@@ -56,7 +56,7 @@ export default function ContactForm() {
     setStatus("sending");
 
     try {
-      await axios.post("https://byteclub2026.onrender.com/send", form);
+      await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URI}/send`, form);
       setStatus("success");
       setForm({ name: "", email: "", message: "" });
     } catch {

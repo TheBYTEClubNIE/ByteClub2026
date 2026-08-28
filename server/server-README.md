@@ -111,7 +111,6 @@ The server starts at `http://localhost:5000` (or your configured `PORT`).
 
 ## API Reference
 
-**Base URL (production):** `https://byteclub2026.onrender.com`  
 **Base URL (local):** `http://localhost:5000`
 
 All endpoints accept and return `application/json`.

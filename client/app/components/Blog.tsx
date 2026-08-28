@@ -253,7 +253,7 @@ export default function BlogsPage() {
 
   const fetchBlogs = async () => {
     try {
-      const res = await axios.get("https://byteclub2026.onrender.com/blog");
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URI}/blog`);
       setBlogs(res.data);
     } catch (err) {
       console.error("Failed to fetch blogs:", err);

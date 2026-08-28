@@ -27,12 +27,7 @@ ByteClub2026/
 
 ---
 
-## Live URLs
 
-| Service | URL |
-|---------|-----|
-| Frontend | `https://byte2026.vercel.app` |
-| Backend API | `https://byteclub2026.onrender.com` |
 
 ---
 
@@ -91,7 +86,6 @@ cd client
 npm run dev        # starts Next.js on http://localhost:3000
 ```
 
-> **Note:** The client is hardcoded to call `https://byteclub2026.onrender.com` in production. For local development, update the API base URL in each component to `http://localhost:5000`. See `client/README.md` for details.
 
 ---
 

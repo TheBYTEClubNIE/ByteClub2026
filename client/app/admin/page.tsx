@@ -13,7 +13,7 @@ interface Blog {
 type View = "login" | "dashboard";
 type EditorMode = "create" | "edit";
 
-const API = "https://byteclub2026.onrender.com";
+const API = process.env.NEXT_PUBLIC_SERVER_URI;
 
 export default function AdminPage() {
   const [view, setView] = useState<View>("login");

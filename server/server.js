@@ -10,7 +10,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: "https://byte2026.vercel.app" ,
+    origin: process.env.CLIENT_URI ,
     credentials: true,
   })
 );

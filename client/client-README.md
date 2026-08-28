@@ -93,15 +93,6 @@ npm install
 
 ---
 
-## Environment & API Configuration
-
-The client does **not** use a `.env` file. The backend API base URL is hardcoded directly in the component files that call the server:
-
-| Component           | Hardcoded API Base URL                      |
-|---------------------|---------------------------------------------|
-| `ContactForm.tsx`   | `https://byteclub2026.onrender.com`         |
-| `Blog.tsx`          | `https://byteclub2026.onrender.com`         |
-| `admin/page.tsx`    | `https://byteclub2026.onrender.com`         |
 
 ### Switching to a local backend during development
 
@@ -279,7 +270,7 @@ A reusable grid renderer used by `CoreTeams.tsx`. Accepts an array of team membe
 
 ### `Blog.tsx`
 
-**API call:** `GET https://byteclub2026.onrender.com/blog`
+**API call:** 
 
 Fetches and displays published blog posts on page load. Each post is rendered as an expandable card showing the title, author ("Byte Club"), date, and full content on expansion.
 
@@ -306,7 +297,6 @@ interface Blog {
 
 ### `ContactForm.tsx`
 
-**API call:** `POST https://byteclub2026.onrender.com/send`
 
 A contact form with three fields: **Name**, **Email**, and **Message**. Submits via `axios.post()` to the server's `/send` endpoint.
 
