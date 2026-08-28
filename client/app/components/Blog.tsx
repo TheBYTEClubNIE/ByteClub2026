@@ -39,7 +39,7 @@ function BlogCard({ blog, onClick }: { blog: Blog; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className="group relative overflow-hidden rounded-[24px] border border-cyan-400/10 bg-[#020812]/80 backdrop-blur-xl p-7 md:p-9 cursor-pointer transition-all duration-300"
+      className="group relative overflow-hidden rounded-3xl border border-cyan-400/10 bg-[#020812]/80 backdrop-blur-xl p-7 md:p-9 cursor-pointer transition-all duration-300"
       style={{
         boxShadow: "0 0 20px rgba(0,212,255,0.04)",
       }}
