@@ -2,6 +2,7 @@
 
 The Express.js backend that powers the ByteClub website. It handles contact form submissions, serves blog posts from Supabase, and exposes a protected admin API for blog management.
 
+
 ---
 
 ## Table of Contents
