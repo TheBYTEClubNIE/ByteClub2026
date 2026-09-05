@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
-import { Expand } from 'lucide-react';
-import ThreeDImagePageflip, { PageFlipLeaf } from './ThreeDImagePageflip';
+import ThreeDImageCarousel from './ThreeDImageCarousel';
 
 export interface PastEventImage {
   id: string | number;
@@ -57,46 +56,6 @@ function groupByEvent(images: PastEventImage[]) {
     acc[img.eventName].push(img);
     return acc;
   }, {});
-}
-
-/* ───────────────── Album → flipbook leaves ───────────────── */
-
-function photosToLeaves(
-  eventName: string,
-  photos: PastEventImage[],
-  singlePage: boolean
-): PageFlipLeaf[] {
-  if (singlePage) {
-    // one leaf per photo so every flip lands on the next photo in order
-    return photos.map((p, i) => ({
-      id: `${eventName}-page-${i}`,
-      frontImage: p.url,
-      frontTitle: p.date,
-      frontSubtitle: eventName,
-      frontBadge: `Page ${String(i + 1).padStart(2, '0')}`,
-      backTitle: p.date,
-      backSubtitle: `${eventName} · continued →`,
-      backBadge: `${String(i + 1).padStart(2, '0')} / ${String(photos.length).padStart(2, '0')}`,
-    }));
-  }
-  // paired front/back leaves for the magazine spread
-  const leaves: PageFlipLeaf[] = [];
-  for (let i = 0; i < photos.length; i += 2) {
-    const front = photos[i];
-    const back = photos[i + 1];
-    leaves.push({
-      id: `${eventName}-${i / 2}`,
-      frontImage: front.url,
-      frontTitle: front.date,
-      frontSubtitle: eventName,
-      frontBadge: i === 0 ? 'Cover' : `Plate ${String(i + 1).padStart(2, '0')}`,
-      backImage: back ? back.url : front.url,
-      backTitle: back ? back.date : 'End of album',
-      backSubtitle: eventName,
-      backBadge: back ? `Plate ${String(i + 2).padStart(2, '0')}` : 'Endplate',
-    });
-  }
-  return leaves;
 }
 
 /* ───────────────── Timeline Node ───────────────── */
@@ -169,7 +128,7 @@ function TimelineEntry({
 
       {/* full-width album — room for a much bigger book */}
       <div className="ml-14 md:ml-0 mt-8">
-        <EventAlbum eventName={eventName} photos={photos} onOpen={onOpen} />
+        <EventCarousel eventName={eventName} photos={photos} onOpen={onOpen} />
       </div>
     </div>
   );
@@ -224,13 +183,13 @@ function TimelineHeader({
         {description}
       </p>
       <p className="text-[13px] text-slate-400 mt-3">
-        Tap › to flip · ‹ to go back · ⤢ to expand
+        Drag or use arrows to browse · click a photo to ⤢ expand
       </p>
     </motion.div>
   );
 }
 
-function EventAlbum({
+function EventCarousel({
   eventName,
   photos,
   onOpen,
@@ -239,35 +198,17 @@ function EventAlbum({
   photos: PastEventImage[];
   onOpen: (img: PastEventImage) => void;
 }) {
-  const bookWrapRef = useRef<HTMLDivElement>(null);
-  const [bookWidth, setBookWidth] = useState(768);
-  const [turned, setTurned] = useState(0);
+  const [focused, setFocused] = useState(0);
 
-  // measure the album so the book scales down on small screens
+  // start from the first photo when the album changes
   useEffect(() => {
-    const el = bookWrapRef.current;
-    if (!el) return;
-    const measure = () => setBookWidth(el.clientWidth);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+    setFocused(0);
+  }, [eventName]);
 
-  const singlePage = bookWidth < 620;
-  const leaves = photosToLeaves(eventName, photos, singlePage);
-  // narrow screens → single full-width page (spine pinned left);
-  // wide screens → classic two-page spread
-  const pageWidth = singlePage
-    ? Math.max(200, bookWidth - 16)
-    : Math.max(100, Math.min(330, (bookWidth - 40) / 2));
-  const pageHeight = Math.round(pageWidth * 1.43);
+  const slides = photos.map((p) => ({ id: p.id, src: p.url, title: p.date }));
+  const current = photos[Math.min(focused, photos.length - 1)];
 
-  const expandCurrent = () => {
-    const idx = singlePage ? turned : Math.min(turned * 2, photos.length - 1);
-    const photo = photos[Math.min(idx, photos.length - 1)];
-    if (photo) onOpen(photo);
-  };
+  if (photos.length === 0) return null;
 
   return (
     <motion.div
@@ -278,9 +219,9 @@ function EventAlbum({
       className="mx-auto w-full max-w-3xl"
     >
 
-      {/* ── Album ── */}
+      {/* ── 3D carousel ── */}
       <div className="relative">
-        {/* ambient glow behind the book */}
+        {/* ambient glow behind the carousel */}
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -288,31 +229,41 @@ function EventAlbum({
               'radial-gradient(55% 45% at 50% 40%, rgba(34,211,238,0.12), transparent 70%)',
           }}
         />
-        <div ref={bookWrapRef} className="relative w-full overflow-x-clip">
-          <ThreeDImagePageflip
-            pages={leaves}
-            pageWidth={pageWidth}
-            pageHeight={pageHeight}
-            accentColor="#22d3ee"
-            showControls={false}
-            singlePage={singlePage}
-            showPageNumbers={!singlePage}
-            onPageChange={(c) => setTurned(c)}
+        <div className="relative w-full">
+          <ThreeDImageCarousel
+            slides={slides}
+            itemCount={5}
+            autoplay
+            delay={4}
+            onSlideChange={setFocused}
+            onSlideClick={(_slide, index) => {
+              const photo = photos[index];
+              if (photo) onOpen(photo);
+            }}
           />
         </div>
       </div>
 
-      {/* expand */}
-      <div className="flex items-center justify-center mt-4 select-none">
-        <button
-          onClick={expandCurrent}
-          aria-label="Expand current photo"
-          className="px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold border border-cyan-400/25 text-cyan-200 bg-cyan-400/5 hover:bg-cyan-400/15 active:scale-95 transition-all"
-          style={{ fontFamily: "'Share Tech Mono', monospace" }}
+      {/* current caption */}
+      <div className="flex items-center justify-center mt-1 select-none">
+        <div
+          className="flex items-center gap-3 max-w-full rounded-full border border-cyan-400/20 bg-[#020812]/80 backdrop-blur px-4 py-2"
+          style={{ boxShadow: '0 0 24px rgba(0,212,255,0.08)' }}
         >
-          <Expand className="w-3.5 h-3.5" />
-          <span>Expand</span>
-        </button>
+          <span
+            className="min-w-0 truncate text-[11px] text-slate-300"
+            style={{ fontFamily: "'Share Tech Mono', monospace", letterSpacing: '0.08em' }}
+          >
+            {current ? current.date : ''}
+          </span>
+          <span className="h-3 w-px shrink-0 bg-cyan-400/25" />
+          <span
+            className="shrink-0 text-[11px] text-cyan-300"
+            style={{ fontFamily: "'Share Tech Mono', monospace" }}
+          >
+            {Math.min(focused + 1, photos.length)} / {photos.length}
+          </span>
+        </div>
       </div>
     </motion.div>
   );
