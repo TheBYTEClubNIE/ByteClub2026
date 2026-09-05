@@ -10,9 +10,10 @@ import React, {
 } from 'react';
 
 export interface PageFlipLeaf {
-  id?: string | number;
-  frontImage: string;
-  backImage: string;
+    id?: string | number;
+    frontImage: string;
+    /** Omit for a themed caption back instead of an image */
+    backImage?: string;
   frontTitle?: string;
   backTitle?: string;
   frontSubtitle?: string;
@@ -46,8 +47,10 @@ export interface ThreeDImagePageflipProps {
   easing?: string;
   /** Shadow intensity factor (0.0 to 1.0, default: 0.45) */
   shadowIntensity?: number;
-  /** Dynamically shift spine horizontally when book is open to center the 2-page spread (default: true) */
-  spineShift?: boolean;
+    /** Dynamically shift spine horizontally when book is open to center the 2-page spread (default: true) */
+    spineShift?: boolean;
+    /** Single-page mode for narrow screens: one full-width page, spine pinned left (default: false) */
+    singlePage?: boolean;
   /** Border radius for pages (default: "10px") */
   radius?: string | number;
   /** Enable page numbering tags (default: true) */
@@ -100,6 +103,7 @@ export const ThreeDImagePageflip = forwardRef<
       easing = 'cubic-bezier(0.4, 0, 0.2, 1)',
       shadowIntensity = 0.45,
       spineShift = true,
+      singlePage = false,
       radius = '14px',
       showPageNumbers = true,
       showSpineBinding = true,
@@ -209,15 +213,15 @@ export const ThreeDImagePageflip = forwardRef<
           setPeekingIndex(null);
         }}
       >
-        {/* 3D Book Viewport Stage */}
-        <div
-          className="relative flex items-center justify-center transition-all duration-500"
-          style={{
-            perspective: `${perspective}px`,
-            width: `${pageWidth * 2 + 40}px`,
-            height: `${pageHeight + 40}px`,
-          }}
-        >
+            {/* 3D Book Viewport Stage */}
+            <div
+                className="relative flex items-center justify-center transition-all duration-500"
+                style={{
+                    perspective: `${perspective}px`,
+                    width: singlePage ? '100%' : `${pageWidth * 2 + 40}px`,
+                    height: `${pageHeight + 40}px`,
+                }}
+            >
           {/* 3D Book Container */}
           <div
             className="relative transition-transform"
@@ -226,7 +230,7 @@ export const ThreeDImagePageflip = forwardRef<
               height: `${pageHeight}px`,
               transformStyle: 'preserve-3d',
               transition: `transform ${duration}s ${easing}`,
-              transform: spineShift && isOpen ? `translateX(${pageWidth / 2}px)` : 'translateX(0)',
+                        transform: spineShift && !singlePage && isOpen ? `translateX(${pageWidth / 2}px)` : 'translateX(0)',
             }}
           >
             {/* Spine Shadow & Binding Crease */}
@@ -249,7 +253,35 @@ export const ThreeDImagePageflip = forwardRef<
               }}
             />
 
-            {/* Book Leaves Stacking Loop */}
+                    {/* End cover (single-page mode: turned pile rests off-screen left) */}
+                    {singlePage && (
+                        <div className="absolute inset-0 z-0 flex flex-col items-center justify-center gap-2 overflow-hidden p-6 text-center border border-cyan-400/20 bg-gradient-to-br from-[#071c2c] via-[#020812] to-[#032a2a]"
+                            style={{ borderRadius: parsedRadius }}
+                        >
+                            <div
+                                className="absolute inset-y-0 left-0 w-8 pointer-events-none"
+                                style={{ background: 'linear-gradient(90deg, rgba(0,0,0,0.6), transparent)' }}
+                            />
+                            <p
+                                className="text-[10px] uppercase text-cyan-400"
+                                style={{ fontFamily: "'Share Tech Mono', monospace", letterSpacing: '0.25em' }}
+                            >
+                                The End
+                            </p>
+                            <p className="text-white/70 text-xs">
+                                You turned every page of this album
+                            </p>
+                            <button
+                                onClick={resetBook}
+                                className="mt-1 px-4 py-1.5 rounded-xl text-xs font-semibold border border-cyan-400/25 text-cyan-200 bg-cyan-400/5 hover:bg-cyan-400/15 active:scale-95 transition-all"
+                                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                            >
+                                ↺ read again
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Book Leaves Stacking Loop */}
             {pages.map((leaf, index) => {
               const isTurned = index < currentTurned;
               const isCanPeek = index === currentTurned;
@@ -265,9 +297,26 @@ export const ThreeDImagePageflip = forwardRef<
               }
 
               return (
-                <div
-                  key={leaf.id ?? index}
-                  onClick={() => handleLeafClick(index)}
+                                <div
+                                    key={leaf.id ?? index}
+                                    onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                                        if (!interactive) return;
+                                        if (singlePage) {
+                                            // e-reader zones: right half advances, left half goes back
+                                            const rect =
+                                                e.currentTarget.getBoundingClientRect();
+                                            if (
+                                                e.clientX - rect.left <
+                                                rect.width / 2
+                                            ) {
+                                                if (currentTurned > 0) flipPrev();
+                                            } else if (index === currentTurned) {
+                                                flipNext();
+                                            }
+                                            return;
+                                        }
+                                        handleLeafClick(index);
+                                    }}
                   onMouseEnter={() => {
                     if (isCanPeek) setPeekingIndex(index);
                   }}
@@ -366,13 +415,48 @@ export const ThreeDImagePageflip = forwardRef<
                       boxShadow: `0 24px 55px -12px rgba(0, 0, 0, ${shadowIntensity}), 0 0 45px -12px rgba(34,211,238,0.28)`,
                     }}
                   >
-                    <img
-                      src={leaf.backImage}
-                      alt={leaf.backTitle ?? `Page ${index * 2 + 2}`}
-                      className="w-full h-full object-cover pointer-events-none select-none"
-                      loading="lazy"
-                      draggable={false}
-                    />
+                                    {leaf.backImage ? (
+                                        <img
+                                            src={leaf.backImage}
+                                            alt={leaf.backTitle ?? `Page ${index * 2 + 2}`}
+                                            className="w-full h-full object-cover pointer-events-none select-none"
+                                            loading="lazy"
+                                            draggable={false}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex flex-col justify-between p-5 sm:p-6 bg-gradient-to-bl from-[#071c2c] via-[#020812] to-[#03202a]">
+                                            <div>
+                                                {leaf.backBadge && (
+                                                    <p
+                                                        className="text-[10px] uppercase text-cyan-400"
+                                                        style={{ fontFamily: "'Share Tech Mono', monospace", letterSpacing: '0.2em' }}
+                                                    >
+                                                        {leaf.backBadge}
+                                                    </p>
+                                                )}
+                                                {leaf.backTitle && (
+                                                    <h4
+                                                        className="text-white font-bold text-base sm:text-lg leading-snug mt-2"
+                                                        style={{ fontFamily: "'Orbitron', sans-serif" }}
+                                                    >
+                                                        {leaf.backTitle}
+                                                    </h4>
+                                                )}
+                                                {leaf.backSubtitle && (
+                                                    <p className="text-cyan-200/70 text-xs mt-1">
+                                                        {leaf.backSubtitle}
+                                                    </p>
+                                                )}
+                                                <div className="mt-3 h-px w-full bg-gradient-to-r from-cyan-400/50 via-cyan-400/10 to-transparent" />
+                                            </div>
+                                            <p
+                                                className="text-[11px] text-cyan-300"
+                                                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                                            >
+                                                → keep flipping
+                                            </p>
+                                        </div>
+                                    )}
 
                     {/* Spine crease shadow overlay for turned back-face */}
                     <div

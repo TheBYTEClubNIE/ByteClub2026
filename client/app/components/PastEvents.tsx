@@ -59,10 +59,27 @@ function groupByEvent(images: PastEventImage[]) {
   }, {});
 }
 
-/* ───────────────── Album → flipbook leaves ─────────────────
-   Pair consecutive photos front/back so each event reads like a magazine. */
+/* ───────────────── Album → flipbook leaves ───────────────── */
 
-function photosToLeaves(eventName: string, photos: PastEventImage[]): PageFlipLeaf[] {
+function photosToLeaves(
+  eventName: string,
+  photos: PastEventImage[],
+  singlePage: boolean
+): PageFlipLeaf[] {
+  if (singlePage) {
+    // one leaf per photo so every flip lands on the next photo in order
+    return photos.map((p, i) => ({
+      id: `${eventName}-page-${i}`,
+      frontImage: p.url,
+      frontTitle: p.date,
+      frontSubtitle: eventName,
+      frontBadge: `Page ${String(i + 1).padStart(2, '0')}`,
+      backTitle: p.date,
+      backSubtitle: `${eventName} · continued →`,
+      backBadge: `${String(i + 1).padStart(2, '0')} / ${String(photos.length).padStart(2, '0')}`,
+    }));
+  }
+  // paired front/back leaves for the magazine spread
   const leaves: PageFlipLeaf[] = [];
   for (let i = 0; i < photos.length; i += 2) {
     const front = photos[i];
@@ -207,7 +224,7 @@ function TimelineHeader({
         {description}
       </p>
       <p className="text-[13px] text-slate-400 mt-3">
-        Hover a page to peek · click to turn · ⤢ to expand
+        Tap › to flip · ‹ to go back · ⤢ to expand
       </p>
     </motion.div>
   );
@@ -237,13 +254,19 @@ function EventAlbum({
     return () => ro.disconnect();
   }, []);
 
-  const leaves = photosToLeaves(eventName, photos);
-  const pageWidth = Math.max(100, Math.min(330, (bookWidth - 40) / 2));
+  const singlePage = bookWidth < 620;
+  const leaves = photosToLeaves(eventName, photos, singlePage);
+  // narrow screens → single full-width page (spine pinned left);
+  // wide screens → classic two-page spread
+  const pageWidth = singlePage
+    ? Math.max(200, bookWidth - 16)
+    : Math.max(100, Math.min(330, (bookWidth - 40) / 2));
   const pageHeight = Math.round(pageWidth * 1.43);
 
   const expandCurrent = () => {
-    const idx = Math.min(turned * 2, photos.length - 1);
-    if (photos[idx]) onOpen(photos[idx]);
+    const idx = singlePage ? turned : Math.min(turned * 2, photos.length - 1);
+    const photo = photos[Math.min(idx, photos.length - 1)];
+    if (photo) onOpen(photo);
   };
 
   return (
@@ -272,6 +295,8 @@ function EventAlbum({
             pageHeight={pageHeight}
             accentColor="#22d3ee"
             showControls={false}
+            singlePage={singlePage}
+            showPageNumbers={!singlePage}
             onPageChange={(c) => setTurned(c)}
           />
         </div>
