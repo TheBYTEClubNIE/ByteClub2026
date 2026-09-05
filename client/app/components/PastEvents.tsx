@@ -104,7 +104,7 @@ function TimelineEntry({
               align="right"
               description={
                 EVENT_DESCRIPTIONS[eventName] ??
-                'Moments from this event — flip through the album to relive them.'
+                'Moments from this event — browse the gallery to relive them.'
               }
             />
             <div className="hidden md:block" />
@@ -119,7 +119,7 @@ function TimelineEntry({
               align="left"
               description={
                 EVENT_DESCRIPTIONS[eventName] ??
-                'Moments from this event — flip through the album to relive them.'
+                'Moments from this event — browse the gallery to relive them.'
               }
             />
           </>
@@ -176,14 +176,11 @@ function TimelineHeader({
           className="text-[11px] text-cyan-200/60"
           style={{ fontFamily: "'Share Tech Mono', monospace", letterSpacing: '0.14em' }}
         >
-          {photos.length} PHOTOS · {Math.ceil(photos.length / 2)} LEAVES
+          {photos.length} PHOTOS
         </span>
       </div>
       <p className="text-[13px] sm:text-sm text-slate-300/80 leading-relaxed mt-3 max-w-xl">
         {description}
-      </p>
-      <p className="text-[13px] text-slate-400 mt-3">
-        Drag or use arrows to browse · click a photo to ⤢ expand
       </p>
     </motion.div>
   );
@@ -448,7 +445,7 @@ export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsPr
           </h2>
           <p className="max-w-xl leading-relaxed" style={{ color: 'rgba(180,220,230,0.7)', fontSize: '14px' }}>
             Scroll through our journey — hackathons, workshops, and community moments,
-            milestone by milestone. Each event is a photo album — turn its pages.
+            milestone by milestone. Each event is a photo deck — drag through it.
           </p>
         </div>
       </div>
