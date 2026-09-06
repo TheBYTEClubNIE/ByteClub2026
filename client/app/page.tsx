@@ -13,7 +13,7 @@ import ContactForm from "./components/ContactForm";
 import NewCard from "./components/About";
 Countdown
 import StaticSpaceBackground from "./components/AnimatedBackground";
-import BlogsPage from "./components/Blog";
+
 import Countdown from "./components/CountDowntimer";
 
 export default function Home() {
@@ -211,42 +211,6 @@ export default function Home() {
           <PastEvents />
         </section>
 
-        {/* ───────────────── BLOGS ───────────────── */}
-        <section id="blogs" className="w-full py-12 sm:py-16 md:py-20">
-
-          <div className="flex justify-center mb-10 sm:mb-14">
-            <h2
-              className="
-                relative inline-block
-                text-3xl sm:text-4xl md:text-5xl
-                font-bold
-                text-white
-                after:content-['']
-                after:absolute
-                after:left-0
-                after:-bottom-2
-                after:h-[3px]
-                after:w-0
-                hover:after:w-full
-                after:bg-cyan-400
-                after:transition-all
-                after:duration-700
-                hover:tracking-wide
-                transition-all
-                duration-500
-              "
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                textShadow:
-                  "0 0 12px rgba(255,255,255,0.25), 0 0 30px rgba(0,212,255,0.15)",
-              }}
-            >
-              Byte Blogs
-            </h2>
-          </div>
-
-          <BlogsPage />
-        </section>
 
         {/* ───────────────── CONTACT ───────────────── */}
         <section

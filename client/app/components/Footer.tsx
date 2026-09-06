@@ -43,6 +43,11 @@ export default function Footer() {
                   Past Events
                 </Link>
               </li>
+              <li>
+                <Link href="/blog" className="hover:text-white transition cursor-pointer">
+                  Blog
+                </Link>
+              </li>
             </ul>
           </div>
 
