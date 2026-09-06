@@ -162,11 +162,16 @@ export default function BlogRoute() {
       <section className="w-full" style={{ height: "680px" }}>
         <BooksShowcase
           books={BYTE_BOOKS}
-          heroTitle="Byte Blogs"
-          navTitle="Featured Topics"
-          showNav={true}
+          heroTitle=""
+          navTitle=""
+          showNav={false}
           showDetailPanel={true}
           showCarousel={true}
+          themeColors={{
+            bg: "#ffffff",
+            bgLight: "#ffffff",
+            bgDark: "#ffffff",
+          }}
           className="h-full"
         />
       </section>
