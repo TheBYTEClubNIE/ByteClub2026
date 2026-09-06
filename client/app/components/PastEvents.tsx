@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import SplitFlapText from '@/components/SplitFlapText';
+import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
+import ThreeDImageCarousel from './ThreeDImageCarousel';
 
 export interface PastEventImage {
   id: string | number;
@@ -29,15 +30,25 @@ const PLACEHOLDER_IMAGES: PastEventImage[] = [
   { id: 10, url: '/events/group-1.jpg', eventName: 'Annual Assembly', date: 'Mass Gathering' },
   { id: 11, url: '/events/group-2.png', eventName: 'Annual Assembly', date: 'Community Photo' },
 
-  
-  
-  { id: 14, url: '/Events/beyondlabs3.jpg', eventName: 'Beyond Labs', date: 'Student Participation' },
-  { id: 15, url: '/Events/beyondlabs4.jpg', eventName: 'Beyond Labs', date: 'Hands-on Activity' },
-  { id: 16, url: '/Events/beyondlabs5.jpg', eventName: 'Beyond Labs', date: 'Interactive Learning' },
-  { id: 17, url: '/Events/beyondlabs6.jpg', eventName: 'Beyond Labs', date: 'Technical Discussion' },
-  { id: 18, url: '/Events/beyondlabs7.jpg', eventName: 'Beyond Labs', date: 'Team Collaboration' },
-  { id: 19, url: '/Events/beyondlabs8.jpg', eventName: 'Beyond Labs', date: 'Closing Moments' },
+  // Beyond Labs
+  { id: 14, url: '/events/beyondlabs3.jpg', eventName: 'Beyond Labs', date: 'Student Participation' },
+  { id: 15, url: '/events/beyondlabs4.jpg', eventName: 'Beyond Labs', date: 'Hands-on Activity' },
+  { id: 16, url: '/events/beyondlabs5.jpg', eventName: 'Beyond Labs', date: 'Interactive Learning' },
+  { id: 17, url: '/events/beyondlabs6.jpg', eventName: 'Beyond Labs', date: 'Technical Discussion' },
+  { id: 18, url: '/events/beyondlabs7.jpg', eventName: 'Beyond Labs', date: 'Team Collaboration' },
+  { id: 19, url: '/events/beyondlabs8.jpg', eventName: 'Beyond Labs', date: 'Closing Moments' },
 ];
+
+const EVENT_DESCRIPTIONS: Record<string, string> = {
+  'Beyond BYTE Ideathon':
+    'Our flagship ideathon where student teams pitched bold ideas beyond the classroom. From high-energy team presentations and a buzzing audience to intense Q&A rounds, the event celebrated creativity, collaboration, and out-of-the-box problem solving.',
+  'Bits to Bytes':
+    'A welcoming community event that walked newcomers from the basics of tech to building real things. Packed with curious faces, live engagement, and the organizers who started it all — the perfect first step into the Byte Club journey.',
+  'Annual Assembly':
+    'The biggest gathering of our community — members old and new under one roof. A day of reflection, celebration, and group photos that capture the true scale and spirit of the Byte Club family.',
+  'Beyond Labs':
+    'A hands-on learning series that took members beyond theory into real building. Through interactive sessions, technical discussions, and team collaboration, participants experimented, broke things, and learned together.',
+};
 
 function groupByEvent(images: PastEventImage[]) {
   return images.reduce<Record<string, PastEventImage[]>>((acc, img) => {
@@ -47,122 +58,211 @@ function groupByEvent(images: PastEventImage[]) {
   }, {});
 }
 
-/* ───────────────── Animated Card ───────────────── */
+/* ───────────────── Timeline Node ───────────────── */
 
-function AnimatedCard({
-  event,
-  index,
-  onClick,
+function TimelineEntry({
+  eventName,
+  photos,
+  seq,
+  side,
+  onOpen,
 }: {
-  event: PastEventImage;
-  index: number;
-  onClick: () => void;
+  eventName: string;
+  photos: PastEventImage[];
+  seq: number;
+  side: 'left' | 'right';
+  onOpen: (img: PastEventImage) => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) observer.observe(ref.current);
-
-    return () => observer.disconnect();
-  }, []);
+  const isLeft = side === 'left';
 
   return (
-    <div
-      ref={ref}
-      onClick={onClick}
-      style={{
-        transitionDelay: `${(index % 8) * 60}ms`,
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0px)' : 'translateY(28px)',
-        transition: 'opacity 0.55s ease, transform 0.55s ease',
-      }}
-      className="
-        break-inside-avoid
-        relative
-        group
-        cursor-pointer
-        rounded-3xl
-        overflow-hidden
-        border border-cyan-400/10
-        bg-[#020812]/80
-        backdrop-blur-md
-        hover:border-cyan-400/30
-        transition-all duration-500
-      "
-    >
-      {/* Glow */}
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(135deg, rgba(0,212,255,0.08), transparent 60%)",
-        }}
-      />
-
-      <img
-        src={event.url}
-        alt={event.eventName}
-        className="
-          w-full
-          h-auto
-          object-cover
-          block
-          transition-all duration-700
-          group-hover:scale-[1.05]
-          group-hover:brightness-[0.65]
-        "
-      />
-
-      {/* Overlay */}
-      <div
-        className="
-          absolute inset-0
-          bg-gradient-to-t
-          from-black/90
-          via-black/10
-          to-transparent
-          opacity-0
-          group-hover:opacity-100
-          transition-opacity duration-400
-          flex flex-col justify-end
-          p-5
-        "
-      >
-        <span
-          style={{
-            fontFamily: "'Share Tech Mono', monospace",
-            letterSpacing: "0.15em",
-          }}
-          className="text-[10px] text-cyan-300 uppercase"
-        >
-          {event.eventName}
-        </span>
-
-        <h3
-          style={{
-            fontFamily: "'Orbitron', sans-serif",
-          }}
-          className="text-white font-semibold text-sm mt-1"
-        >
-          {event.date}
-        </h3>
-
-        <span className="text-cyan-200 text-[11px] mt-2 opacity-80">
-          ⊕ view
+    <div className="relative">
+      {/* node dot — mobile: left rail · desktop: centre spine */}
+      <div className="absolute left-[19px] md:left-1/2 top-2 md:-translate-x-1/2 z-10">
+        <span className="relative flex h-9 w-9 items-center justify-center">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400/20" />
+          <span
+            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-cyan-300/50 bg-[#020812] text-[11px] font-bold text-cyan-300"
+            style={{
+              fontFamily: "'Share Tech Mono', monospace",
+              boxShadow: '0 0 20px rgba(0,212,255,0.45)',
+            }}
+          >
+            {String(seq).padStart(2, '0')}
+          </span>
         </span>
       </div>
+
+      {/* alternating header column on desktop */}
+      <div className="ml-14 md:ml-0 md:grid md:grid-cols-2 md:gap-14">
+        {isLeft ? (
+          <>
+            <TimelineHeader
+              eventName={eventName}
+              photos={photos}
+              seq={seq}
+              align="right"
+              description={
+                EVENT_DESCRIPTIONS[eventName] ??
+                'Moments from this event — browse the gallery to relive them.'
+              }
+            />
+            <div className="hidden md:block" />
+          </>
+        ) : (
+          <>
+            <div className="hidden md:block" />
+            <TimelineHeader
+              eventName={eventName}
+              photos={photos}
+              seq={seq}
+              align="left"
+              description={
+                EVENT_DESCRIPTIONS[eventName] ??
+                'Moments from this event — browse the gallery to relive them.'
+              }
+            />
+          </>
+        )}
+      </div>
+
+      {/* full-width album — room for a much bigger book */}
+      <div className="ml-14 md:ml-0 mt-8">
+        <EventCarousel eventName={eventName} photos={photos} onOpen={onOpen} />
+      </div>
     </div>
+  );
+}
+
+function TimelineHeader({
+  eventName,
+  photos,
+  seq,
+  align,
+  description,
+}: {
+  eventName: string;
+  photos: PastEventImage[];
+  seq: number;
+  align: 'left' | 'right';
+  description: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: align === 'right' ? -60 : 60, y: 30 }}
+      whileInView={{ opacity: 1, x: 0, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      className="relative"
+    >
+      <p
+        className="text-[10px] uppercase text-cyan-400/70"
+        style={{ fontFamily: "'Share Tech Mono', monospace", letterSpacing: '0.22em' }}
+      >
+        {String(seq).padStart(2, '0')} // MILESTONE
+      </p>
+
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mt-1">
+        <h3
+          className="text-2xl sm:text-3xl font-black text-white leading-tight"
+          style={{
+            fontFamily: "'Orbitron', sans-serif",
+            textShadow: '0 0 18px rgba(0,212,255,0.2)',
+          }}
+        >
+          {eventName}
+        </h3>
+        <span
+          className="text-[11px] text-cyan-200/60"
+          style={{ fontFamily: "'Share Tech Mono', monospace", letterSpacing: '0.14em' }}
+        >
+          {photos.length} PHOTOS
+        </span>
+      </div>
+      <p className="text-[13px] sm:text-sm text-slate-300/80 leading-relaxed mt-3 max-w-xl">
+        {description}
+      </p>
+    </motion.div>
+  );
+}
+
+function EventCarousel({
+  eventName,
+  photos,
+  onOpen,
+}: {
+  eventName: string;
+  photos: PastEventImage[];
+  onOpen: (img: PastEventImage) => void;
+}) {
+  const [focused, setFocused] = useState(0);
+
+  // start from the first photo when the album changes
+  useEffect(() => {
+    setFocused(0);
+  }, [eventName]);
+
+  const slides = photos.map((p) => ({ id: p.id, src: p.url, title: p.date }));
+  const current = photos[Math.min(focused, photos.length - 1)];
+
+  if (photos.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      className="mx-auto w-full max-w-3xl"
+    >
+
+      {/* ── 3D carousel ── */}
+      <div className="relative">
+        {/* ambient glow behind the carousel */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(55% 45% at 50% 40%, rgba(34,211,238,0.12), transparent 70%)',
+          }}
+        />
+        <div className="relative w-full">
+          <ThreeDImageCarousel
+            slides={slides}
+            itemCount={5}
+            autoplay
+            delay={4}
+            onSlideChange={setFocused}
+            onSlideClick={(_slide, index) => {
+              const photo = photos[index];
+              if (photo) onOpen(photo);
+            }}
+          />
+        </div>
+      </div>
+
+      {/* current caption */}
+      <div className="flex items-center justify-center mt-1 select-none">
+        <div
+          className="flex items-center gap-3 max-w-full rounded-full border border-cyan-400/20 bg-[#020812]/80 backdrop-blur px-4 py-2"
+          style={{ boxShadow: '0 0 24px rgba(0,212,255,0.08)' }}
+        >
+          <span
+            className="min-w-0 truncate text-[11px] text-slate-300"
+            style={{ fontFamily: "'Share Tech Mono', monospace", letterSpacing: '0.08em' }}
+          >
+            {current ? current.date : ''}
+          </span>
+          <span className="h-3 w-px shrink-0 bg-cyan-400/25" />
+          <span
+            className="shrink-0 text-[11px] text-cyan-300"
+            style={{ fontFamily: "'Share Tech Mono', monospace" }}
+          >
+            {Math.min(focused + 1, photos.length)} / {photos.length}
+          </span>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
@@ -189,324 +289,224 @@ function Lightbox({
       if (e.key === 'ArrowLeft') onPrev();
       if (e.key === 'ArrowRight') onNext();
     };
-
     window.addEventListener('keydown', handler);
-
-    return () => window.removeEventListener('keydown', handler);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handler);
+      document.body.style.overflow = '';
+    };
   }, [onClose, onPrev, onNext]);
 
   return (
-    <div
-      className="
-        fixed inset-0 z-50
-        flex items-center justify-center
-        bg-black/85 backdrop-blur-md p-4
-      "
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
       onClick={onClose}
     >
       <div
         className="relative flex flex-col items-center w-full max-w-5xl gap-5"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Bar */}
         <div className="w-full flex items-center justify-between">
           <span
-            style={{
-              fontFamily: "'Share Tech Mono', monospace",
-            }}
+            style={{ fontFamily: "'Share Tech Mono', monospace" }}
             className="text-cyan-400 text-xs"
           >
             {current + 1} / {total}
           </span>
-
           <button
             onClick={onClose}
-            className="
-              px-4 py-1.5 rounded-full
-              border border-cyan-400/20
-              text-cyan-300 text-xs
-              hover:bg-cyan-400/10
-              transition-all duration-300
-            "
+            className="px-4 py-1.5 rounded-full border border-cyan-400/20 text-cyan-300 text-xs hover:bg-cyan-400/10 transition-all duration-300"
           >
             ✕ close
           </button>
         </div>
 
-        {/* Image */}
         <div className="flex items-center gap-4 w-full">
-
           <button
             onClick={onPrev}
-            className="
-              w-10 h-10 rounded-full
-              border border-cyan-400/20
-              text-cyan-300
-              hover:bg-cyan-400/10
-              transition-all duration-300
-            "
+            className="w-10 h-10 shrink-0 rounded-full border border-cyan-400/20 text-cyan-300 hover:bg-cyan-400/10 transition-all duration-300"
           >
             ←
           </button>
-
-          <img
+          <motion.img
+            key={String(image.id)}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
             src={image.url}
             alt={image.eventName}
-            className="
-              flex-1
-              max-h-[75vh]
-              object-contain
-              rounded-2xl
-              border border-cyan-400/10
-            "
+            className="flex-1 min-w-0 max-h-[75vh] object-contain rounded-2xl border border-cyan-400/10"
           />
-
           <button
             onClick={onNext}
-            className="
-              w-10 h-10 rounded-full
-              border border-cyan-400/20
-              text-cyan-300
-              hover:bg-cyan-400/10
-              transition-all duration-300
-            "
+            className="w-10 h-10 shrink-0 rounded-full border border-cyan-400/20 text-cyan-300 hover:bg-cyan-400/10 transition-all duration-300"
           >
             →
           </button>
-
         </div>
 
-        {/* Caption */}
         <div className="flex items-center gap-3 text-sm">
           <span className="text-white">{image.eventName}</span>
           <span className="text-cyan-500">•</span>
           <span className="text-cyan-300">{image.date}</span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-/* ───────────────── Main Component ───────────────── */
+/* ───────────────── Main Component : Scroll Timeline ───────────────── */
 
-export default function PastEvents({
-  images = PLACEHOLDER_IMAGES,
-}: PastEventsProps) {
-
+export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsProps) {
   const grouped = groupByEvent(images);
   const eventNames = Object.keys(grouped);
-  const filters = ['All', ...eventNames];
 
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [displayedImages, setDisplayedImages] = useState(images);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  const handleFilter = (filter: string) => {
-    if (filter === activeFilter) return;
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: timelineRef,
+    offset: ['start center', 'end center'],
+  });
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.4 });
 
-    setIsTransitioning(true);
+  // Every milestone shows on the timeline
+  const visibleEvents = eventNames.map((name) => ({ name, photos: grouped[name] }));
 
-    setTimeout(() => {
-      setActiveFilter(filter);
+  const flatList = visibleEvents.flatMap((e) => e.photos);
 
-      setDisplayedImages(
-        filter === 'All'
-          ? images
-          : images.filter((img) => img.eventName === filter)
-      );
+  // Map flat index offsets so the lightbox can page across the whole filtered set
+  const offsets: number[] = [];
+  {
+    let acc = 0;
+    for (const e of visibleEvents) {
+      offsets.push(acc);
+      acc += e.photos.length;
+    }
+  }
 
-      setIsTransitioning(false);
-    }, 250);
-  };
-
-  const openLightbox = (index: number) => setLightboxIndex(index);
-
+  const openAtFlatIndex = (idx: number) => setLightboxIndex(idx);
   const closeLightbox = () => setLightboxIndex(null);
-
   const prevImage = () =>
     setLightboxIndex((prev) =>
-      prev !== null
-        ? (prev - 1 + displayedImages.length) % displayedImages.length
-        : null
+      prev !== null ? (prev - 1 + flatList.length) % flatList.length : null
     );
-
   const nextImage = () =>
-    setLightboxIndex((prev) =>
-      prev !== null
-        ? (prev + 1) % displayedImages.length
-        : null
-    );
+    setLightboxIndex((prev) => (prev !== null ? (prev + 1) % flatList.length : null));
 
   return (
     <div className="min-h-screen bg-transparent text-white px-5 py-16 md:px-12">
-
-      {/* ───────────────── Title ───────────────── */}
-
+      {/* ── Title ── */}
       <div className="max-w-7xl mx-auto mb-14">
-
         <div
-          className="
-            relative overflow-hidden rounded-[28px]
-            border border-cyan-400/20
-            bg-[#020812]/90
-            backdrop-blur-xl
-            p-8 md:p-10
-          "
+          className="relative overflow-hidden rounded-[28px] border border-cyan-400/20 bg-[#020812]/90 backdrop-blur-xl p-8 md:p-10"
           style={{
             boxShadow:
-              "0 0 40px rgba(0,212,255,0.08), inset 0 0 20px rgba(0,212,255,0.04)",
+              '0 0 40px rgba(0,212,255,0.08), inset 0 0 20px rgba(0,212,255,0.04)',
           }}
         >
-
-          {/* Glow */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
               background:
-                "linear-gradient(135deg, rgba(0,212,255,0.05) 0%, transparent 50%, rgba(0,255,200,0.03) 100%)",
+                'linear-gradient(135deg, rgba(0,212,255,0.05) 0%, transparent 50%, rgba(0,255,200,0.03) 100%)',
             }}
           />
-
-          {/* Top Line */}
           <div
             className="absolute top-0 left-10 right-10 h-[1px]"
             style={{
               background:
-                "linear-gradient(90deg, transparent, rgba(0,212,255,0.4), rgba(0,255,200,0.4), transparent)",
+                'linear-gradient(90deg, transparent, rgba(0,212,255,0.4), rgba(0,255,200,0.4), transparent)',
             }}
           />
-
-          {/* Label */}
           <p
             className="mb-3"
             style={{
               fontFamily: "'Share Tech Mono', monospace",
-              fontSize: "11px",
-              color: "rgba(0,212,255,0.65)",
-              letterSpacing: "0.18em",
+              fontSize: '11px',
+              color: 'rgba(0,212,255,0.65)',
+              letterSpacing: '0.18em',
             }}
           >
-            ARCHIVE.LOG
+            ARCHIVE.LOG — SCROLL TIMELINE
           </p>
+          <h2
+            className="relative inline-block text-5xl md:text-7xl font-black text-white leading-none mb-6"
+            style={{
+              fontFamily: "'Orbitron', sans-serif",
+              textShadow:
+                '0 0 16px rgba(255,255,255,0.22), 0 0 40px rgba(0,212,255,0.18)',
+            }}
+          >
+            Past Events
+          </h2>
+          <p className="max-w-xl leading-relaxed" style={{ color: 'rgba(180,220,230,0.7)', fontSize: '14px' }}>
+            Scroll through our journey — hackathons, workshops, and community moments,
+            milestone by milestone. Each event is a photo deck — drag through it.
+          </p>
+        </div>
+      </div>
 
-          {/* Heading */}
-          <div className="mb-6">
-            <SplitFlapText
-              words={["PAST EVENTS", "EVENT ARCHIVE", "BYTE HISTORY"]}
-              flipDuration={0.1}
-              stagger={0.04}
-              cycleDelay={2800}
-              charset="alphanumeric"
-              flipsPerChar={6}
-              tileColor="#071026"
-              textColor="#38bdf8"
-              tileRadius="clamp(4px, 0.8vw, 8px)"
-              gap="clamp(3px, 0.5vw, 6px)"
-              fontSize="clamp(26px, 5vw, 54px)"
-              loop
-              padTo={14}
+      {/* ── Scroll Timeline ── */}
+      <div className="max-w-7xl mx-auto">
+        <div ref={timelineRef} className="relative">
+          {/* rail */}
+          <div className="absolute left-[32px] md:left-1/2 top-0 bottom-0 md:-translate-x-1/2 w-[2px] bg-white/10 rounded-full overflow-hidden">
+            <motion.div
+              className="absolute inset-0 origin-top"
+              style={{
+                scaleY: progress,
+                background:
+                  'linear-gradient(180deg, #00d4ff, #00ffc8, #00d4ff)',
+                boxShadow: '0 0 16px rgba(0,212,255,0.6)',
+              }}
             />
           </div>
 
-          {/* Description */}
-          <p
-            className="max-w-xl leading-relaxed"
-            style={{
-              color: "rgba(180,220,230,0.7)",
-              fontSize: "14px",
-            }}
-          >
-            Relive our hackathons, workshops, and unforgettable community moments.
-          </p>
+          <div className="space-y-10 md:space-y-16">
+            {visibleEvents.map((entry, i) => (
+              <TimelineEntry
+                key={entry.name}
+                eventName={entry.name}
+                photos={entry.photos}
+                seq={i + 1}
+                side={i % 2 === 0 ? 'left' : 'right'}
+                onOpen={(img) => {
+                  const local = entry.photos.findIndex((p) => p.id === img.id);
+                  openAtFlatIndex((offsets[i] ?? 0) + Math.max(local, 0));
+                }}
+              />
+            ))}
+          </div>
 
+          {/* end cap */}
+          <div className="relative flex justify-start md:justify-center mt-12 pl-[14px] md:pl-0">
+            <span
+              className="inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-[#020812] px-5 py-2 text-[11px] text-cyan-300"
+              style={{ fontFamily: "'Share Tech Mono', monospace", letterSpacing: '0.15em' }}
+            >
+              ◉ END OF TIMELINE
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ───────────────── Filters ───────────────── */}
-
-      <div className="max-w-7xl mx-auto mb-10 flex flex-wrap gap-3 items-center">
-
-        {filters.map((filter) => (
-          <button
-            key={filter}
-            onClick={() => handleFilter(filter)}
-            className="
-              px-5 py-2 rounded-full
-              text-xs transition-all duration-300
-            "
-            style={{
-              fontFamily: "'Share Tech Mono', monospace",
-              letterSpacing: "0.12em",
-
-              background:
-                activeFilter === filter
-                  ? "linear-gradient(135deg, rgba(0,212,255,0.18), rgba(0,255,200,0.08))"
-                  : "rgba(255,255,255,0.03)",
-
-              border:
-                activeFilter === filter
-                  ? "1px solid rgba(0,212,255,0.4)"
-                  : "1px solid rgba(255,255,255,0.08)",
-
-              color:
-                activeFilter === filter
-                  ? "#67e8f9"
-                  : "rgba(180,220,230,0.65)",
-            }}
-          >
-            {filter}
-          </button>
-        ))}
-
-        <span
-          className="ml-auto text-[11px]"
-          style={{
-            fontFamily: "'Share Tech Mono', monospace",
-            color: "rgba(180,220,230,0.45)",
-            letterSpacing: "0.12em",
-          }}
-        >
-          {displayedImages.length} PHOTOS
-        </span>
-      </div>
-
-      {/* ───────────────── Grid ───────────────── */}
-
-      <div
-        className="max-w-7xl mx-auto"
-        style={{
-          opacity: isTransitioning ? 0 : 1,
-          transform: isTransitioning
-            ? 'translateY(10px)'
-            : 'translateY(0)',
-          transition: 'opacity 0.25s ease, transform 0.25s ease',
-        }}
-      >
-        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-          {displayedImages.map((event, index) => (
-            <AnimatedCard
-              key={`${event.id}-${activeFilter}`}
-              event={event}
-              index={index}
-              onClick={() => openLightbox(index)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* ───────────────── Lightbox ───────────────── */}
-
-      {lightboxIndex !== null && (
-        <Lightbox
-          image={displayedImages[lightboxIndex]}
-          onClose={closeLightbox}
-          onPrev={prevImage}
-          onNext={nextImage}
-          current={lightboxIndex}
-          total={displayedImages.length}
-        />
-      )}
+      {/* ── Lightbox ── */}
+      <AnimatePresence>
+        {lightboxIndex !== null && flatList[lightboxIndex] && (
+          <Lightbox
+            image={flatList[lightboxIndex]}
+            onClose={closeLightbox}
+            onPrev={prevImage}
+            onNext={nextImage}
+            current={lightboxIndex}
+            total={flatList.length}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
