@@ -16,6 +16,7 @@ import BlogsPage from "./components/Blog";
 import Countdown from "./components/CountDowntimer";
 import GooeyNav from "./components/Navbar";
 import SplitFlapText from "@/components/SplitFlapText";
+import FAQSection from "./components/FAQSection";
 import {
   Home as HomeIcon,
   Calendar,
@@ -24,6 +25,7 @@ import {
   BookOpen,
   Mail,
   Info,
+  HelpCircle,
 } from "lucide-react";
 
 const navItems = [
@@ -34,6 +36,7 @@ const navItems = [
   { label: "Blogs", href: "#blogs", icon: <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" /> },
   { label: "Contact", href: "#write", icon: <Mail className="w-4 h-4 sm:w-5 sm:h-5" /> },
   { label: "About", href: "#idea", icon: <Info className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  { label: "FAQ", href: "#faq", icon: <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" /> },
 ];
 
 export default function Home() {
@@ -267,7 +270,7 @@ export default function Home() {
 
           <NewCard />
         </section>
-
+               <FAQSection />
       </div>
 
       {/* ───────────────── FOOTER ───────────────── */}

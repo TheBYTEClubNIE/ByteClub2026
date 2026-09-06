@@ -1,420 +1,1169 @@
 "use client";
-import React, { useEffect, useRef } from "react";
-import { Renderer, Program, Mesh, Triangle } from "ogl";
 
-export interface PlasmaProps {
-  color?: string;
-  speed?: number;
-  direction?: "forward" | "reverse" | "pingpong";
+import { useRef, useEffect, useMemo, useState, CSSProperties } from "react";
+
+type PatternShape = "Checks" | "Stripes" | "Edge";
+
+const PatternShapes: Record<PatternShape, number> = {
+  Checks: 0,
+  Stripes: 1,
+  Edge: 2,
+};
+
+interface PresetParams {
+  color1: string;
+  color2: string;
+  color3: string;
+  rotation: number;
+  proportion: number;
+  scale: number;
+  speed: number;
+  distortion: number;
+  swirl: number;
+  swirlIterations: number;
+  softness: number;
+  offset: number;
+  shape: PatternShape;
+  shapeSize: number;
+}
+
+const presets: Record<PresetName, PresetParams> = {
+  Prism: {
+    color1: "#050505",
+    color2: "#66B3FF",
+    color3: "#FFFFFF",
+    rotation: -50,
+    proportion: 1,
+    scale: 0.01,
+    speed: 8,
+    distortion: 0,
+    swirl: 50,
+    swirlIterations: 16,
+    softness: 47,
+    offset: -299,
+    shape: "Checks",
+    shapeSize: 45,
+  },
+  Lava: {
+    color1: "#FF9F21",
+    color2: "#FF0303",
+    color3: "#000000",
+    rotation: 114,
+    proportion: 100,
+    scale: 0.52,
+    speed: 30,
+    distortion: 7,
+    swirl: 18,
+    swirlIterations: 20,
+    softness: 100,
+    offset: 717,
+    shape: "Edge",
+    shapeSize: 12,
+  },
+  Plasma: {
+    color1: "#B566FF",
+    color2: "#000000",
+    color3: "#000000",
+    rotation: 0,
+    proportion: 63,
+    scale: 0.75,
+    speed: 30,
+    distortion: 5,
+    swirl: 61,
+    swirlIterations: 5,
+    softness: 100,
+    offset: -168,
+    shape: "Checks",
+    shapeSize: 28,
+  },
+  Pulse: {
+    color1: "#66FF85",
+    color2: "#000000",
+    color3: "#000000",
+    rotation: -167,
+    proportion: 92,
+    scale: 0,
+    speed: 20,
+    distortion: 54,
+    swirl: 75,
+    swirlIterations: 3,
+    softness: 28,
+    offset: -813,
+    shape: "Checks",
+    shapeSize: 79,
+  },
+  Vortex: {
+    color1: "#000000",
+    color2: "#FFFFFF",
+    color3: "#000000",
+    rotation: 50,
+    proportion: 41,
+    scale: 0.4,
+    speed: 20,
+    distortion: 0,
+    swirl: 100,
+    swirlIterations: 3,
+    softness: 5,
+    offset: -744,
+    shape: "Stripes",
+    shapeSize: 80,
+  },
+  Mist: {
+    color1: "#050505",
+    color2: "#FF66B8",
+    color3: "#050505",
+    rotation: 0,
+    proportion: 33,
+    scale: 0.48,
+    speed: 39,
+    distortion: 4,
+    swirl: 65,
+    swirlIterations: 5,
+    softness: 100,
+    offset: -235,
+    shape: "Edge",
+    shapeSize: 48,
+  },
+};
+
+type PresetName =
+  | "Prism"
+  | "Lava"
+  | "Plasma"
+  | "Pulse"
+  | "Vortex"
+  | "Mist";
+
+interface CustomConfig {
+  preset: "custom";
+  color1: string;
+  color2: string;
+  color3: string;
+  rotation?: number;
+  proportion?: number;
   scale?: number;
-  opacity?: number;
-  mouseInteractive?: boolean;
-  /** Internal render resolution multiplier. 1 = full res, 0.65 = balanced performance. */
-  renderScale?: number;
-  /** Hard cap on devicePixelRatio used for rendering. Default 1.5. */
-  maxDpr?: number;
-  /** Target frame rate for the animation loop. Default 60. */
-  targetFps?: number;
-  /** Raymarch step count — lower is cheaper, higher is sharper. Default 60. */
-  iterations?: number;
-  lightMode?: boolean;
+  speed?: number;
+  distortion?: number;
+  swirl?: number;
+  swirlIterations?: number;
+  softness?: number;
+  offset?: number;
+  shape?: PatternShape;
+  shapeSize?: number;
+}
+
+interface PresetConfig {
+  preset: PresetName;
+  speed?: number;
+}
+
+type GradientConfig = CustomConfig | PresetConfig;
+
+interface NoiseConfig {
+  opacity: number;
+  scale?: number;
+}
+
+interface AnimatedGradientProps {
+  config?: GradientConfig;
+  noise?: NoiseConfig;
+  radius?: string;
+  style?: CSSProperties;
   className?: string;
 }
 
-const hexToRgb = (hex: string): [number, number, number] => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result) return [0.156, 0.392, 0.780]; // Default to #2864c7
-  return [
-    parseInt(result[1], 16) / 255,
-    parseInt(result[2], 16) / 255,
-    parseInt(result[3], 16) / 255,
-  ];
-};
+export default function AnimatedGradient({
+  config = { preset: "Prism" },
+  noise,
+  radius = "0px",
+  style,
+  className,
+}: AnimatedGradientProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const frameIdRef = useRef<number | undefined>(undefined);
+  const startTimeRef = useRef<number>(0);
 
-const vertexShader = `#version 300 es
-precision highp float;
-in vec2 position;
-in vec2 uv;
-out vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = vec4(position, 0.0, 1.0);
-}
-`;
-
-const ORIGINAL_QUALITY = 60.0;
-
-const buildFragmentShader = (iterations: number) => {
-  return `#version 300 es
-precision highp float;
-uniform vec2 iResolution;
-uniform float iTime;
-uniform vec3 uCustomColor;
-uniform float uUseCustomColor;
-uniform float uSpeed;
-uniform float uDirection;
-uniform float uScale;
-uniform float uOpacity;
-uniform vec2 uMouse;
-uniform float uMouseInteractive;
-uniform float uQuality;
-uniform float uStepScale;
-uniform float uLightMode;
-out vec4 fragColor;
-
-void mainImage(out vec4 o, vec2 C) {
-  vec2 center = iResolution.xy * 0.5;
-  C = (C - center) / uScale + center;
-
-  vec2 mouseOffset = (uMouse - center) * 0.0002;
-  C += mouseOffset * length(C - center) * step(0.5, uMouseInteractive);
-
-  float i = 0.0, d = 0.0, z = 0.0;
-  float T = iTime * uSpeed * uDirection;
-  vec3 O = vec3(0.0), p, S;
-
-  for (vec2 r = iResolution.xy, Q; ++i < 60.0; O += o.w/d*o.xyz) {
-    p = z * normalize(vec3(C - 0.5 * r, r.y));
-    p.z -= 4.0;
-    S = p;
-    d = p.y - T;
-
-    p.x += 0.4 * (1.0 + p.y) * sin(d + p.x * 0.1) * cos(0.34 * d + p.x * 0.05);
-    Q = p.xz *= mat2(cos(p.y + vec4(0.0, 11.0, 33.0, 0.0) - T));
-    z += d = (abs(sqrt(length(Q * Q)) - 0.25 * (5.0 + S.y)) / 3.0 + 8e-4) * uStepScale;
-    o = 1.0 + sin(S.y + p.z * 0.5 + S.z - length(S - p) + vec4(2.0, 1.0, 0.0, 8.0));
-    if (i >= uQuality) break;
-  }
-
-  o.xyz = tanh(O / 1e4);
-}
-
-bool finite1(float x) { return !(isnan(x) || isinf(x)); }
-vec3 sanitize(vec3 c) {
-  return vec3(
-    finite1(c.r) ? c.r : 0.0,
-    finite1(c.g) ? c.g : 0.0,
-    finite1(c.b) ? c.b : 0.0
-  );
-}
-
-void main() {
-  vec4 o = vec4(0.0);
-  mainImage(o, gl_FragCoord.xy);
-  vec3 rgb = sanitize(o.rgb);
-
-  float intensity = (rgb.r + rgb.g + rgb.b) / 3.0;
-  vec3 customColor = intensity * uCustomColor;
-  vec3 finalColor = mix(rgb, customColor, step(0.5, uUseCustomColor));
-
-  float alpha = length(rgb) * uOpacity;
-  if (uLightMode > 0.5) {
-    vec3 source = clamp(finalColor, 0.0, 1.0);
-    float peak = max(source.r, max(source.g, source.b));
-    float floorColor = min(source.r, min(source.g, source.b));
-    vec3 chroma = (source - vec3(floorColor)) / max(peak - floorColor, 0.0001);
-    vec3 pigment = mix(source / max(peak, 0.0001), chroma, 0.68) * 0.72;
-    float energy = clamp(length(rgb) / 1.7320508, 0.0, 1.0);
-    float coverage = pow(smoothstep(0.035, 0.72, energy), 0.76) * min(uOpacity, 1.0) * 0.9;
-    fragColor = vec4(mix(vec3(1.0), pigment, coverage), 1.0);
-  } else {
-    fragColor = vec4(finalColor, alpha);
-  }
-}
-`;
-};
-
-export const Plasma: React.FC<PlasmaProps> = ({
-  color,
-  speed = 1,
-  direction = "forward",
-  scale = 1,
-  opacity = 1,
-  mouseInteractive = true,
-  renderScale = 0.65,
-  maxDpr = 1.5,
-  targetFps = 60,
-  iterations = 60,
-  lightMode = false,
-  className = "w-full h-full relative overflow-hidden",
-}) => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const mousePos = useRef({ x: 0, y: 0 });
-  const pendingMouse = useRef<{ x: number; y: number } | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    const containerEl = containerRef.current;
+    setIsMounted(true);
 
-    const prefersReducedMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    return () => setIsMounted(false);
+  }, []);
 
-    const useCustomColor = Boolean(
-      color && color !== "" && color !== "original"
-    );
-    const customColorRgb = useCustomColor && color ? hexToRgb(color) : [1, 1, 1];
-    const directionMultiplier = direction === "reverse" ? -1.0 : 1.0;
-
-    let renderer: Renderer;
-    try {
-      renderer = new Renderer({
-        webgl: 2,
-        alpha: true,
-        antialias: false,
-        dpr: Math.min(
-          typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
-          maxDpr
-        ),
-      });
-    } catch {
-      return;
-    }
-
-    const gl = renderer.gl;
-    if (!gl) return;
-    const canvas = gl.canvas as HTMLCanvasElement;
-    canvas.style.display = "block";
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
-    containerEl.appendChild(canvas);
-
-    const geometry = new Triangle(gl);
-
-    const program = new Program(gl, {
-      vertex: vertexShader,
-      fragment: buildFragmentShader(iterations),
-      uniforms: {
-        iTime: { value: 0 },
-        iResolution: { value: new Float32Array([1, 1]) },
-        uCustomColor: { value: new Float32Array(customColorRgb) },
-        uUseCustomColor: { value: useCustomColor ? 1.0 : 0.0 },
-        uSpeed: { value: speed * 0.4 },
-        uDirection: { value: directionMultiplier },
-        uScale: { value: scale },
-        uOpacity: { value: opacity },
-        uMouse: { value: new Float32Array([0, 0]) },
-        uMouseInteractive: { value: mouseInteractive ? 1.0 : 0.0 },
-        uQuality: { value: iterations },
-        uStepScale: { value: ORIGINAL_QUALITY / iterations },
-        uLightMode: { value: lightMode ? 1 : 0 },
-      },
-    });
-
-    const mesh = new Mesh(gl, { geometry, program });
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!mouseInteractive) return;
-      const rect = containerEl.getBoundingClientRect();
-      pendingMouse.current = {
-        x: (e.clientX - rect.left) * renderScale,
-        y: (e.clientY - rect.top) * renderScale,
+  const params = useMemo((): PresetParams => {
+    if (config.preset === "custom") {
+      return {
+        color1: config.color1,
+        color2: config.color2,
+        color3: config.color3,
+        rotation: config.rotation ?? 0,
+        proportion: config.proportion ?? 35,
+        scale: config.scale ?? 1,
+        speed: config.speed ?? 25,
+        distortion: config.distortion ?? 12,
+        swirl: config.swirl ?? 80,
+        swirlIterations: config.swirlIterations ?? 10,
+        softness: config.softness ?? 100,
+        offset: config.offset ?? 0,
+        shape: config.shape ?? "Checks",
+        shapeSize: config.shapeSize ?? 10,
       };
-    };
-
-    if (mouseInteractive) {
-      window.addEventListener("mousemove", handleMouseMove, {
-        passive: true,
-      });
     }
 
-    let resizePending = false;
-    const setSize = () => {
-      const rect = containerEl.getBoundingClientRect();
-      const width = Math.max(1, Math.floor(rect.width * renderScale));
-      const height = Math.max(1, Math.floor(rect.height * renderScale));
-      renderer.setSize(width, height);
+    const preset = presets[config.preset] || presets.Prism;
 
-      canvas.style.width = "100%";
-      canvas.style.height = "100%";
-
-      const res = program.uniforms.iResolution.value as Float32Array;
-      res[0] = gl.drawingBufferWidth;
-      res[1] = gl.drawingBufferHeight;
+    return {
+      ...preset,
+      speed: config.speed ?? preset.speed,
     };
+  }, [config]);
 
-    const ro = new ResizeObserver(() => {
-      if (resizePending) return;
-      resizePending = true;
-      requestAnimationFrame(() => {
-        resizePending = false;
-        setSize();
-      });
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+
+    if (!canvas || !container || !isMounted) return;
+
+    const gl = canvas.getContext("webgl2", {
+      premultipliedAlpha: true,
+      alpha: true,
+      antialias: true,
     });
-    ro.observe(containerEl);
-    setSize();
 
-    let raf = 0;
-    let contextLost = false;
-    let isVisible = true;
-    let tabVisible = document.visibilityState !== "hidden";
-    const t0 = performance.now();
-    const frameInterval = 1000 / targetFps;
-    let lastFrameTime = 0;
+    if (!gl) return;
 
-    const renderStaticFrame = () => {
-      (program.uniforms.iTime as any).value = 0;
-      renderer.render({ scene: mesh });
-    };
+    const vertexShaderSource = `#version 300 es
+    in vec4 a_position;
 
-    const loop = (t: number) => {
-      if (contextLost || !isVisible || !tabVisible) return;
+    void main() {
+      gl_Position = a_position;
+    }`;
 
-      if (t - lastFrameTime < frameInterval) {
-        raf = requestAnimationFrame(loop);
-        return;
-      }
-      lastFrameTime = t;
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER)!;
 
-      if (pendingMouse.current) {
-        mousePos.current = pendingMouse.current;
-        pendingMouse.current = null;
-        const mouseUniform = program.uniforms.uMouse.value as Float32Array;
-        mouseUniform[0] = mousePos.current.x;
-        mouseUniform[1] = mousePos.current.y;
-      }
+    gl.shaderSource(vertexShader, vertexShaderSource);
+    gl.compileShader(vertexShader);
 
-      let timeValue = (t - t0) * 0.001;
-      if (direction === "pingpong") {
-        const pingpongDuration = 10;
-        const segmentTime = timeValue % pingpongDuration;
-        const isForward = Math.floor(timeValue / pingpongDuration) % 2 === 0;
-        const u = segmentTime / pingpongDuration;
-        const smooth = u * u * (3 - 2 * u);
-        const pingpongTime = isForward
-          ? smooth * pingpongDuration
-          : (1 - smooth) * pingpongDuration;
-        (program.uniforms.uDirection as any).value = 1.0;
-        (program.uniforms.iTime as any).value = pingpongTime;
-      } else {
-        (program.uniforms.iTime as any).value = timeValue;
-      }
-      renderer.render({ scene: mesh });
-      raf = requestAnimationFrame(loop);
-    };
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)!;
 
-    const handleContextLost = (e: Event) => {
-      e.preventDefault();
-      contextLost = true;
-      cancelAnimationFrame(raf);
-    };
-    const handleContextRestored = () => {
-      contextLost = false;
-      if (isVisible && tabVisible && !prefersReducedMotion) {
-        cancelAnimationFrame(raf);
-        raf = requestAnimationFrame(loop);
-      }
-    };
-    canvas.addEventListener("webglcontextlost", handleContextLost);
-    canvas.addEventListener("webglcontextrestored", handleContextRestored);
+    gl.shaderSource(fragmentShader, FRAGMENT_SHADER);
+    gl.compileShader(fragmentShader);
 
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        const wasVisible = isVisible;
-        isVisible = entry.isIntersecting;
-        if (
-          isVisible &&
-          !wasVisible &&
-          !contextLost &&
-          tabVisible &&
-          !prefersReducedMotion
-        ) {
-          cancelAnimationFrame(raf);
-          raf = requestAnimationFrame(loop);
-        }
-      },
-      { threshold: 0 }
+    const program = gl.createProgram()!;
+
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    const positionBuffer = gl.createBuffer();
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([
+        -1,
+        -1,
+        1,
+        -1,
+        -1,
+        1,
+        -1,
+        1,
+        1,
+        -1,
+        1,
+        1,
+      ]),
+      gl.STATIC_DRAW
     );
-    io.observe(containerEl);
 
-    const handleVisibilityChange = () => {
-      tabVisible = document.visibilityState !== "hidden";
-      if (tabVisible && isVisible && !contextLost && !prefersReducedMotion) {
-        cancelAnimationFrame(raf);
-        lastFrameTime = 0;
-        raf = requestAnimationFrame(loop);
-      } else {
-        cancelAnimationFrame(raf);
-      }
+    const positionLocation = gl.getAttribLocation(
+      program,
+      "a_position"
+    );
+
+    gl.enableVertexAttribArray(positionLocation);
+
+    gl.vertexAttribPointer(
+      positionLocation,
+      2,
+      gl.FLOAT,
+      false,
+      0,
+      0
+    );
+
+    const uniforms = {
+      u_time: gl.getUniformLocation(program, "u_time"),
+      u_resolution: gl.getUniformLocation(
+        program,
+        "u_resolution"
+      ),
+      u_pixelRatio: gl.getUniformLocation(
+        program,
+        "u_pixelRatio"
+      ),
+      u_scale: gl.getUniformLocation(program, "u_scale"),
+      u_rotation: gl.getUniformLocation(
+        program,
+        "u_rotation"
+      ),
+      u_color1: gl.getUniformLocation(
+        program,
+        "u_color1"
+      ),
+      u_color2: gl.getUniformLocation(
+        program,
+        "u_color2"
+      ),
+      u_color3: gl.getUniformLocation(
+        program,
+        "u_color3"
+      ),
+      u_proportion: gl.getUniformLocation(
+        program,
+        "u_proportion"
+      ),
+      u_softness: gl.getUniformLocation(
+        program,
+        "u_softness"
+      ),
+      u_shape: gl.getUniformLocation(
+        program,
+        "u_shape"
+      ),
+      u_shapeScale: gl.getUniformLocation(
+        program,
+        "u_shapeScale"
+      ),
+      u_distortion: gl.getUniformLocation(
+        program,
+        "u_distortion"
+      ),
+      u_swirl: gl.getUniformLocation(
+        program,
+        "u_swirl"
+      ),
+      u_swirlIterations: gl.getUniformLocation(
+        program,
+        "u_swirlIterations"
+      ),
     };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    if (prefersReducedMotion) {
-      renderStaticFrame();
-    } else {
-      raf = requestAnimationFrame(loop);
-    }
+    const resize = () => {
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      const pixelRatio = window.devicePixelRatio || 1;
+
+      canvas.width = width * pixelRatio;
+      canvas.height = height * pixelRatio;
+
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      gl.viewport(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+    };
+
+    resize();
+
+    const resizeObserver = new ResizeObserver(resize);
+
+    resizeObserver.observe(container);
+
+    startTimeRef.current = performance.now();
+
+    const animate = (time: number) => {
+      const elapsed =
+        (time - startTimeRef.current) / 1000;
+
+      const speed = (params.speed / 100) * 5;
+
+      gl.uniform1f(
+        uniforms.u_time,
+        elapsed * speed +
+          params.offset * 0.01
+      );
+
+      gl.uniform2f(
+        uniforms.u_resolution,
+        canvas.width,
+        canvas.height
+      );
+
+      gl.uniform1f(
+        uniforms.u_pixelRatio,
+        window.devicePixelRatio || 1
+      );
+
+      gl.uniform1f(
+        uniforms.u_scale,
+        params.scale
+      );
+
+      gl.uniform1f(
+        uniforms.u_rotation,
+        (params.rotation * Math.PI) / 180
+      );
+
+      const c1 = hexToRgba(params.color1);
+      const c2 = hexToRgba(params.color2);
+      const c3 = hexToRgba(params.color3);
+
+      gl.uniform4f(
+        uniforms.u_color1,
+        c1[0],
+        c1[1],
+        c1[2],
+        c1[3]
+      );
+
+      gl.uniform4f(
+        uniforms.u_color2,
+        c2[0],
+        c2[1],
+        c2[2],
+        c2[3]
+      );
+
+      gl.uniform4f(
+        uniforms.u_color3,
+        c3[0],
+        c3[1],
+        c3[2],
+        c3[3]
+      );
+
+      gl.uniform1f(
+        uniforms.u_proportion,
+        params.proportion / 100
+      );
+
+      gl.uniform1f(
+        uniforms.u_softness,
+        params.softness / 100
+      );
+
+      gl.uniform1f(
+        uniforms.u_shape,
+        PatternShapes[params.shape]
+      );
+
+      gl.uniform1f(
+        uniforms.u_shapeScale,
+        params.shapeSize / 100
+      );
+
+      gl.uniform1f(
+        uniforms.u_distortion,
+        params.distortion / 50
+      );
+
+      gl.uniform1f(
+        uniforms.u_swirl,
+        params.swirl / 100
+      );
+
+      gl.uniform1f(
+        uniforms.u_swirlIterations,
+        params.swirl === 0
+          ? 0
+          : params.swirlIterations
+      );
+
+      gl.drawArrays(
+        gl.TRIANGLES,
+        0,
+        6
+      );
+
+      frameIdRef.current =
+        requestAnimationFrame(animate);
+    };
+
+    frameIdRef.current =
+      requestAnimationFrame(animate);
 
     return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-      io.disconnect();
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      canvas.removeEventListener("webglcontextlost", handleContextLost);
-      canvas.removeEventListener("webglcontextrestored", handleContextRestored);
-      if (mouseInteractive) {
-        window.removeEventListener("mousemove", handleMouseMove);
+      if (
+        frameIdRef.current !== undefined
+      ) {
+        cancelAnimationFrame(
+          frameIdRef.current
+        );
       }
-      try {
-        containerEl?.removeChild(canvas);
-      } catch {}
+
+      resizeObserver.disconnect();
+
+      gl.deleteProgram(program);
+      gl.deleteShader(vertexShader);
+      gl.deleteShader(fragmentShader);
+      gl.deleteBuffer(positionBuffer);
     };
-  }, [
-    color,
-    speed,
-    direction,
-    scale,
-    opacity,
-    mouseInteractive,
-    renderScale,
-    maxDpr,
-    targetFps,
-    iterations,
-    lightMode,
-  ]);
+  }, [isMounted, params]);
 
-  return <div ref={containerRef} className={className} />;
-};
-
-/**
- * Full-Page Animated Background
- */
-export default function AnimatedBackground({
-  color = "#2864c7",
-  speed = 1,
-  direction = "forward",
-  scale = 1,
-  opacity = 1,
-  mouseInteractive = false,
-}: {
-  color?: string;
-  speed?: number;
-  direction?: "forward" | "reverse" | "pingpong";
-  scale?: number;
-  opacity?: number;
-  mouseInteractive?: boolean;
-}) {
   return (
     <div
-      aria-hidden="true"
-      className="fixed inset-0 w-full h-full -z-50 pointer-events-none overflow-hidden bg-[#020617]"
+      ref={containerRef}
+      className={className}
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: -1,
+        borderRadius: radius,
+        overflow: "hidden",
+        ...style,
+      }}
     >
-      <div className="absolute inset-0 w-full h-full">
-        <Plasma
-          color={color}
-          speed={speed}
-          direction={direction}
-          scale={scale}
-          opacity={opacity}
-          mouseInteractive={mouseInteractive}
-          renderScale={0.65}
-          maxDpr={1.5}
-          targetFps={60}
-          iterations={60}
+      <canvas
+        ref={canvasRef}
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+        }}
+      />
+
+      {noise && noise.opacity > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundImage: `url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAElBMVEUAAAAAAAAAAAAAAAAAAAAAAADgKxmiAAAABnRSTlMCCgkGBAVJOAVJAAAASklEQVQ4y2NgGAWjYBSMglEwCgY/YGRgZBQUYmJiZGQEkYwMjIyMgoKCjIyMIJKBgRFIMjIyAklGRkYGRkFBYEcwMDIyMjAOUQAA1I4HwVwZAkYAAAAASUVORK5CYII=")`,
+            backgroundSize:
+              (noise.scale ?? 1) * 200,
+            backgroundRepeat: "repeat",
+            opacity: noise.opacity / 2,
+            pointerEvents: "none",
+          }}
         />
-      </div>
+      )}
     </div>
   );
 }
 
-export const StaticSpaceBackground = AnimatedBackground;
+function hexToRgba(
+  hex: string
+): [number, number, number, number] {
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  let a = 1;
+
+  if (hex.startsWith("rgba(")) {
+    const parts = hex
+      .slice(5, -1)
+      .split(",");
+
+    r = parseInt(parts[0]) / 255;
+    g = parseInt(parts[1]) / 255;
+    b = parseInt(parts[2]) / 255;
+    a = parseFloat(parts[3]);
+  } else if (hex.startsWith("rgb(")) {
+    const parts = hex
+      .slice(4, -1)
+      .split(",");
+
+    r = parseInt(parts[0]) / 255;
+    g = parseInt(parts[1]) / 255;
+    b = parseInt(parts[2]) / 255;
+  } else if (
+    hex.startsWith("hsla(") ||
+    hex.startsWith("hsl(")
+  ) {
+    const isHsla =
+      hex.startsWith("hsla(");
+
+    const parts = hex
+      .slice(isHsla ? 5 : 4, -1)
+      .split(",");
+
+    const h =
+      parseFloat(parts[0]) / 360;
+
+    const s =
+      parseFloat(parts[1]) / 100;
+
+    const l =
+      parseFloat(parts[2]) / 100;
+
+    a = isHsla
+      ? parseFloat(parts[3])
+      : 1;
+
+    [r, g, b] = hslToRgb(
+      h,
+      s,
+      l
+    );
+  } else if (hex.startsWith("#")) {
+    const c = hex.slice(1);
+
+    if (c.length === 3) {
+      r =
+        parseInt(
+          c[0] + c[0],
+          16
+        ) / 255;
+
+      g =
+        parseInt(
+          c[1] + c[1],
+          16
+        ) / 255;
+
+      b =
+        parseInt(
+          c[2] + c[2],
+          16
+        ) / 255;
+    } else if (c.length >= 6) {
+      r =
+        parseInt(
+          c.slice(0, 2),
+          16
+        ) / 255;
+
+      g =
+        parseInt(
+          c.slice(2, 4),
+          16
+        ) / 255;
+
+      b =
+        parseInt(
+          c.slice(4, 6),
+          16
+        ) / 255;
+
+      if (c.length === 8) {
+        a =
+          parseInt(
+            c.slice(6, 8),
+            16
+          ) / 255;
+      }
+    }
+  }
+
+  return [r, g, b, a];
+}
+
+function hslToRgb(
+  h: number,
+  s: number,
+  l: number
+): [number, number, number] {
+  let r: number;
+  let g: number;
+  let b: number;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (
+      p: number,
+      q: number,
+      t: number
+    ) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+
+      if (t < 1 / 6)
+        return (
+          p +
+          (q - p) * 6 * t
+        );
+
+      if (t < 1 / 2)
+        return q;
+
+      if (t < 2 / 3)
+        return (
+          p +
+          (q - p) *
+            (2 / 3 - t) *
+            6
+        );
+
+      return p;
+    };
+
+    const q =
+      l < 0.5
+        ? l * (1 + s)
+        : l +
+          s -
+          l * s;
+
+    const p =
+      2 * l - q;
+
+    r = hue2rgb(
+      p,
+      q,
+      h + 1 / 3
+    );
+
+    g = hue2rgb(
+      p,
+      q,
+      h
+    );
+
+    b = hue2rgb(
+      p,
+      q,
+      h - 1 / 3
+    );
+  }
+
+  return [r, g, b];
+}
+
+const FRAGMENT_SHADER = `#version 300 es
+
+precision highp float;
+
+uniform float u_time;
+uniform float u_pixelRatio;
+uniform vec2 u_resolution;
+
+uniform float u_scale;
+uniform float u_rotation;
+
+uniform vec4 u_color1;
+uniform vec4 u_color2;
+uniform vec4 u_color3;
+
+uniform float u_proportion;
+uniform float u_softness;
+uniform float u_shape;
+uniform float u_shapeScale;
+uniform float u_distortion;
+uniform float u_swirl;
+uniform float u_swirlIterations;
+
+out vec4 fragColor;
+
+#define TWO_PI 6.28318530718
+#define PI 3.14159265358979323846
+
+vec2 rotate(vec2 uv, float th) {
+  return mat2(
+    cos(th),
+    sin(th),
+    -sin(th),
+    cos(th)
+  ) * uv;
+}
+
+float random(vec2 st) {
+  return fract(
+    sin(
+      dot(
+        st.xy,
+        vec2(12.9898, 78.233)
+      )
+    ) * 43758.5453123
+  );
+}
+
+float noise(vec2 st) {
+  vec2 i = floor(st);
+  vec2 f = fract(st);
+
+  float a = random(i);
+
+  float b = random(
+    i + vec2(1.0, 0.0)
+  );
+
+  float c = random(
+    i + vec2(0.0, 1.0)
+  );
+
+  float d = random(
+    i + vec2(1.0, 1.0)
+  );
+
+  vec2 u =
+    f *
+    f *
+    (3.0 - 2.0 * f);
+
+  float x1 =
+    mix(a, b, u.x);
+
+  float x2 =
+    mix(c, d, u.x);
+
+  return mix(
+    x1,
+    x2,
+    u.y
+  );
+}
+
+vec4 blend_colors(
+  vec4 c1,
+  vec4 c2,
+  vec4 c3,
+  float mixer,
+  float edgesWidth,
+  float edge_blur
+) {
+  vec3 color1 =
+    c1.rgb * c1.a;
+
+  vec3 color2 =
+    c2.rgb * c2.a;
+
+  vec3 color3 =
+    c3.rgb * c3.a;
+
+  float r1 =
+    smoothstep(
+      .0 + .35 * edgesWidth,
+      .7 -
+        .35 * edgesWidth +
+        .5 * edge_blur,
+      mixer
+    );
+
+  float r2 =
+    smoothstep(
+      .3 + .35 * edgesWidth,
+      1. -
+        .35 * edgesWidth +
+        edge_blur,
+      mixer
+    );
+
+  vec3 blended_color_2 =
+    mix(
+      color1,
+      color2,
+      r1
+    );
+
+  float blended_opacity_2 =
+    mix(
+      c1.a,
+      c2.a,
+      r1
+    );
+
+  vec3 c =
+    mix(
+      blended_color_2,
+      color3,
+      r2
+    );
+
+  float o =
+    mix(
+      blended_opacity_2,
+      c3.a,
+      r2
+    );
+
+  return vec4(c, o);
+}
+
+void main() {
+
+  vec2 uv =
+    gl_FragCoord.xy /
+    u_resolution.xy;
+
+  // Original animation time
+  float t =
+    u_time * 0.12;
+
+  // Separate strong continuous scrolling
+  float scrollTime =
+    u_time * 1.5;
+
+  float noise_scale =
+    .0005 +
+    .006 * u_scale;
+
+  uv -= .5;
+
+  uv *=
+    (noise_scale * u_resolution);
+
+  uv =
+    rotate(
+      uv,
+      u_rotation * .5 * PI
+    );
+
+  uv /= u_pixelRatio;
+
+  uv += .5;
+
+
+  // ------------------------------------------
+  // MAXIMUM SMOOTH CONTINUOUS SCROLLING
+  // ------------------------------------------
+
+  vec2 scrollDirection =
+    vec2(
+      cos(
+        u_rotation *
+        0.5 *
+        PI
+      ),
+      sin(
+        u_rotation *
+        0.5 *
+        PI
+      )
+    );
+
+  // Constant one-direction movement
+  uv +=
+    scrollDirection *
+    scrollTime * 0.3;
+
+
+  // ------------------------------------------
+  // ORIGINAL SMOOTH NOISE MOTION
+  // ------------------------------------------
+
+  float n1 =
+    noise(
+      uv * 1.0 +
+      t * 0.08
+    );
+
+  float n2 =
+    noise(
+      uv * 2.0 -
+      t * 0.06
+    );
+
+  float angle =
+    n1 * TWO_PI;
+
+  uv.x +=
+    4. *
+    u_distortion *
+    n2 *
+    cos(angle);
+
+  uv.y +=
+    4. *
+    u_distortion *
+    n2 *
+    sin(angle);
+
+
+  // ------------------------------------------
+  // ORIGINAL SWIRL
+  // ------------------------------------------
+
+  float iterations_number =
+    ceil(
+      clamp(
+        u_swirlIterations,
+        1.,
+        30.
+      )
+    );
+
+  for (
+    float i = 1.;
+    i <= iterations_number;
+    i++
+  ) {
+
+    uv.x +=
+      clamp(
+        u_swirl,
+        0.,
+        2.
+      ) /
+      i *
+      cos(
+        t +
+        i *
+        1.5 *
+        uv.y
+      );
+
+    uv.y +=
+      clamp(
+        u_swirl,
+        0.,
+        2.
+      ) /
+      i *
+      cos(
+        t +
+        i *
+        1. *
+        uv.x
+      );
+  }
+
+
+  float proportion =
+    clamp(
+      u_proportion,
+      0.,
+      1.
+    );
+
+  float shape = 0.;
+  float mixer = 0.;
+
+
+  if (u_shape < .5) {
+
+    vec2 checks_shape_uv =
+      uv *
+      (
+        .5 +
+        3.5 *
+        u_shapeScale
+      );
+
+    shape =
+      .5 +
+      .5 *
+      sin(
+        checks_shape_uv.x
+      ) *
+      cos(
+        checks_shape_uv.y
+      );
+
+    mixer =
+      shape +
+      .48 *
+      sign(
+        proportion - .5
+      ) *
+      pow(
+        abs(
+          proportion - .5
+        ),
+        .5
+      );
+
+  } else if (u_shape < 1.5) {
+
+    vec2 stripes_shape_uv =
+      uv *
+      (
+        .25 +
+        3. *
+        u_shapeScale
+      );
+
+    float f =
+      fract(
+        stripes_shape_uv.y
+      );
+
+    shape =
+      smoothstep(
+        .0,
+        .55,
+        f
+      ) *
+      smoothstep(
+        1.,
+        .45,
+        f
+      );
+
+    mixer =
+      shape +
+      .48 *
+      sign(
+        proportion - .5
+      ) *
+      pow(
+        abs(
+          proportion - .5
+        ),
+        .5
+      );
+
+  } else {
+
+    float sh =
+      1. - uv.y;
+
+    sh -= .5;
+
+    sh /=
+      (
+        noise_scale *
+        u_resolution.y
+      );
+
+    sh += .5;
+
+    float shape_scaling =
+      .2 *
+      (
+        1. -
+        u_shapeScale
+      );
+
+    shape =
+      smoothstep(
+        .45 -
+          shape_scaling,
+        .55 +
+          shape_scaling,
+        sh +
+          .3 *
+          (
+            proportion - .5
+          )
+      );
+
+    mixer = shape;
+  }
+
+
+  vec4 color_mix =
+    blend_colors(
+      u_color1,
+      u_color2,
+      u_color3,
+      mixer,
+      1. -
+        clamp(
+          u_softness,
+          0.,
+          1.
+        ),
+      .01 +
+        .01 *
+        u_scale
+    );
+
+  fragColor =
+    vec4(
+      color_mix.rgb,
+      color_mix.a
+    );
+}
+`;
