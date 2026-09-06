@@ -20,8 +20,28 @@ const BYTE_BOOKS: BookCfg[] = [
     backBg: "#020812",
     backInk: "0,212,255",
     edge: "#00d4ff",
-    images: {
-      front: "/books/webdev-front.jpg",
+    front: (ctx, w, h) => {
+      ctx.fillStyle = "#020812";
+      ctx.fillRect(0, 0, w, h);
+      const grad = ctx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, "rgba(0,212,255,0.3)");
+      grad.addColorStop(1, "rgba(0,255,200,0.1)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(0,212,255,0.5)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(30, 30, w - 60, h - 60);
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.font = "bold 56px Georgia";
+      ctx.fillText("WEB", w / 2, h * 0.38);
+      ctx.fillText("DEV", w / 2, h * 0.48);
+      ctx.font = "italic 30px Georgia";
+      ctx.fillStyle = "rgba(0,212,255,0.9)";
+      ctx.fillText("Insights", w / 2, h * 0.6);
+      ctx.font = "20px Arial";
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      ctx.fillText("The Byte Club", w / 2, h * 0.75);
     },
   },
   {
