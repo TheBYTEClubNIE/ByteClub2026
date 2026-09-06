@@ -11,9 +11,7 @@ import Footer from "./components/Footer";
 import DesktopNotice from "./components/Header";
 import ContactForm from "./components/ContactForm";
 import NewCard from "./components/About";
-Countdown
 import StaticSpaceBackground from "./components/AnimatedBackground";
-
 import Countdown from "./components/CountDowntimer";
 
 export default function Home() {
