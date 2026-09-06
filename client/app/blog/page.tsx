@@ -46,73 +46,71 @@ const BYTE_BOOKS: BookCfg[] = [
   },
   {
     id: "blog2",
-    title: "Cybersecurity",
+    title: "Machine Learning",
     author: "The Byte Club",
     year: "2026",
     stars: 5,
-    desc: "Explore ethical hacking, CTF writeups, vulnerability research and the world of cybersecurity through our members' lens.",
-    spineBg: "#0a0d1d",
-    spineInk: "#ff4f6d",
-    spineFont: "700 36px monospace",
-    backBg: "#0a0d1d",
-    backInk: "255,79,109",
-    edge: "#ff4f6d",
+    desc: "Demystifying ML — from regression to deep learning, our members break down algorithms, experiments, and real-world applications.",
+    spineBg: "#0f172a",
+    spineInk: "#f59e0b",
+    spineFont: "700 36px Georgia",
+    backBg: "#0f172a",
+    backInk: "245,158,11",
+    edge: "#f59e0b",
     front: (ctx, w, h) => {
-      ctx.fillStyle = "#0a0d1d";
+      ctx.fillStyle = "#0f172a";
       ctx.fillRect(0, 0, w, h);
-      const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w);
-      grad.addColorStop(0, "rgba(255,79,109,0.2)");
+      const grad = ctx.createRadialGradient(w / 2, h * 0.4, 0, w / 2, h * 0.4, w * 0.8);
+      grad.addColorStop(0, "rgba(245,158,11,0.25)");
       grad.addColorStop(1, "transparent");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = "rgba(255,79,109,0.6)";
+      ctx.strokeStyle = "rgba(245,158,11,0.5)";
       ctx.lineWidth = 3;
       ctx.strokeRect(30, 30, w - 60, h - 60);
-      ctx.fillStyle = "#ff4f6d";
+      ctx.fillStyle = "#f59e0b";
       ctx.textAlign = "center";
-      ctx.font = "bold 48px monospace";
-      ctx.fillText("CYBER", w / 2, h * 0.4);
-      ctx.fillText("SEC", w / 2, h * 0.52);
-      ctx.font = "18px monospace";
-      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.font = "bold 48px Georgia";
+      ctx.fillText("MACHINE", w / 2, h * 0.38);
+      ctx.fillText("LEARNING", w / 2, h * 0.5);
+      ctx.font = "18px Arial";
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
       ctx.fillText("The Byte Club", w / 2, h * 0.72);
     },
   },
   {
     id: "blog3",
-    title: "Hackathon Diaries",
+    title: "Agentic AI",
     author: "The Byte Club",
     year: "2026",
     stars: 5,
-    desc: "Stories, lessons, wins, and losses from hackathons attended by The Byte Club members across the country.",
+    desc: "Autonomous agents, multi-agent systems, LLM tool-use and the future of AI that acts — explored by The Byte Club.",
     spineBg: "#1a0a2e",
-    spineInk: "#c084fc",
+    spineInk: "#a78bfa",
     spineFont: "700 36px serif",
     backBg: "#1a0a2e",
-    backInk: "192,132,252",
-    edge: "#c084fc",
+    backInk: "167,139,250",
+    edge: "#a78bfa",
     front: (ctx, w, h) => {
       ctx.fillStyle = "#1a0a2e";
       ctx.fillRect(0, 0, w, h);
       const grad = ctx.createLinearGradient(0, 0, w, h);
-      grad.addColorStop(0, "rgba(192,132,252,0.25)");
-      grad.addColorStop(1, "rgba(99,102,241,0.1)");
+      grad.addColorStop(0, "rgba(167,139,250,0.3)");
+      grad.addColorStop(1, "rgba(99,102,241,0.08)");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = "rgba(192,132,252,0.5)";
+      ctx.strokeStyle = "rgba(167,139,250,0.55)";
       ctx.lineWidth = 3;
       ctx.strokeRect(30, 30, w - 60, h - 60);
-      ctx.fillStyle = "#c084fc";
+      ctx.fillStyle = "#a78bfa";
       ctx.textAlign = "center";
-      ctx.font = "bold 44px serif";
-      ctx.fillText("HACK-", w / 2, h * 0.38);
-      ctx.fillText("ATHON", w / 2, h * 0.5);
-      ctx.font = "italic 26px serif";
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
-      ctx.fillText("Diaries", w / 2, h * 0.62);
+      ctx.font = "bold 52px serif";
+      ctx.fillText("AGENTIC", w / 2, h * 0.38);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText("AI", w / 2, h * 0.52);
       ctx.font = "18px Arial";
-      ctx.fillStyle = "rgba(192,132,252,0.7)";
-      ctx.fillText("The Byte Club", w / 2, h * 0.76);
+      ctx.fillStyle = "rgba(167,139,250,0.7)";
+      ctx.fillText("The Byte Club", w / 2, h * 0.72);
     },
   },
   {
