@@ -1,114 +1,307 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
+import ThreeDImagePageflip, {
+  PageFlipLeaf,
+  ThreeDImagePageflipHandle,
+} from "@/components/lightswind/3d-image-pageflip";
 
-interface Lead {
+/* ───────────────── Leads Data ─────────────────
+   Note: pageSide / leafIndex / pageNumber were dropped from this type —
+   the new layout computes leaf positions itself (see buildBookPages below),
+   since every lead now always spans two adjacent leaves: a photo face and
+   a description face. If another file also imports `Lead` and relies on
+   those three fields, keep them there and just ignore them here.
+*/
+
+export interface Lead {
   id: number;
   name: string;
   role: string;
+  domain: string;
+  badge: string;
+  description: string;
+  skills: string[];
   insta: string;
   linkedin: string;
   github: string;
   image: string;
 }
 
-const leads: Lead[] = [
-  { id: 1, name: "Ritesh Kumar", role: "Club Lead", insta: "https://www.instagram.com/riteshkrkarn", linkedin: "https://www.linkedin.com/in/riteshkrkarn", github: "https://github.com/riteshkrkarn", image: "/Leads/ritesh president.jpeg" },
-  { id: 2, name: "Gulshan Kumar", role: "Tech Lead", insta: "https://www.instagram.com/jhagk_", linkedin: "https://www.linkedin.com/in/gulshankumar0", github: "https://github.com/GulshanJha00", image: "/Leads/gulshankumar-techlead.jpeg" },
-  { id: 3, name: "Mayank Rai", role: "Management Lead", insta: "https://www.instagram.com/may_nk_0333", linkedin: "https://www.linkedin.com/in/mayank-rai-423419305", github: "https://github.com/raimac12345", image: "/Leads/Mayank-managmentlead.jpeg" },
-  { id: 4, name: "Sashwat Sharma", role: "Creativity Lead", insta: "https://www.instagram.com/luminal786", linkedin: "https://www.linkedin.com/in/shashwat-sharma-universal", github: "https://github.com/Universal786", image: "/Leads/shashwat-creativitylead.jpeg" },
-  { id: 5, name: "Sambhav Roy", role: "Design Lead", insta: "insta_id", linkedin: "linkedin_id", github: "github_id", image: "/Leads/Sambhav.jpeg" },
-  { id: 6, name: "Vishnu M", role: "Sponsorship Lead", insta: "https://www.instagram.com/_vishnum___", linkedin: "https://www.linkedin.com/in/vishnu-m-88a722308", github: "https://github.com/MVishnu-dot", image: "/Leads/vishnum-sponshership lead.jpeg" },
+export const leads: Lead[] = [
+  {
+    id: 1,
+    name: "Ritesh Kumar",
+    role: "Club Lead",
+    domain: "Executive & Strategy",
+    badge: "Club Lead",
+    image: "/Leads/ritesh president.jpeg",
+    description:
+      "Sets the overarching vision and roadmap for Byte Club, driving cross-functional alignment across technical initiatives, creative campaigns, and community hackathons.",
+    skills: ["Leadership", "Community", "Strategy"],
+    insta: "https://www.instagram.com/riteshkrkarn",
+    linkedin: "https://www.linkedin.com/in/riteshkrkarn",
+    github: "https://github.com/riteshkrkarn",
+  },
+  {
+    id: 2,
+    name: "Gulshan Kumar",
+    role: "Tech Lead",
+    domain: "Engineering & Architecture",
+    badge: "Tech Lead",
+    image: "/Leads/gulshankumar-techlead.jpeg",
+    description:
+      "Architects the technical ecosystem and infrastructure for club platforms. Oversees full-stack open-source projects, conducts workshops, and mentors developers.",
+    skills: ["Full-Stack", "Architecture", "Open Source"],
+    insta: "https://www.instagram.com/jhagk_",
+    linkedin: "https://www.linkedin.com/in/gulshankumar0",
+    github: "https://github.com/GulshanJha00",
+  },
+  {
+    id: 3,
+    name: "Mayank Rai",
+    role: "Management Lead",
+    domain: "Operations & Logistics",
+    badge: "Management Lead",
+    image: "/Leads/Mayank-managmentlead.jpeg",
+    description:
+      "Orchestrates end-to-end event operations, resource allocation, and logistics. Ensures flagship hackathons and club projects execute seamlessly on schedule.",
+    skills: ["Operations", "Logistics", "Planning"],
+    insta: "https://www.instagram.com/may_nk_0333",
+    linkedin: "https://www.linkedin.com/in/mayank-rai-423419305",
+    github: "https://github.com/raimac12345",
+  },
+  {
+    id: 4,
+    name: "Sashwat Sharma",
+    role: "Creativity Lead",
+    domain: "Media & Brand Identity",
+    badge: "Creativity Lead",
+    image: "/Leads/shashwat-creativitylead.jpeg",
+    description:
+      "Directs creative strategy, multimedia storytelling, and brand identity across digital channels. Crafts high-impact visuals and design narratives.",
+    skills: ["Creative", "Motion Design", "Branding"],
+    insta: "https://www.instagram.com/luminal786",
+    linkedin: "https://www.linkedin.com/in/shashwat-sharma-universal",
+    github: "https://github.com/Universal786",
+  },
+  {
+    id: 5,
+    name: "Sambhav Roy",
+    role: "Design Lead",
+    domain: "UI/UX & Product Design",
+    badge: "Design Lead",
+    image: "/Leads/Sambhav.jpeg",
+    description:
+      "Spearheads UI/UX design systems, user research, and interactive prototypes. Transforms complex technical workflows into intuitive, visually stunning interfaces.",
+    skills: ["UI/UX", "Figma", "Design Systems"],
+    insta: "https://www.instagram.com/",
+    linkedin: "https://www.linkedin.com/",
+    github: "https://github.com/",
+  },
+  {
+    id: 6,
+    name: "Vishnu M",
+    role: "Sponsorship Lead",
+    domain: "Partnerships & Outreach",
+    badge: "Sponsorship Lead",
+    image: "/Leads/vishnum-sponshership lead.jpeg",
+    description:
+      "Builds and manages key corporate partnerships, sponsorships, and industry outreach. Secures funding, merchandise, and mentorship resources.",
+    skills: ["Partnerships", "Outreach", "Negotiation"],
+    insta: "https://www.instagram.com/_vishnum___",
+    linkedin: "https://www.linkedin.com/in/vishnu-m-88a722308",
+    github: "https://github.com/MVishnu-dot",
+  },
 ];
 
-function InstagramIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="2" y="2" width="20" height="20" rx="5" />
-      <circle cx="12" cy="12" r="4" />
-      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-    </svg>
-  );
+/* ───────────────── 3D PageFlip Leaves ─────────────────
+   Book physics: at any moment you see the BACK of the last-flipped leaf on
+   the left and the FRONT of the next leaf on the right. So to land on
+   "lead's photo (left) + lead's description (right)" as one spread, each
+   lead's photo goes on the BACK of one leaf, and their description goes on
+   the FRONT of the very next leaf:
+
+     leaf 0:  front = cover                back = lead[0] photo
+     leaf 1:  front = lead[0] description   back = lead[1] photo
+     leaf 2:  front = lead[1] description   back = lead[2] photo
+     ...
+     leaf N:  front = lead[N-1] description back = back cover
+
+   Flipping leaf i reveals exactly the spread for lead i-1 (photo left,
+   description right) — no separate front/back tracking is needed anymore.
+*/
+
+function buildBookPages(): PageFlipLeaf[] {
+  const pages: PageFlipLeaf[] = [];
+
+  // Leaf 0: front cover, back = first lead's photo
+  pages.push({
+    id: 0,
+    frontTitle: "Byte Club",
+    frontSubtitle: "Leadership Directory",
+    frontBadge: "2025–2026",
+    frontLogo: "/Logo/image.png",
+    frontDescription:
+      "A collective of student developers, designers, and innovators leading technical projects, community workshops, and hackathons.",
+    frontIsCover: true,
+    backImage: leads[0].image,
+    backTitle: leads[0].name,
+    backSubtitle: `${leads[0].role} • ${leads[0].domain}`,
+    backBadge: leads[0].badge,
+  });
+
+  // One leaf per lead: front = this lead's description, back = next lead's photo
+  leads.forEach((lead, idx) => {
+    const isLast = idx === leads.length - 1;
+    pages.push({
+      id: idx + 1,
+      frontTitle: lead.name,
+      frontSubtitle: `${lead.role} • ${lead.domain}`,
+      frontBadge: lead.badge,
+      frontDescription: lead.description,
+      frontSkills: lead.skills,
+      frontSocials: {
+        insta: lead.insta,
+        linkedin: lead.linkedin,
+        github: lead.github,
+      },
+      backImage: isLast ? undefined : leads[idx + 1].image,
+      backBadge: isLast ? "Byte Club 2026" : leads[idx + 1].badge,
+      backTitle: isLast ? "Byte Club" : leads[idx + 1].name,
+      backSubtitle: isLast ? "Join The Community" : `${leads[idx + 1].role} • ${leads[idx + 1].domain}`,
+      backLogo: isLast ? "/Logo/image.png" : undefined,
+      backDescription: isLast
+        ? "Building open-source platforms, conducting workshops, and hosting flagship hackathons. Connect with our community or explore upcoming initiatives."
+        : undefined,
+      backIsCover: isLast,
+    });
+  });
+
+  return pages;
 }
 
-function LinkedInIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M4.98 3.5C4.98 4.88 3.87 6 2.49 6S0 4.88 0 3.5 1.11 1 2.49 1 4.98 2.12 4.98 3.5zM0 8h5v16H0V8zm7.5 0h4.7v2.2h.1c.7-1.3 2.4-2.7 5-2.7 5.4 0 6.4 3.6 6.4 8.3V24h-5V16c0-1.9 0-4.4-2.7-4.4s-3.1 2.1-3.1 4.2V24h-5V8z"/>
-    </svg>
-  );
-}
+const bookPages: PageFlipLeaf[] = buildBookPages();
 
-function GithubIcon() {
-  return (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 .5C5.7.5.8 5.4.8 11.7c0 5 3.2 9.2 7.6 10.7.6.1.8-.3.8-.6v-2.2c-3.1.7-3.7-1.3-3.7-1.3-.5-1.3-1.2-1.7-1.2-1.7-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 .1.7-.7 1.5-1 .1-.7.4-1.2.7-1.5-2.5-.3-5.2-1.2-5.2-5.5 0-1.2.4-2.1 1.1-2.9-.1-.3-.5-1.4.1-2.9 0 0 .9-.3 3 .1.9-.3 1.8-.4 2.7-.4s1.8.1 2.7.4c2.1-.4 3-.1 3-.1.6 1.5.2 2.6.1 2.9.7.8 1.1 1.7 1.1 2.9 0 4.3-2.7 5.2-5.2 5.5.4.3.8 1 .8 2v3c0 .3.2.7.8.6 4.4-1.5 7.6-5.7 7.6-10.7C23.2 5.4 18.3.5 12 .5z"/>
-    </svg>
-  );
-}
-
-function LeadCard({ lead }: { lead: Lead }) {
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={`relative w-[260px] h-[340px] rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 ${
-        hovered ? "shadow-2xl -translate-y-2" : "shadow-md"
-      }`}
-    >
-      <img
-        src={lead.image}
-        alt={lead.name}
-        className={`w-full h-full object-cover transition-transform duration-500 ${
-          hovered ? "scale-110" : ""
-        }`}
-      />
-
-      {/* Bottom strip */}
-      <div className={`absolute bottom-0 w-full px-4 py-3 backdrop-blur-md bg-white/20 transition-opacity duration-300 ${hovered ? "opacity-0" : "opacity-100"}`}>
-        <p className="text-white font-semibold">{lead.name}</p>
-        <p className="text-white/80 text-sm">{lead.role}</p>
-      </div>
-
-      {/* Hover overlay */}
-      <div className={`absolute inset-0 flex flex-col items-center justify-center gap-4 backdrop-blur-xl bg-white/20 transition-opacity duration-300 ${hovered ? "opacity-100" : "opacity-0"}`}>
-
-        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white">
-          <img src={lead.image} alt={lead.name} className="w-full h-full object-cover" />
-        </div>
-
-        <div className="text-center">
-          <p className="font-bold text-gray-900">{lead.name}</p>
-          <p className="text-xs uppercase text-gray-500">{lead.role}</p>
-        </div>
-
-        {/* Socials — use URLs directly, no wrapping */}
-        <div className="flex gap-4">
-          <a href={lead.insta} target="_blank" rel="noreferrer" className="text-gray-800 hover:text-pink-500 transition-colors">
-            <InstagramIcon />
-          </a>
-          <a href={lead.linkedin} target="_blank" rel="noreferrer" className="text-gray-800 hover:text-blue-600 transition-colors">
-            <LinkedInIcon />
-          </a>
-          <a href={lead.github} target="_blank" rel="noreferrer" className="text-gray-800 hover:text-gray-600 transition-colors">
-            <GithubIcon />
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
+/* ───────────────── Main TeamLeads Component ───────────────── */
 
 export default function TeamLeads() {
+  const bookRef = useRef<ThreeDImagePageflipHandle>(null);
+  // -1 = cover is showing, no lead active yet
+  const [activeLeadIndex, setActiveLeadIndex] = useState<number>(-1);
+
+  // Responsive book sizing (mobile & desktop)
+  const [dimensions, setDimensions] = useState<{ width: number; height: number; perspective: number }>({
+    width: 320,
+    height: 480,
+    perspective: 1600,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      const w = window.innerWidth;
+      if (w < 380) {
+        setDimensions({ width: 145, height: 250, perspective: 850 });
+      } else if (w < 480) {
+        setDimensions({ width: 165, height: 280, perspective: 950 });
+      } else if (w < 640) {
+        setDimensions({ width: 210, height: 340, perspective: 1200 });
+      } else if (w < 1024) {
+        setDimensions({ width: 260, height: 410, perspective: 1400 });
+      } else {
+        setDimensions({ width: 330, height: 490, perspective: 1600 });
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // turnedCount leaves flipped => spread for lead (turnedCount - 1) is showing.
+  // turnedCount 0 = cover still showing.
+  const handlePageChange = (turnedCount: number) => {
+    if (turnedCount <= 0) {
+      setActiveLeadIndex(-1);
+    } else {
+      setActiveLeadIndex(Math.min(turnedCount - 1, leads.length - 1));
+    }
+  };
+
+  // Jump straight to a lead's spread (photo left, description right)
+  const handleJumpToLead = (index: number) => {
+    setActiveLeadIndex(index);
+    bookRef.current?.goTo(index + 1);
+  };
+
+  const handleJumpToCover = () => {
+    setActiveLeadIndex(-1);
+    bookRef.current?.goTo(0);
+  };
+
   return (
-    <section className="px-10 py-10">
-      <div className="flex flex-wrap justify-center gap-8">
-        {leads.map((lead) => (
-          <LeadCard key={lead.id} lead={lead} />
-        ))}
+    <div className="w-full flex flex-col items-center gap-6 py-2">
+      {/* Quick Jump Pills */}
+      <div className="w-full flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5 px-2">
+        <button
+          onClick={handleJumpToCover}
+          className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
+            activeLeadIndex === -1
+              ? "bg-blue-600/20 text-blue-200 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] scale-105"
+              : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/30"
+          }`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full transition-colors ${
+              activeLeadIndex === -1 ? "bg-blue-400 animate-pulse" : "bg-white/40"
+            }`}
+          />
+          <span>Cover</span>
+        </button>
+
+        {leads.map((lead, idx) => {
+          const isActive = activeLeadIndex === idx;
+          return (
+            <button
+              key={lead.id}
+              onClick={() => handleJumpToLead(idx)}
+              className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
+                isActive
+                  ? "bg-blue-600/20 text-blue-200 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] scale-105"
+                  : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/30"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  isActive ? "bg-blue-400 animate-pulse" : "bg-white/40"
+                }`}
+              />
+              <span>{lead.name}</span>
+              <span className="text-[10px] opacity-60 font-mono hidden md:inline">
+                [{lead.role}]
+              </span>
+            </button>
+          );
+        })}
       </div>
-    </section>
+
+      {/* Pure 3D Book */}
+      <div className="w-full flex flex-col items-center justify-center overflow-visible py-2">
+        <ThreeDImagePageflip
+          ref={bookRef}
+          pages={bookPages}
+          pageWidth={dimensions.width}
+          pageHeight={dimensions.height}
+          perspective={dimensions.perspective}
+          duration={0.7}
+          peekAngle={15}
+          spineShift={true}
+          showPageNumbers={true}
+          accentColor="#3b82f6"
+          showControls={true}
+          onPageChange={handlePageChange}
+        />
+      </div>
+    </div>
   );
 }

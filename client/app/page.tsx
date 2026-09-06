@@ -1,6 +1,6 @@
 import "./globals.css";
 
-import Navbar from "./components/Navbar";
+
 import ModernImage from "./components/LogoComponent";
 import FlashCard from "./components/FlashCard";
 import UpcomingEvents from "./components/UpcomingEvents";
@@ -11,20 +11,51 @@ import Footer from "./components/Footer";
 import DesktopNotice from "./components/Header";
 import ContactForm from "./components/ContactForm";
 import NewCard from "./components/About";
-Countdown
-import StaticSpaceBackground from "./components/AnimatedBackground";
+import AnimatedBackground from "./components/AnimatedBackground";
 import BlogsPage from "./components/Blog";
 import Countdown from "./components/CountDowntimer";
+import GooeyNav from "./components/Navbar";
+import SplitFlapText from "@/components/SplitFlapText";
+import {
+  Home as HomeIcon,
+  Calendar,
+  Users,
+  History,
+  BookOpen,
+  Mail,
+  Info,
+} from "lucide-react";
+
+const navItems = [
+  { label: "Home", href: "#home", icon: <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  { label: "Events", href: "#info", icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  { label: "Leads", href: "#cores", icon: <Users className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  { label: "Past Events", href: "#pastevents", icon: <History className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  { label: "Blogs", href: "#blogs", icon: <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  { label: "Contact", href: "#write", icon: <Mail className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  { label: "About", href: "#idea", icon: <Info className="w-4 h-4 sm:w-5 sm:h-5" /> },
+];
 
 export default function Home() {
   return (
     <div className="relative min-h-screen overflow-x-hidden text-white">
+      <AnimatedBackground />
 
-      {/* Background */}
-      <StaticSpaceBackground />
-
-      {/* Navbar */}
-      <div className="p-8"><Navbar /></div>
+      {/* Floating Navbar */}
+      <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-center px-4 pointer-events-none">
+        <div className="pointer-events-auto">
+          <GooeyNav
+            items={navItems}
+            particleCount={15}
+            particleDistances={[90, 10]}
+            particleR={100}
+            initialActiveIndex={0}
+            animationTime={600}
+            timeVariance={300}
+            colors={[1, 2, 3, 1, 2, 3, 1, 4]}
+          />
+        </div>
+      </div>
       
 
       {/* Main Container */}
@@ -60,34 +91,21 @@ export default function Home() {
           <div className="w-full lg:w-2/3">
 
             <div className="mb-8 sm:mb-12">
-              <h2
-                className="
-                  relative inline-block
-                  text-3xl sm:text-4xl md:text-5xl
-                  font-bold
-                  text-white
-                  after:content-['']
-                  after:absolute
-                  after:left-0
-                  after:-bottom-2
-                  after:h-[3px]
-                  after:w-0
-                  hover:after:w-full
-                  after:bg-cyan-400
-                  after:transition-all
-                  after:duration-700
-                  hover:tracking-wide
-                  transition-all
-                  duration-500
-                "
-                style={{
-                  fontFamily: "'Orbitron', sans-serif",
-                  textShadow:
-                    "0 0 12px rgba(255,255,255,0.22), 0 0 30px rgba(0,212,255,0.15)",
-                }}
-              >
-                Upcoming Events
-              </h2>
+              <SplitFlapText
+                words={["UPCOMING EVENTS", "TECH WORKSHOPS", "HACKATHONS LIVE"]}
+                flipDuration={0.1}
+                stagger={0.04}
+                cycleDelay={2800}
+                charset="alphanumeric"
+                flipsPerChar={6}
+                tileColor="#071026"
+                textColor="#38bdf8"
+                tileRadius="clamp(4px, 0.8vw, 8px)"
+                gap="clamp(3px, 0.5vw, 6px)"
+                fontSize="clamp(22px, 3.8vw, 42px)"
+                loop
+                padTo={15}
+              />
             </div>
 
             <UpcomingEvents />
@@ -97,34 +115,21 @@ export default function Home() {
           <div className="w-full lg:w-1/3 flex flex-col items-center lg:items-end">
 
             <div className="mb-8 sm:mb-10 text-center lg:text-right w-full">
-              <h2
-                className="
-                  relative inline-block
-                  text-2xl sm:text-3xl md:text-4xl
-                  font-bold
-                  text-white
-                  after:content-['']
-                  after:absolute
-                  after:left-0
-                  after:-bottom-2
-                  after:h-[3px]
-                  after:w-0
-                  hover:after:w-full
-                  after:bg-cyan-400
-                  after:transition-all
-                  after:duration-700
-                  hover:tracking-wide
-                  transition-all
-                  duration-500
-                "
-                style={{
-                  fontFamily: "'Orbitron', sans-serif",
-                  textShadow:
-                    "0 0 12px rgba(255,255,255,0.22), 0 0 30px rgba(0,212,255,0.15)",
-                }}
-              >
-                Countdown Timer
-              </h2>
+              <SplitFlapText
+                words={["COUNTDOWN TIMER", "EVENT TICKING", "TIME REMAINING"]}
+                flipDuration={0.1}
+                stagger={0.04}
+                cycleDelay={2800}
+                charset="alphanumeric"
+                flipsPerChar={6}
+                tileColor="#071026"
+                textColor="#38bdf8"
+                tileRadius="clamp(4px, 0.8vw, 8px)"
+                gap="clamp(3px, 0.5vw, 6px)"
+                fontSize="clamp(20px, 3.2vw, 36px)"
+                loop
+                padTo={15}
+              />
             </div>
 
             <Countdown targetDate="2026-04-08T14:30:00" />
@@ -136,34 +141,21 @@ export default function Home() {
         <section id="cores" className="w-full py-12 sm:py-16 md:py-20">
 
           <div className="flex justify-center mb-10 sm:mb-14">
-            <h2
-              className="
-                relative inline-block
-                text-3xl sm:text-4xl md:text-5xl
-                font-bold
-                text-white
-                after:content-['']
-                after:absolute
-                after:left-0
-                after:-bottom-2
-                after:h-[3px]
-                after:w-0
-                hover:after:w-full
-                after:bg-cyan-400
-                after:transition-all
-                after:duration-700
-                hover:tracking-wide
-                transition-all
-                duration-500
-              "
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                textShadow:
-                  "0 0 12px rgba(255,255,255,0.25), 0 0 30px rgba(0,212,255,0.15)",
-              }}
-            >
-              Our Leads
-            </h2>
+            <SplitFlapText
+              words={["OUR LEADS", "LEADERSHIP 2026", "DOMAINS IN CHARGE"]}
+              flipDuration={0.1}
+              stagger={0.04}
+              cycleDelay={2800}
+              charset="alphanumeric"
+              flipsPerChar={6}
+              tileColor="#071026"
+              textColor="#38bdf8"
+              tileRadius="clamp(4px, 0.8vw, 8px)"
+              gap="clamp(3px, 0.5vw, 6px)"
+              fontSize="clamp(22px, 3.8vw, 42px)"
+              loop
+              padTo={18}
+            />
           </div>
 
           <TeamLeads />
@@ -173,34 +165,21 @@ export default function Home() {
         <section className="w-full py-12 sm:py-16 md:py-20">
 
           <div className="flex justify-center mb-10 sm:mb-14">
-            <h2
-              className="
-                relative inline-block
-                text-3xl sm:text-4xl md:text-5xl
-                font-bold
-                text-white
-                after:content-['']
-                after:absolute
-                after:left-0
-                after:-bottom-2
-                after:h-[3px]
-                after:w-0
-                hover:after:w-full
-                after:bg-cyan-400
-                after:transition-all
-                after:duration-700
-                hover:tracking-wide
-                transition-all
-                duration-500
-              "
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                textShadow:
-                  "0 0 12px rgba(255,255,255,0.22), 0 0 30px rgba(0,212,255,0.15)",
-              }}
-            >
-              Core Teams
-            </h2>
+            <SplitFlapText
+              words={["CORE TEAMS", "COMMUNITY SQUAD", "BYTE BUILDERS"]}
+              flipDuration={0.1}
+              stagger={0.04}
+              cycleDelay={2800}
+              charset="alphanumeric"
+              flipsPerChar={6}
+              tileColor="#071026"
+              textColor="#38bdf8"
+              tileRadius="clamp(4px, 0.8vw, 8px)"
+              gap="clamp(3px, 0.5vw, 6px)"
+              fontSize="clamp(22px, 3.8vw, 42px)"
+              loop
+              padTo={15}
+            />
           </div>
 
           <CoreTeams />
@@ -215,34 +194,21 @@ export default function Home() {
         <section id="blogs" className="w-full py-12 sm:py-16 md:py-20">
 
           <div className="flex justify-center mb-10 sm:mb-14">
-            <h2
-              className="
-                relative inline-block
-                text-3xl sm:text-4xl md:text-5xl
-                font-bold
-                text-white
-                after:content-['']
-                after:absolute
-                after:left-0
-                after:-bottom-2
-                after:h-[3px]
-                after:w-0
-                hover:after:w-full
-                after:bg-cyan-400
-                after:transition-all
-                after:duration-700
-                hover:tracking-wide
-                transition-all
-                duration-500
-              "
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                textShadow:
-                  "0 0 12px rgba(255,255,255,0.25), 0 0 30px rgba(0,212,255,0.15)",
-              }}
-            >
-              Byte Blogs
-            </h2>
+            <SplitFlapText
+              words={["BYTE BLOGS", "TECH ARTICLES", "LATEST STORIES"]}
+              flipDuration={0.1}
+              stagger={0.04}
+              cycleDelay={2800}
+              charset="alphanumeric"
+              flipsPerChar={6}
+              tileColor="#071026"
+              textColor="#38bdf8"
+              tileRadius="clamp(4px, 0.8vw, 8px)"
+              gap="clamp(3px, 0.5vw, 6px)"
+              fontSize="clamp(22px, 3.8vw, 42px)"
+              loop
+              padTo={14}
+            />
           </div>
 
           <BlogsPage />
@@ -255,34 +221,21 @@ export default function Home() {
         >
 
           <div className="mb-10 sm:mb-14">
-            <h2
-              className="
-                relative inline-block
-                text-3xl sm:text-4xl md:text-5xl
-                font-bold
-                text-white
-                after:content-['']
-                after:absolute
-                after:left-0
-                after:-bottom-2
-                after:h-[3px]
-                after:w-0
-                hover:after:w-full
-                after:bg-cyan-400
-                after:transition-all
-                after:duration-700
-                hover:tracking-wide
-                transition-all
-                duration-500
-              "
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                textShadow:
-                  "0 0 12px rgba(255,255,255,0.25), 0 0 30px rgba(0,212,255,0.15)",
-              }}
-            >
-              Contact Us
-            </h2>
+            <SplitFlapText
+              words={["CONTACT US", "GET IN TOUCH", "JOIN BYTE CLUB"]}
+              flipDuration={0.1}
+              stagger={0.04}
+              cycleDelay={2800}
+              charset="alphanumeric"
+              flipsPerChar={6}
+              tileColor="#071026"
+              textColor="#38bdf8"
+              tileRadius="clamp(4px, 0.8vw, 8px)"
+              gap="clamp(3px, 0.5vw, 6px)"
+              fontSize="clamp(22px, 3.8vw, 42px)"
+              loop
+              padTo={14}
+            />
           </div>
 
           <ContactForm />
@@ -295,34 +248,21 @@ export default function Home() {
         >
 
           <div className="mb-10 sm:mb-14">
-            <h2
-              className="
-                relative inline-block
-                text-3xl sm:text-4xl md:text-5xl
-                font-bold
-                text-white
-                after:content-['']
-                after:absolute
-                after:left-0
-                after:-bottom-2
-                after:h-[3px]
-                after:w-0
-                hover:after:w-full
-                after:bg-cyan-400
-                after:transition-all
-                after:duration-700
-                hover:tracking-wide
-                transition-all
-                duration-500
-              "
-              style={{
-                fontFamily: "'Orbitron', sans-serif",
-                textShadow:
-                  "0 0 12px rgba(255,255,255,0.25), 0 0 30px rgba(0,212,255,0.15)",
-              }}
-            >
-              Our View
-            </h2>
+            <SplitFlapText
+              words={["OUR VIEW", "BYTE MISSION", "FUTURE VISION"]}
+              flipDuration={0.1}
+              stagger={0.04}
+              cycleDelay={2800}
+              charset="alphanumeric"
+              flipsPerChar={6}
+              tileColor="#071026"
+              textColor="#38bdf8"
+              tileRadius="clamp(4px, 0.8vw, 8px)"
+              gap="clamp(3px, 0.5vw, 6px)"
+              fontSize="clamp(22px, 3.8vw, 42px)"
+              loop
+              padTo={13}
+            />
           </div>
 
           <NewCard />

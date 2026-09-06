@@ -252,6 +252,10 @@ export default function BlogsPage() {
   }, []);
 
   const fetchBlogs = async () => {
+    if (!process.env.NEXT_PUBLIC_SERVER_URI) {
+      setLoading(false);
+      return;
+    }
     try {
       const res = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URI}/blog`);
       setBlogs(res.data);

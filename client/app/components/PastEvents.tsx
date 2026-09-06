@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import SplitFlapText from '@/components/SplitFlapText';
 
 export interface PastEventImage {
   id: string | number;
@@ -28,7 +29,7 @@ const PLACEHOLDER_IMAGES: PastEventImage[] = [
   { id: 10, url: '/events/group-1.jpg', eventName: 'Annual Assembly', date: 'Mass Gathering' },
   { id: 11, url: '/events/group-2.png', eventName: 'Annual Assembly', date: 'Community Photo' },
 
-  // Beyond Labs
+  
   
   { id: 14, url: '/Events/beyondlabs3.jpg', eventName: 'Beyond Labs', date: 'Student Participation' },
   { id: 15, url: '/Events/beyondlabs4.jpg', eventName: 'Beyond Labs', date: 'Hands-on Activity' },
@@ -390,23 +391,23 @@ export default function PastEvents({
           </p>
 
           {/* Heading */}
-          <h2
-            className="
-              relative inline-block
-              text-5xl md:text-7xl
-              font-black
-              text-white
-              leading-none
-              mb-6
-            "
-            style={{
-              fontFamily: "'Orbitron', sans-serif",
-              textShadow:
-                "0 0 16px rgba(255,255,255,0.22), 0 0 40px rgba(0,212,255,0.18)",
-            }}
-          >
-            Past Events
-          </h2>
+          <div className="mb-6">
+            <SplitFlapText
+              words={["PAST EVENTS", "EVENT ARCHIVE", "BYTE HISTORY"]}
+              flipDuration={0.1}
+              stagger={0.04}
+              cycleDelay={2800}
+              charset="alphanumeric"
+              flipsPerChar={6}
+              tileColor="#071026"
+              textColor="#38bdf8"
+              tileRadius="clamp(4px, 0.8vw, 8px)"
+              gap="clamp(3px, 0.5vw, 6px)"
+              fontSize="clamp(26px, 5vw, 54px)"
+              loop
+              padTo={14}
+            />
+          </div>
 
           {/* Description */}
           <p
