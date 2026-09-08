@@ -164,6 +164,102 @@ export function buildCompanion(logoTexture: THREE.Texture, particleCount = 1400)
   return { group, cloud, badge, shards };
 }
 
+export interface ShapeCloud {
+  points: THREE.Points;
+  sphere: Float32Array;
+  lightbulb: Float32Array;
+}
+
+/** Evenly distributed points on a sphere surface (Fibonacci sphere). */
+function sphereFormation(count: number, radius: number): Float32Array {
+  const arr = new Float32Array(count * 3);
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < count; i++) {
+    const y = 1 - (i / (count - 1)) * 2;
+    const r = Math.sqrt(Math.max(0, 1 - y * y));
+    const theta = golden * i;
+    arr[i * 3] = Math.cos(theta) * r * radius;
+    arr[i * 3 + 1] = y * radius;
+    arr[i * 3 + 2] = Math.sin(theta) * r * radius;
+  }
+  return arr;
+}
+
+/** A bulb-shaped dome sitting on a narrowing stem — a lightbulb silhouette. */
+function lightbulbFormation(count: number, radius: number): Float32Array {
+  const arr = new Float32Array(count * 3);
+  const domeCount = Math.floor(count * 0.72);
+  const domeCenterY = radius * 0.25;
+
+  for (let i = 0; i < count; i++) {
+    if (i < domeCount) {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * Math.PI * 2;
+      // Bias phi so points mostly cover the dome (upper ~80% of a sphere),
+      // leaving a narrower opening at the bottom that blends into the stem.
+      const phi = Math.acos(1 - v * 1.6);
+      const r = radius * (0.88 + Math.random() * 0.12);
+      arr[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      arr[i * 3 + 1] = r * Math.cos(phi) + domeCenterY;
+      arr[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    } else {
+      const t = (i - domeCount) / Math.max(1, count - domeCount - 1);
+      const stemRadius = radius * 0.26 * (1 - t * 0.45);
+      const angle = Math.random() * Math.PI * 2;
+      const rr = stemRadius * Math.sqrt(Math.random());
+      arr[i * 3] = Math.cos(angle) * rr;
+      arr[i * 3 + 1] = domeCenterY - radius * 0.55 - t * radius * 1.3;
+      arr[i * 3 + 2] = Math.sin(angle) * rr;
+    }
+  }
+  return arr;
+}
+
+/**
+ * A second, larger particle field that morphs between two recognizable 3D
+ * shapes (sphere -> lightbulb) as the user scrolls through the hero/story
+ * zone — the literal "constellation forms a shape" technique from the
+ * reference, kept to our single accent hue. This lives behind the logo
+ * companion (bigger, further back) and is only around for that zone; the
+ * caller fades it out afterward so it doesn't linger behind every section.
+ */
+export function buildShapeCloud(particleCount = 1800): ShapeCloud {
+  const sphere = sphereFormation(particleCount, 4.4);
+  const lightbulb = lightbulbFormation(particleCount, 4.2);
+
+  const positions = sphere.slice();
+  const colors = new Float32Array(particleCount * 3);
+  const tmpColor = new THREE.Color();
+  for (let i = 0; i < particleCount; i++) {
+    tmpColor.setHex(TONES[i % TONES.length]);
+    colors[i * 3] = tmpColor.r;
+    colors[i * 3 + 1] = tmpColor.g;
+    colors[i * 3 + 2] = tmpColor.b;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+  const points = new THREE.Points(
+    geo,
+    new THREE.PointsMaterial({
+      size: 0.075,
+      map: getTriangleSprite(),
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      sizeAttenuation: true,
+    })
+  );
+  points.userData.spinY = 0.0011;
+
+  return { points, sphere, lightbulb };
+}
+
 /**
  * Plain ambient starfield — tertiary layer, dim and sparse, filling the void
  * far behind everything. No clustering, no representational content.

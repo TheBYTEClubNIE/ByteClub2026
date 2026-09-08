@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { buildCompanion, buildStarfield } from "./story/rooms";
+import { buildCompanion, buildStarfield, buildShapeCloud } from "./story/rooms";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -76,10 +76,25 @@ export default function StoryCorridor() {
     const cloudMaterial = cloud.material as THREE.PointsMaterial;
     const cloudBaseOpacity = cloudMaterial.opacity;
 
+    // A bigger backdrop field that morphs sphere -> lightbulb as the user
+    // scrolls from the hero into the Story section, then dissolves — sits
+    // further back than the companion so the logo stays the crisp,
+    // primary element in front of it.
+    const shapeCloudCount = isMobile ? 700 : 1800;
+    const { points: shapePoints, sphere: sphereFormation, lightbulb: lightbulbFormation } = buildShapeCloud(shapeCloudCount);
+    const shapePositions = shapePoints.geometry.attributes.position as THREE.BufferAttribute;
+    const shapeMaterial = shapePoints.material as THREE.PointsMaterial;
+    const shapeBaseOpacity = shapeMaterial.opacity;
+    shapePoints.position.set(isMobile ? 0 : 2.0, -0.2, -13);
+    shapePoints.scale.setScalar(isMobile ? 0.55 : 1);
+    camera.add(shapePoints);
+
     const scrollState = { progress: 0 };
     const dockState = { progress: 0 };
+    const morphState = { progress: 0 };
     let scrollTriggerInstance: ScrollTrigger | null = null;
     let dockTriggerInstance: ScrollTrigger | null = null;
+    let morphTriggerInstance: ScrollTrigger | null = null;
     const ctx = gsap.context(() => {
       if (!skipScrollTracking) {
         scrollTriggerInstance = ScrollTrigger.create({
@@ -103,6 +118,21 @@ export default function StoryCorridor() {
           scrub: 0.6,
           onUpdate: (self) => {
             dockState.progress = self.progress;
+          },
+        });
+
+        // The shape cloud morphs sphere -> lightbulb across the Hero +
+        // Story sections specifically, then dissolves right at the end —
+        // independent of the rest of the page's length.
+        const storyEl = document.getElementById("idea");
+        morphTriggerInstance = ScrollTrigger.create({
+          trigger: heroEl ?? document.body,
+          start: "top top",
+          endTrigger: storyEl ?? undefined,
+          end: storyEl ? "bottom center" : "+=2000",
+          scrub: 0.8,
+          onUpdate: (self) => {
+            morphState.progress = self.progress;
           },
         });
       }
@@ -181,6 +211,18 @@ export default function StoryCorridor() {
         const fadeT = THREE.MathUtils.clamp((dockEased - fadeStart) / (1 - fadeStart), 0, 1);
         badgeMaterial.opacity = 1 - fadeT;
 
+        // Morph the shape cloud between sphere and lightbulb, then dissolve
+        // it in the final stretch once it's had a moment to read as a bulb.
+        const morphT = morphState.progress;
+        const posArray = shapePositions.array as Float32Array;
+        for (let i = 0; i < posArray.length; i++) {
+          posArray[i] = sphereFormation[i] + (lightbulbFormation[i] - sphereFormation[i]) * morphT;
+        }
+        shapePositions.needsUpdate = true;
+        const shapeFadeStart = 0.82;
+        const shapeFadeT = THREE.MathUtils.clamp((morphT - shapeFadeStart) / (1 - shapeFadeStart), 0, 1);
+        shapeMaterial.opacity = shapeBaseOpacity * (1 - shapeFadeT);
+
         if (!skipCameraTravel) {
           const targetZ = THREE.MathUtils.lerp(startZ, endZ, scrollState.progress);
           camera.position.z += (targetZ - camera.position.z) * 0.06;
@@ -252,6 +294,7 @@ export default function StoryCorridor() {
       ctx.revert();
       scrollTriggerInstance?.kill();
       dockTriggerInstance?.kill();
+      morphTriggerInstance?.kill();
 
       scene.traverse((obj) => {
         const mesh = obj as THREE.Mesh | THREE.Points | THREE.Line;
