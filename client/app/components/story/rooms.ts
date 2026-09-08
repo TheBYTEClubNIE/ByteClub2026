@@ -184,14 +184,26 @@ export function buildCompanion(logoTexture: THREE.Texture, particleCount = 1400)
  * far behind everything. Small triangle sprites in our accent, not the
  * plain round starfield dots this used to be — still no clustering, no
  * representational content, just quiet texture.
+ *
+ * Spread is depth-aware (scaled to how wide the camera frustum actually is
+ * at each point's distance) rather than a flat box — a flat +/-12 x range
+ * put a lot of points outside what the camera could ever see at its
+ * nearer depths, which read as "the small triangles aren't really
+ * everywhere." Scaling by depth keeps the field filling the visible frame
+ * at every distance, on both portrait and landscape screens.
  */
 export function buildAmbientDust(): THREE.Points {
-  const count = 140;
+  const count = 190;
   const positions = new Float32Array(count * 3);
+  const vHalf = Math.tan(THREE.MathUtils.degToRad(55 / 2));
   for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 12;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 8;
-    positions[i * 3 + 2] = -3 - Math.random() * 6;
+    const z = -3 - Math.random() * 7;
+    const depth = -z;
+    const halfH = vHalf * depth * 0.95;
+    const halfW = halfH * 1.7;
+    positions[i * 3] = (Math.random() - 0.5) * 2 * halfW;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 2 * halfH;
+    positions[i * 3 + 2] = z;
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -200,9 +212,9 @@ export function buildAmbientDust(): THREE.Points {
     new THREE.PointsMaterial({
       color: TONES[0],
       map: getTriangleSprite(),
-      size: 0.045,
+      size: 0.055,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.36,
       depthWrite: false,
       sizeAttenuation: true,
     })

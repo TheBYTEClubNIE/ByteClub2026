@@ -14,9 +14,21 @@ if (typeof window !== "undefined") {
 // (the ambient dust field) — unlike the per-object userData.home/displace
 // pattern used for discrete shards, a Points object is hundreds of vertices
 // sharing one transform, so each individual triangle needs its own home,
-// a fixed random heading, and a decaying displacement tracked in parallel
-// Float32Arrays and written back into the position buffer every frame.
+// heading, and motion state tracked in parallel Float32Arrays and written
+// back into the position buffer every frame.
+//
+// Two separate motions are layered on top of home:
+//  - `displace` is the hover-scatter spring: an instant push away from the
+//    mouse that decays quickly back to zero once the mouse moves off.
+//  - `driftVel`/`driftPos` is the scroll wander: scrolling adds velocity
+//    along the point's fixed heading, velocity only damps gradually, and
+//    position keeps integrating that velocity — so a triangle actually
+//    travels to a new spot and keeps drifting for a bit after you stop
+//    scrolling, instead of springing straight back to its home position
+//    (which read as "basically static"). A soft radius bounce keeps it
+//    from wandering off into the middle distance forever.
 const scatterWorldPos = new THREE.Vector3();
+const DRIFT_MAX = 0.55;
 function updatePointScatter(
   points: THREE.Points,
   camera: THREE.Camera,
@@ -26,40 +38,64 @@ function updatePointScatter(
 ) {
   const homePositions = points.userData.homePositions as Float32Array | undefined;
   if (!homePositions) return;
+  const n = homePositions.length;
   let displace = points.userData.displace as Float32Array | undefined;
-  if (!displace || displace.length !== homePositions.length) {
-    displace = new Float32Array(homePositions.length);
+  if (!displace || displace.length !== n) {
+    displace = new Float32Array(n);
     points.userData.displace = displace;
   }
   let driftDirs = points.userData.driftDirs as Float32Array | undefined;
   if (!driftDirs) {
-    driftDirs = new Float32Array(homePositions.length);
-    for (let i = 0; i < driftDirs.length; i += 3) {
+    driftDirs = new Float32Array(n);
+    for (let i = 0; i < n; i += 3) {
       driftDirs[i] = (Math.random() - 0.5) * 2;
       driftDirs[i + 1] = (Math.random() - 0.5) * 2;
       driftDirs[i + 2] = (Math.random() - 0.5) * 0.8;
     }
     points.userData.driftDirs = driftDirs;
   }
+  let driftVel = points.userData.driftVel as Float32Array | undefined;
+  if (!driftVel || driftVel.length !== n) {
+    driftVel = new Float32Array(n);
+    points.userData.driftVel = driftVel;
+  }
+  let driftPos = points.userData.driftPos as Float32Array | undefined;
+  if (!driftPos || driftPos.length !== n) {
+    driftPos = new Float32Array(n);
+    points.userData.driftPos = driftPos;
+  }
   const posAttr = points.geometry.attributes.position as THREE.BufferAttribute;
   const arr = posAttr.array as Float32Array;
   const threshold = 0.26;
   const scrolling = scrollDelta > 0.00003;
-  for (let i = 0; i < homePositions.length; i += 3) {
-    // Scroll-reactive random-direction drift — every individual triangle
-    // wanders along its own fixed heading whenever the page is actively
-    // scrolling, so the background always has something moving rather than
-    // sitting static between hover interactions.
+  for (let i = 0; i < n; i += 3) {
     if (scrolling) {
-      displace[i] += driftDirs[i] * scrollDelta * 5;
-      displace[i + 1] += driftDirs[i + 1] * scrollDelta * 5;
-      displace[i + 2] += driftDirs[i + 2] * scrollDelta * 5;
+      driftVel[i] += driftDirs[i] * scrollDelta * 14;
+      driftVel[i + 1] += driftDirs[i + 1] * scrollDelta * 14;
+      driftVel[i + 2] += driftDirs[i + 2] * scrollDelta * 14;
     }
+    driftVel[i] *= 0.97;
+    driftVel[i + 1] *= 0.97;
+    driftVel[i + 2] *= 0.97;
+    driftPos[i] += driftVel[i];
+    driftPos[i + 1] += driftVel[i + 1];
+    driftPos[i + 2] += driftVel[i + 2];
+    const dlen = Math.sqrt(driftPos[i] * driftPos[i] + driftPos[i + 1] * driftPos[i + 1] + driftPos[i + 2] * driftPos[i + 2]);
+    if (dlen > DRIFT_MAX) {
+      const s = DRIFT_MAX / dlen;
+      driftPos[i] *= s;
+      driftPos[i + 1] *= s;
+      driftPos[i + 2] *= s;
+      driftVel[i] *= -0.4;
+      driftVel[i + 1] *= -0.4;
+      driftVel[i + 2] *= -0.4;
+    }
+
     if (hoverEnabled) {
       scatterWorldPos.set(
-        homePositions[i] + displace[i],
-        homePositions[i + 1] + displace[i + 1],
-        homePositions[i + 2] + displace[i + 2]
+        homePositions[i] + driftPos[i] + displace[i],
+        homePositions[i + 1] + driftPos[i + 1] + displace[i + 1],
+        homePositions[i + 2] + driftPos[i + 2] + displace[i + 2]
       );
       points.localToWorld(scatterWorldPos);
       scatterWorldPos.project(camera);
@@ -76,9 +112,9 @@ function updatePointScatter(
     displace[i] *= 0.94;
     displace[i + 1] *= 0.94;
     displace[i + 2] *= 0.94;
-    arr[i] = homePositions[i] + displace[i];
-    arr[i + 1] = homePositions[i + 1] + displace[i + 1];
-    arr[i + 2] = homePositions[i + 2] + displace[i + 2];
+    arr[i] = homePositions[i] + driftPos[i] + displace[i];
+    arr[i + 1] = homePositions[i + 1] + driftPos[i + 1] + displace[i + 1];
+    arr[i + 2] = homePositions[i + 2] + driftPos[i + 2] + displace[i + 2];
   }
   posAttr.needsUpdate = true;
 }
@@ -268,15 +304,31 @@ export default function StoryCorridor() {
           if (obj.userData.home) {
             const home = obj.userData.home as THREE.Vector3;
             const displace = obj.userData.displace as THREE.Vector3;
-            // Scroll-reactive random-direction drift, same idea as the
-            // per-point dust field below: each shard has its own fixed
-            // heading and wanders along it while the page is scrolling, so
-            // the big triangles are visibly doing something too.
+            // Scroll-driven wander, same idea as the per-point dust field
+            // below: scrolling adds velocity along the shard's own fixed
+            // heading, velocity only damps gradually, and position keeps
+            // integrating it — so a shard actually travels somewhere and
+            // keeps drifting briefly after you stop scrolling, rather than
+            // springing straight back to home (which read as "static").
+            // A soft bounce off a max radius keeps it from wandering off
+            // into the middle distance forever.
             const driftDir = obj.userData.driftDir as THREE.Vector3 | undefined;
-            if (driftDir && scrollDelta > 0.00003) {
-              displace.x += driftDir.x * scrollDelta * 3;
-              displace.y += driftDir.y * scrollDelta * 3;
-              displace.z += driftDir.z * scrollDelta * 3;
+            if (driftDir) {
+              if (!obj.userData.driftVel) obj.userData.driftVel = new THREE.Vector3();
+              if (!obj.userData.driftPos) obj.userData.driftPos = new THREE.Vector3();
+              const driftVel = obj.userData.driftVel as THREE.Vector3;
+              const driftPos = obj.userData.driftPos as THREE.Vector3;
+              if (scrollDelta > 0.00003) {
+                driftVel.addScaledVector(driftDir, scrollDelta * 14);
+              }
+              driftVel.multiplyScalar(0.97);
+              driftPos.add(driftVel);
+              const driftMax = 0.9;
+              const dlen = driftPos.length();
+              if (dlen > driftMax) {
+                driftPos.multiplyScalar(driftMax / dlen);
+                driftVel.multiplyScalar(-0.4);
+              }
             }
             if (hoverEnabled) {
               obj.getWorldPosition(hoverWorldPos);
@@ -292,8 +344,9 @@ export default function StoryCorridor() {
                 displace.y += dy * invDist * force * 0.1;
               }
             }
-            displace.multiplyScalar(0.92);
+            displace.multiplyScalar(0.88);
             obj.position.copy(home).add(displace);
+            if (obj.userData.driftPos) obj.position.add(obj.userData.driftPos as THREE.Vector3);
           }
         });
 
