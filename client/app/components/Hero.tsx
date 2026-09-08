@@ -22,14 +22,11 @@ export default function Hero() {
         }
       `}</style>
 
-      {/* The 3D portal (StoryCorridor Room 0) shows through here — no local background needed */}
-      <div
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            "linear-gradient(180deg, transparent 0%, var(--bg) 96%)",
-        }}
-      />
+      {/* The 3D portal (StoryCorridor) shows through here — no local background
+          needed. (A fade-to-opaque overlay used to live here, but with the
+          ambient field now persisting at a consistent look across the whole
+          page, it just cut a hard-edged black box into the canvas instead of
+          blending anything.) */}
 
       <div className="w-full flex items-center">
         {/* Copy */}

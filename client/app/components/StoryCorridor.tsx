@@ -130,6 +130,9 @@ export default function StoryCorridor() {
     // Guard against a transient 0-width layout (e.g. a hidden/not-yet-laid-out
     // container) falsely matching the mobile media query at mount time.
     const isMobile = window.innerWidth > 0 && window.innerWidth <= 768;
+    // Wider than "mobile" but not full desktop — the hero logo should still
+    // sit dead-center here (only true desktop pushes it right of center).
+    const isTabletOrSmaller = window.innerWidth > 0 && window.innerWidth <= 1024;
     // Reduced motion disables all scroll-driven animation (camera drift,
     // dock/burst). Mobile only skips the camera dolly for perf — the
     // dock/burst transition is cheap and stays on so the logo still
@@ -212,7 +215,7 @@ export default function StoryCorridor() {
     const shardMaterials = shards.children.map((s) => (s as THREE.LineSegments).material as THREE.LineBasicMaterial);
     const shardBaseOpacities = shardMaterials.map((m) => m.opacity);
     const badgeMaterial = badge.material as THREE.MeshBasicMaterial;
-    const HERO_POS = new THREE.Vector3(isMobile ? 0 : 2.3, -0.9, -5.2);
+    const HERO_POS = new THREE.Vector3(isTabletOrSmaller ? 0 : 2.3, 0, -5.2);
     const DOCK_POS = new THREE.Vector3(isMobile ? -1.15 : -2.7, 1.85, -4.2);
     const HERO_SCALE = isMobile ? 0.85 : 1;
     const DOCK_SCALE = 0.3;
