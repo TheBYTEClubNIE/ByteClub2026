@@ -58,7 +58,7 @@ export interface Companion {
  * they catch perspective and rotate in three axes, giving the field real
  * depth instead of a flat sheet of dots.
  */
-function buildAmbientShards(count: number): THREE.Group {
+export function buildAmbientShards(count: number, spread: { inner: number; outer: number } = { inner: 1.6, outer: 4.2 }): THREE.Group {
   const group = new THREE.Group();
   for (let i = 0; i < count; i++) {
     const radius = 0.14 + Math.random() * 0.22;
@@ -72,13 +72,26 @@ function buildAmbientShards(count: number): THREE.Group {
     const shard = new THREE.LineSegments(edges, material);
 
     const angle = Math.random() * Math.PI * 2;
-    const r = 1.6 + Math.random() * 2.6;
+    const r = spread.inner + Math.random() * (spread.outer - spread.inner);
     shard.position.set(Math.cos(angle) * r, Math.sin(angle) * r * 0.9, (Math.random() - 0.5) * 1.4);
     shard.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
     shard.userData.tumble = {
       x: (Math.random() - 0.5) * 0.01,
       y: (Math.random() - 0.5) * 0.01,
     };
+    // Hover-scatter support: a stable rest position plus a decaying
+    // displacement the caller can push around when the mouse is nearby.
+    shard.userData.home = shard.position.clone();
+    shard.userData.displace = new THREE.Vector3();
+    // A fixed random heading, unique per shard, that the render loop nudges
+    // it along whenever the page is actively scrolling — so the big
+    // triangles visibly wander in different directions instead of just
+    // spinning in place. Purely additive to the hover displacement above.
+    shard.userData.driftDir = new THREE.Vector3(
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 2,
+      (Math.random() - 0.5) * 0.8
+    );
     group.add(shard);
   }
   return group;
@@ -167,31 +180,37 @@ export function buildCompanion(logoTexture: THREE.Texture, particleCount = 1400)
 }
 
 /**
- * Plain ambient starfield — tertiary layer, dim and sparse, filling the void
- * far behind everything. No clustering, no representational content.
+ * Plain ambient dust — tertiary layer, dim and sparse, filling the void
+ * far behind everything. Small triangle sprites in our accent, not the
+ * plain round starfield dots this used to be — still no clustering, no
+ * representational content, just quiet texture.
  */
-export function buildStarfield(): THREE.Group {
-  const group = new THREE.Group();
-  const count = 180;
+export function buildAmbientDust(): THREE.Points {
+  const count = 140;
   const positions = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 90;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 55;
-    positions[i * 3 + 2] = -20 - Math.random() * 120;
+    positions[i * 3] = (Math.random() - 0.5) * 12;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 8;
+    positions[i * 3 + 2] = -3 - Math.random() * 6;
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  const stars = new THREE.Points(
+  const dust = new THREE.Points(
     geo,
     new THREE.PointsMaterial({
-      color: 0x4a5560,
-      size: 0.05,
+      color: TONES[0],
+      map: getTriangleSprite(),
+      size: 0.045,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.28,
       depthWrite: false,
+      sizeAttenuation: true,
     })
   );
-  stars.userData.spinY = 0.00015;
-  group.add(stars);
-  return group;
+  dust.userData.spinY = 0.00015;
+  // Per-point hover-scatter support (see StoryCorridor): a stable copy of
+  // the rest positions, keyed off the same array every frame.
+  dust.userData.homePositions = positions.slice();
+  return dust;
 }
+

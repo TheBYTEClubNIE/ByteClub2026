@@ -4,10 +4,83 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { buildCompanion, buildStarfield } from "./story/rooms";
+import { buildCompanion, buildAmbientDust, buildAmbientShards } from "./story/rooms";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
+}
+
+// Per-point hover-scatter AND scroll-drift for bulk THREE.Points clouds
+// (the ambient dust field) — unlike the per-object userData.home/displace
+// pattern used for discrete shards, a Points object is hundreds of vertices
+// sharing one transform, so each individual triangle needs its own home,
+// a fixed random heading, and a decaying displacement tracked in parallel
+// Float32Arrays and written back into the position buffer every frame.
+const scatterWorldPos = new THREE.Vector3();
+function updatePointScatter(
+  points: THREE.Points,
+  camera: THREE.Camera,
+  mouseNDC: { x: number; y: number },
+  hoverEnabled: boolean,
+  scrollDelta: number
+) {
+  const homePositions = points.userData.homePositions as Float32Array | undefined;
+  if (!homePositions) return;
+  let displace = points.userData.displace as Float32Array | undefined;
+  if (!displace || displace.length !== homePositions.length) {
+    displace = new Float32Array(homePositions.length);
+    points.userData.displace = displace;
+  }
+  let driftDirs = points.userData.driftDirs as Float32Array | undefined;
+  if (!driftDirs) {
+    driftDirs = new Float32Array(homePositions.length);
+    for (let i = 0; i < driftDirs.length; i += 3) {
+      driftDirs[i] = (Math.random() - 0.5) * 2;
+      driftDirs[i + 1] = (Math.random() - 0.5) * 2;
+      driftDirs[i + 2] = (Math.random() - 0.5) * 0.8;
+    }
+    points.userData.driftDirs = driftDirs;
+  }
+  const posAttr = points.geometry.attributes.position as THREE.BufferAttribute;
+  const arr = posAttr.array as Float32Array;
+  const threshold = 0.26;
+  const scrolling = scrollDelta > 0.00003;
+  for (let i = 0; i < homePositions.length; i += 3) {
+    // Scroll-reactive random-direction drift — every individual triangle
+    // wanders along its own fixed heading whenever the page is actively
+    // scrolling, so the background always has something moving rather than
+    // sitting static between hover interactions.
+    if (scrolling) {
+      displace[i] += driftDirs[i] * scrollDelta * 5;
+      displace[i + 1] += driftDirs[i + 1] * scrollDelta * 5;
+      displace[i + 2] += driftDirs[i + 2] * scrollDelta * 5;
+    }
+    if (hoverEnabled) {
+      scatterWorldPos.set(
+        homePositions[i] + displace[i],
+        homePositions[i + 1] + displace[i + 1],
+        homePositions[i + 2] + displace[i + 2]
+      );
+      points.localToWorld(scatterWorldPos);
+      scatterWorldPos.project(camera);
+      const dx = scatterWorldPos.x - mouseNDC.x;
+      const dy = scatterWorldPos.y - mouseNDC.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < threshold) {
+        const force = 1 - dist / threshold;
+        const invDist = dist > 0.0001 ? 1 / dist : 0;
+        displace[i] += dx * invDist * force * 0.16;
+        displace[i + 1] += dy * invDist * force * 0.16;
+      }
+    }
+    displace[i] *= 0.94;
+    displace[i + 1] *= 0.94;
+    displace[i + 2] *= 0.94;
+    arr[i] = homePositions[i] + displace[i];
+    arr[i + 1] = homePositions[i + 1] + displace[i + 1];
+    arr[i + 2] = homePositions[i + 2] + displace[i + 2];
+  }
+  posAttr.needsUpdate = true;
 }
 
 export default function StoryCorridor() {
@@ -57,7 +130,45 @@ export default function StoryCorridor() {
     const textureLoader = new THREE.TextureLoader();
     const logoTexture = textureLoader.load("/Logo/logo-transparent.png");
 
-    scene.add(buildStarfield());
+    // Persistent, deliberately minimal ambient field: quiet dust plus a
+    // handful of big tumbling shards further out — all camera-attached so
+    // they're present everywhere on the site, not just the hero. Kept
+    // sparse on purpose (per "minimal, don't overuse").
+    const ambientField = new THREE.Group();
+    const ambientDust = buildAmbientDust();
+    // buildAmbientShards was written to sit inside the hero companion, whose
+    // parent group already carries a Z offset — added straight to the
+    // camera here (no such parent), its shards' near-zero local Z would put
+    // them essentially at the camera itself. Push the whole group back to a
+    // sane depth, and keep the radius modest so it stays inside the frustum
+    // on narrow/mobile aspect ratios too.
+    const ambientShards = buildAmbientShards(6, { inner: 0.9, outer: 1.8 });
+    ambientShards.position.z = -4;
+    ambientField.add(ambientDust, ambientShards);
+    camera.add(ambientField);
+
+    const ambientDustMaterial = ambientDust.material as THREE.PointsMaterial;
+    const ambientShardMaterials = ambientShards.children.map((s) => (s as THREE.LineSegments).material as THREE.LineBasicMaterial);
+    const ambientDustBaseOpacity = ambientDustMaterial.opacity;
+    const ambientShardBaseOpacities = ambientShardMaterials.map((m) => m.opacity);
+    // Every individual triangle in the dust field gets its own hover-scatter
+    // and scroll-drift physics, not just whole objects.
+    const scatterClouds: THREE.Points[] = [ambientDust];
+
+    // Hover-scatter physics: any object tagged with userData.home/displace
+    // gets pushed away from the mouse and springs back when it moves off.
+    // Desktop + motion-enabled only — skipped on touch devices and when the
+    // user has asked for reduced motion.
+    const hoverEnabled = !isMobile && !prefersReducedMotion;
+    const mouseNDC = { x: 10, y: 10 }; // starts off-screen so nothing reacts before the first move
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+    if (hoverEnabled) {
+      window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    }
+    const hoverWorldPos = new THREE.Vector3();
 
     // Persistent logo + constellation companion, attached to the camera so
     // it stays on screen for the entire scroll instead of living in one spot.
@@ -141,8 +252,9 @@ export default function StoryCorridor() {
           }
           if (obj.userData.tumble) {
             const { x, y } = obj.userData.tumble as { x: number; y: number };
-            obj.rotation.x += x;
-            obj.rotation.y += y;
+            const boost = 1 + scrollDelta * 400;
+            obj.rotation.x += x * boost;
+            obj.rotation.y += y * boost;
           }
           if (obj.userData.bob) {
             const { amp, speed, phase, baseY } = obj.userData.bob as {
@@ -153,7 +265,44 @@ export default function StoryCorridor() {
             };
             obj.position.y = baseY + Math.sin(elapsed * speed + phase) * amp;
           }
+          if (obj.userData.home) {
+            const home = obj.userData.home as THREE.Vector3;
+            const displace = obj.userData.displace as THREE.Vector3;
+            // Scroll-reactive random-direction drift, same idea as the
+            // per-point dust field below: each shard has its own fixed
+            // heading and wanders along it while the page is scrolling, so
+            // the big triangles are visibly doing something too.
+            const driftDir = obj.userData.driftDir as THREE.Vector3 | undefined;
+            if (driftDir && scrollDelta > 0.00003) {
+              displace.x += driftDir.x * scrollDelta * 3;
+              displace.y += driftDir.y * scrollDelta * 3;
+              displace.z += driftDir.z * scrollDelta * 3;
+            }
+            if (hoverEnabled) {
+              obj.getWorldPosition(hoverWorldPos);
+              hoverWorldPos.project(camera);
+              const dx = hoverWorldPos.x - mouseNDC.x;
+              const dy = hoverWorldPos.y - mouseNDC.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const threshold = 0.32;
+              if (dist < threshold) {
+                const force = 1 - dist / threshold;
+                const invDist = dist > 0.0001 ? 1 / dist : 0;
+                displace.x += dx * invDist * force * 0.1;
+                displace.y += dy * invDist * force * 0.1;
+              }
+            }
+            displace.multiplyScalar(0.92);
+            obj.position.copy(home).add(displace);
+          }
         });
+
+        // Per-point scatter + scroll-drift for the bulk dust cloud — kept
+        // out of the generic traverse above since it needs array-level
+        // access to a whole Points object's position buffer, not just one
+        // object's transform. Always runs (not just when hover is enabled)
+        // so scroll-driven movement still happens on mobile/touch devices.
+        scatterClouds.forEach((pts) => updatePointScatter(pts, camera, mouseNDC, hoverEnabled, scrollDelta));
 
         // Dock progress is scoped to the Hero section itself (dockState),
         // so it completes exactly as the hero scrolls away and reverses
@@ -180,6 +329,15 @@ export default function StoryCorridor() {
         const fadeStart = 0.55;
         const fadeT = THREE.MathUtils.clamp((dockEased - fadeStart) / (1 - fadeStart), 0, 1);
         badgeMaterial.opacity = 1 - fadeT;
+
+        // Smooth handoff, not a hard cut: as the dense hero globe bursts
+        // away, the persistent ambient field gently brightens to fill the
+        // gap — a gradient between "hero spectacle" and "quiet site-wide
+        // texture" rather than an abrupt switch from one to the other.
+        ambientDustMaterial.opacity = ambientDustBaseOpacity * (0.5 + dockEased * 0.5);
+        ambientShardMaterials.forEach((m, i) => {
+          m.opacity = ambientShardBaseOpacities[i] * (0.4 + dockEased * 0.6);
+        });
 
         if (!skipCameraTravel) {
           const targetZ = THREE.MathUtils.lerp(startZ, endZ, scrollState.progress);
@@ -245,6 +403,7 @@ export default function StoryCorridor() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", handleResize);
+      if (hoverEnabled) window.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
       renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
