@@ -1,260 +1,151 @@
 import * as THREE from "three";
 
-export const ROOM_SPACING = 46;
-export const ROOM_COUNT = 7;
+// Single accent family (blue -> cyan) — several tonal stops for depth in the
+// particle cloud, never a second hue. This is our equivalent of the
+// reference's multicolor triangle field, kept disciplined to one brand hue.
+const TONES = [0x3066be, 0x60afff, 0x28c2ff, 0x2af5ff];
 
-const TEAL = 0x5fe3c8;
-const TEAL_BRIGHT = 0x8ff0da;
-
-function makeLabelTexture(text: string): THREE.CanvasTexture {
+let triangleSprite: THREE.Texture | null = null;
+function getTriangleSprite(): THREE.Texture {
+  if (triangleSprite) return triangleSprite;
+  const size = 64;
   const canvas = document.createElement("canvas");
-  canvas.width = 320;
-  canvas.height = 120;
+  canvas.width = size;
+  canvas.height = size;
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#071019";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = "rgba(95,227,200,0.6)";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
-  ctx.fillStyle = "#8ff0da";
-  ctx.font = "700 26px 'IBM Plex Mono', monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.needsUpdate = true;
-  return tex;
+  ctx.clearRect(0, 0, size, size);
+  ctx.beginPath();
+  ctx.moveTo(size / 2, size * 0.08);
+  ctx.lineTo(size * 0.92, size * 0.88);
+  ctx.lineTo(size * 0.08, size * 0.88);
+  ctx.closePath();
+  ctx.strokeStyle = "rgba(255,255,255,0.95)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  triangleSprite = new THREE.CanvasTexture(canvas);
+  triangleSprite.needsUpdate = true;
+  return triangleSprite;
 }
 
-function buildPortal(z: number, logoTexture: THREE.Texture, bright: boolean): THREE.Group {
+/**
+ * The persistent companion: the real logo, unmodified and uncropped, wrapped
+ * in a dense constellation of small triangle particles — the technique from
+ * the reference (thousands of tiny outlined triangles forming a field around
+ * the brand mark), kept to our single accent hue family. Attached to the
+ * camera in StoryCorridor so it stays on screen for the entire scroll.
+ *
+ * Visual hierarchy (deliberate, not accidental):
+ *   1. Logo plane        — primary, always fully legible, nothing drawn over it.
+ *   2. Constellation      — secondary, dense and alive, but thins out right
+ *                           over the wordmark so it never obscures it.
+ */
+export interface Companion {
+  group: THREE.Group;
+  cloud: THREE.Points;
+  badge: THREE.Mesh;
+}
+
+export function buildCompanion(logoTexture: THREE.Texture, particleCount = 1400): Companion {
   const group = new THREE.Group();
-  group.position.z = z;
 
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(bright ? 4.2 : 5.4, 0.12, 16, 96),
-    new THREE.MeshStandardMaterial({
-      color: TEAL,
-      emissive: TEAL,
-      emissiveIntensity: bright ? 2.2 : 1.1,
-      roughness: 0.35,
-      metalness: 0.2,
-    })
-  );
-  ring.userData.spinY = 0.0025;
-  group.add(ring);
-
-  const badge = new THREE.Mesh(
-    new THREE.PlaneGeometry(3, 3),
-    new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true })
-  );
-  badge.userData.bob = { amp: 0.15, speed: 0.6, phase: 0, baseY: 0 };
+  // The real logo, full square image, no crop — this is already a complete
+  // circular badge design (rings, wordmark, accent arcs baked in), so no
+  // separate procedural ring is drawn on top of it.
+  // Explicit color-space + toneMapped:false so the logo renders at its true
+  // brightness/colors regardless of renderer tone-mapping defaults — without
+  // this it was rendering washed-out gray instead of the real wordmark colors.
+  logoTexture.colorSpace = THREE.SRGBColorSpace;
+  const badgeMaterial = new THREE.MeshBasicMaterial({ map: logoTexture, transparent: true });
+  badgeMaterial.toneMapped = false;
+  const badge = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), badgeMaterial);
+  badge.userData.bob = { amp: 0.04, speed: 0.5, phase: 0, baseY: 0 };
+  badge.renderOrder = 2;
   group.add(badge);
 
-  const particleCount = 260;
+  // Dense constellation cloud: an annulus around the logo (inner radius
+  // clears the wordmark, outer radius fades into sparse ambient particles),
+  // with depth jitter so it reads as a volume, not a flat ring.
   const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+  const sizes = new Float32Array(particleCount);
+  const tmpColor = new THREE.Color();
+
   for (let i = 0; i < particleCount; i++) {
-    const r = 6 + Math.random() * 6;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-    positions[i * 3 + 2] = r * Math.cos(phi) * 0.4;
+    const angle = Math.random() * Math.PI * 2;
+    // Bias radius heavily toward the inner band so it reads as a halo
+    // wrapped around the logo, not particles scattered across the whole
+    // hero — only a small tail reaches the outer, sparse ambient edge.
+    const t = Math.random();
+    const r = 1.3 + Math.pow(t, 2.4) * 1.9;
+    const depth = (Math.random() - 0.5) * 0.7;
+
+    positions[i * 3] = Math.cos(angle) * r;
+    positions[i * 3 + 1] = Math.sin(angle) * r * 0.92;
+    positions[i * 3 + 2] = depth;
+
+    tmpColor.setHex(TONES[i % TONES.length]);
+    colors[i * 3] = tmpColor.r;
+    colors[i * 3 + 1] = tmpColor.g;
+    colors[i * 3 + 2] = tmpColor.b;
+
+    sizes[i] = 0.05 + Math.random() * 0.11;
   }
-  const particleGeo = new THREE.BufferGeometry();
-  particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  const particles = new THREE.Points(
-    particleGeo,
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
+
+  const cloud = new THREE.Points(
+    geo,
     new THREE.PointsMaterial({
-      color: bright ? TEAL_BRIGHT : TEAL,
       size: 0.09,
+      map: getTriangleSprite(),
+      vertexColors: true,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.85,
       blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      sizeAttenuation: true,
+    })
+  );
+  cloud.userData.spinY = 0.0009;
+  cloud.renderOrder = 1;
+  group.add(cloud);
+
+  const light = new THREE.PointLight(TONES[2], 1.1, 10);
+  light.position.set(0, 0, 1.5);
+  group.add(light);
+
+  return { group, cloud, badge };
+}
+
+/**
+ * Plain ambient starfield — tertiary layer, dim and sparse, filling the void
+ * far behind everything. No clustering, no representational content.
+ */
+export function buildStarfield(): THREE.Group {
+  const group = new THREE.Group();
+  const count = 180;
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 90;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 55;
+    positions[i * 3 + 2] = -20 - Math.random() * 120;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const stars = new THREE.Points(
+    geo,
+    new THREE.PointsMaterial({
+      color: 0x4a5560,
+      size: 0.05,
+      transparent: true,
+      opacity: 0.22,
       depthWrite: false,
     })
   );
-  particles.userData.spinY = 0.0006;
-  group.add(particles);
-
-  const light = new THREE.PointLight(TEAL, bright ? 3 : 1.6, 30);
-  light.position.set(0, 0, 4);
-  group.add(light);
-
+  stars.userData.spinY = 0.00015;
+  group.add(stars);
   return group;
-}
-
-function buildCircuit(z: number): THREE.Group {
-  const group = new THREE.Group();
-  group.position.z = z;
-
-  const board = new THREE.Mesh(
-    new THREE.PlaneGeometry(11, 7),
-    new THREE.MeshStandardMaterial({ color: 0x0c1613, roughness: 0.8, metalness: 0.1 })
-  );
-  board.rotation.x = -0.12;
-  group.add(board);
-
-  const traceMat = new THREE.MeshStandardMaterial({ color: TEAL, emissive: TEAL, emissiveIntensity: 1.4 });
-  for (let i = 0; i < 12; i++) {
-    const len = 1.2 + Math.random() * 2.4;
-    const trace = new THREE.Mesh(new THREE.BoxGeometry(len, 0.05, 0.05), traceMat);
-    trace.position.set((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 5, 0.1);
-    trace.rotation.z = Math.random() > 0.5 ? 0 : Math.PI / 2;
-    trace.rotation.x = -0.12;
-    group.add(trace);
-
-    if (Math.random() > 0.5) {
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), traceMat);
-      dot.position.copy(trace.position);
-      dot.position.x += len / 2;
-      group.add(dot);
-    }
-  }
-
-  const light = new THREE.PointLight(TEAL, 1.8, 25);
-  light.position.set(0, 2, 5);
-  group.add(light);
-
-  return group;
-}
-
-function buildStage(z: number): THREE.Group {
-  const group = new THREE.Group();
-  group.position.z = z;
-
-  const platform = new THREE.Mesh(
-    new THREE.CylinderGeometry(4.5, 4.8, 0.4, 48),
-    new THREE.MeshStandardMaterial({ color: 0x0d1013, roughness: 0.6 })
-  );
-  platform.position.y = -2.6;
-  group.add(platform);
-
-  const rim = new THREE.Mesh(
-    new THREE.TorusGeometry(4.5, 0.06, 12, 64),
-    new THREE.MeshStandardMaterial({ color: TEAL, emissive: TEAL, emissiveIntensity: 1.6 })
-  );
-  rim.rotation.x = Math.PI / 2;
-  rim.position.y = -2.4;
-  group.add(rim);
-
-  const spot = new THREE.SpotLight(TEAL_BRIGHT, 6, 20, Math.PI / 6, 0.4);
-  spot.position.set(0, 8, 2);
-  spot.target.position.set(0, -2.6, 0);
-  group.add(spot);
-  group.add(spot.target);
-
-  const labels = ["BEYOND THE LABS", "BITS TO BYTES", "BEYOND LABS"];
-  labels.forEach((text, i) => {
-    const tex = makeLabelTexture(text);
-    const screen = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.6, 1),
-      new THREE.MeshBasicMaterial({ map: tex, transparent: true })
-    );
-    const angle = (i / labels.length) * Math.PI * 2;
-    screen.position.set(Math.cos(angle) * 5.5, 0.6 + i * 0.3, Math.sin(angle) * 5.5 - 3);
-    screen.lookAt(0, 0.6, -3);
-    screen.userData.bob = { amp: 0.12, speed: 0.5 + i * 0.1, phase: i, baseY: screen.position.y };
-    group.add(screen);
-  });
-
-  return group;
-}
-
-function buildNetworkTable(z: number): THREE.Group {
-  const group = new THREE.Group();
-  group.position.z = z;
-
-  const nodeMat = new THREE.MeshStandardMaterial({ color: TEAL, emissive: TEAL, emissiveIntensity: 1.5 });
-  group.add(new THREE.Mesh(new THREE.SphereGeometry(0.45, 20, 20), nodeMat));
-
-  const nodeCount = 6;
-  const lineMat = new THREE.LineBasicMaterial({ color: TEAL, transparent: true, opacity: 0.35 });
-  for (let i = 0; i < nodeCount; i++) {
-    const angle = (i / nodeCount) * Math.PI * 2;
-    const radius = 4.6;
-    const pos = new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle * 1.3) * 0.8, Math.sin(angle) * radius);
-    const node = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), nodeMat);
-    node.position.copy(pos);
-    node.userData.bob = { amp: 0.18, speed: 0.4 + i * 0.05, phase: i, baseY: pos.y };
-    group.add(node);
-
-    const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), pos]);
-    group.add(new THREE.Line(lineGeo, lineMat));
-  }
-
-  const light = new THREE.PointLight(TEAL, 2, 20);
-  group.add(light);
-
-  return group;
-}
-
-function buildGalleryWall(z: number, textures: THREE.Texture[]): THREE.Group {
-  const group = new THREE.Group();
-  group.position.z = z;
-
-  const cols = 3;
-  const spacingX = 3.6;
-  const spacingY = 2.6;
-  const count = textures.length > 0 ? textures.length : 6;
-  const fallbackColors = [0x123b34, 0x175a4d, 0x0f2b27, 0x1d6e5d, 0x134238, 0x0c211d];
-
-  for (let i = 0; i < count; i++) {
-    const col = i % cols;
-    const row = Math.floor(i / cols);
-    const mat =
-      textures.length > 0
-        ? new THREE.MeshBasicMaterial({ map: textures[i] })
-        : new THREE.MeshStandardMaterial({
-            color: fallbackColors[i % fallbackColors.length],
-            emissive: TEAL,
-            emissiveIntensity: 0.15,
-          });
-    const plane = new THREE.Mesh(new THREE.PlaneGeometry(3, 2), mat);
-    plane.position.set((col - (cols - 1) / 2) * spacingX, (row - 0.5) * spacingY, (Math.random() - 0.5) * 1.5);
-    plane.userData.bob = { amp: 0.08, speed: 0.3 + i * 0.03, phase: i, baseY: plane.position.y };
-    group.add(plane);
-  }
-
-  const light = new THREE.PointLight(TEAL, 1.4, 25);
-  light.position.set(0, 0, 6);
-  group.add(light);
-
-  return group;
-}
-
-function buildTerminal(z: number): THREE.Group {
-  const group = new THREE.Group();
-  group.position.z = z;
-
-  group.add(
-    new THREE.Mesh(
-      new THREE.BoxGeometry(1.6, 4.2, 0.5),
-      new THREE.MeshStandardMaterial({ color: 0x0b0e11, roughness: 0.7 })
-    )
-  );
-
-  const strip = new THREE.Mesh(
-    new THREE.BoxGeometry(0.08, 3.6, 0.05),
-    new THREE.MeshStandardMaterial({ color: TEAL, emissive: TEAL, emissiveIntensity: 1.2 })
-  );
-  strip.position.z = 0.28;
-  group.add(strip);
-
-  const light = new THREE.PointLight(TEAL, 0.9, 15);
-  light.position.set(0, 0, 3);
-  group.add(light);
-
-  return group;
-}
-
-export function buildRooms(logoTexture: THREE.Texture, galleryTextures: THREE.Texture[]): THREE.Group[] {
-  return [
-    buildPortal(0, logoTexture, false),
-    buildCircuit(-ROOM_SPACING),
-    buildStage(-ROOM_SPACING * 2),
-    buildNetworkTable(-ROOM_SPACING * 3),
-    buildGalleryWall(-ROOM_SPACING * 4, galleryTextures),
-    buildTerminal(-ROOM_SPACING * 5),
-    buildPortal(-ROOM_SPACING * 6, logoTexture, true),
-  ];
 }

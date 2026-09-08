@@ -38,10 +38,12 @@ html {
   --ink: #f3f5f7;
   --ink-muted: #9aa2ab;
   --ink-faint: #5b6167;
-  --accent: #5fe3c8;
-  --accent-strong: #8ff0da;
-  --accent-soft: rgba(95, 227, 200, 0.12);
-  --accent-border: rgba(95, 227, 200, 0.35);
+  --accent-deep: #3066be;
+  --accent-mid: #60afff;
+  --accent: #28c2ff;
+  --accent-strong: #2af5ff;
+  --accent-soft: rgba(40, 194, 255, 0.12);
+  --accent-border: rgba(40, 194, 255, 0.35);
   --font-display: var(--font-display), "Bricolage Grotesque", sans-serif;
   --font-body: var(--font-body), "IBM Plex Sans", sans-serif;
   --font-mono: var(--font-mono), "IBM Plex Mono", monospace;

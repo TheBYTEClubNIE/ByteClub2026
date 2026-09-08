@@ -459,7 +459,7 @@ export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsPr
               style={{
                 scaleY: progress,
                 background:
-                  'linear-gradient(180deg, #5fe3c8, #8ff0da, #5fe3c8)',
+                  'linear-gradient(180deg, #28c2ff, #2af5ff, #28c2ff)',
                 boxShadow: '0 0 16px rgba(95,227,200,0.6)',
               }}
             />

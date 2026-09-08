@@ -8,7 +8,7 @@ export default function Logo() {
       
       {/* 🔹 Base Image (static) */}
       <img
-        src="/Logo/image.png"
+        src="/Logo/logo-transparent.png"
         alt="base logo"
         className="relative top-5 w-full h-full object-contain"
       />

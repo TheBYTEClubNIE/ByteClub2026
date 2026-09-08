@@ -33,7 +33,7 @@ const SECTION_LABEL_PROPS = {
   charset: "alphanumeric" as const,
   flipsPerChar: 6,
   tileColor: "#101317",
-  textColor: "#5fe3c8",
+  textColor: "#28c2ff",
   tileRadius: "clamp(4px, 0.6vw, 7px)",
   gap: "clamp(2px, 0.4vw, 5px)",
   loop: true,

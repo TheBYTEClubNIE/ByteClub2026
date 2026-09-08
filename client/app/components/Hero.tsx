@@ -46,10 +46,12 @@ export default function Hero() {
           </p>
 
           <h1
-            className="hero-fade-2 mt-5 font-[var(--font-display)] font-extrabold leading-[0.98] tracking-tight"
+            className="hero-fade-2 mt-5 leading-[0.96]"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(2.6rem, 6.4vw, 5.2rem)",
+              fontWeight: 500,
+              letterSpacing: "-0.02em",
+              fontSize: "clamp(3rem, 7.4vw, 6.4rem)",
               color: "var(--ink)",
             }}
           >

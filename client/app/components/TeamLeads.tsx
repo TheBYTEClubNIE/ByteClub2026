@@ -141,7 +141,7 @@ function buildBookPages(): PageFlipLeaf[] {
     frontTitle: "Byte Club",
     frontSubtitle: "Leadership Directory",
     frontBadge: "2025–2026",
-    frontLogo: "/Logo/image.png",
+    frontLogo: "/Logo/logo-transparent.png",
     frontDescription:
       "A collective of student developers, designers, and innovators leading technical projects, community workshops, and hackathons.",
     frontIsCover: true,
@@ -170,7 +170,7 @@ function buildBookPages(): PageFlipLeaf[] {
       backBadge: isLast ? "Byte Club 2026" : leads[idx + 1].badge,
       backTitle: isLast ? "Byte Club" : leads[idx + 1].name,
       backSubtitle: isLast ? "Join The Community" : `${leads[idx + 1].role} • ${leads[idx + 1].domain}`,
-      backLogo: isLast ? "/Logo/image.png" : undefined,
+      backLogo: isLast ? "/Logo/logo-transparent.png" : undefined,
       backDescription: isLast
         ? "Building open-source platforms, conducting workshops, and hosting flagship hackathons. Connect with our community or explore upcoming initiatives."
         : undefined,
@@ -247,13 +247,13 @@ export default function TeamLeads() {
           onClick={handleJumpToCover}
           className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
             activeLeadIndex === -1
-              ? "bg-[rgba(95,227,200,0.14)] text-[#8ff0da] border-[rgba(95,227,200,0.55)] shadow-[0_0_15px_rgba(95,227,200,0.3)] scale-105"
+              ? "bg-[rgba(40,194,255,0.14)] text-[#2af5ff] border-[rgba(40,194,255,0.55)] shadow-[0_0_15px_rgba(40,194,255,0.3)] scale-105"
               : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/30"
           }`}
         >
           <span
             className={`w-1.5 h-1.5 rounded-full transition-colors ${
-              activeLeadIndex === -1 ? "bg-[#5fe3c8] animate-pulse" : "bg-white/40"
+              activeLeadIndex === -1 ? "bg-[#28c2ff] animate-pulse" : "bg-white/40"
             }`}
           />
           <span>Cover</span>
@@ -267,13 +267,13 @@ export default function TeamLeads() {
               onClick={() => handleJumpToLead(idx)}
               className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
                 isActive
-                  ? "bg-[rgba(95,227,200,0.14)] text-[#8ff0da] border-[rgba(95,227,200,0.55)] shadow-[0_0_15px_rgba(95,227,200,0.3)] scale-105"
+                  ? "bg-[rgba(40,194,255,0.14)] text-[#2af5ff] border-[rgba(40,194,255,0.55)] shadow-[0_0_15px_rgba(40,194,255,0.3)] scale-105"
                   : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/30"
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  isActive ? "bg-[#5fe3c8] animate-pulse" : "bg-white/40"
+                  isActive ? "bg-[#28c2ff] animate-pulse" : "bg-white/40"
                 }`}
               />
               <span>{lead.name}</span>
@@ -297,7 +297,7 @@ export default function TeamLeads() {
           peekAngle={15}
           spineShift={true}
           showPageNumbers={true}
-          accentColor="#5fe3c8"
+          accentColor="#28c2ff"
           showControls={true}
           onPageChange={handlePageChange}
         />

@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 const BOOKS = [
-  { label: "Web Dev", color: "#5fe3c8" },
+  { label: "Web Dev", color: "#28c2ff" },
   { label: "Machine Learning", color: "#7fb8ff" },
   { label: "Agentic AI", color: "#c6a6ff" },
   { label: "Open Source", color: "#ffbf7f" },

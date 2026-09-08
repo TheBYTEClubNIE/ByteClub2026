@@ -4,20 +4,11 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { buildRooms, ROOM_SPACING, ROOM_COUNT } from "./story/rooms";
+import { buildCompanion, buildStarfield } from "./story/rooms";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
-
-const GALLERY_IMAGES = [
-  "/Events/beyondlabs4.jpg",
-  "/Events/bits-1.jpg",
-  "/Events/group-1.jpg",
-  "/Events/1.jpg",
-  "/Events/beyondlabs6.jpg",
-  "/Events/event1.jpg",
-];
 
 export default function StoryCorridor() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -30,10 +21,15 @@ export default function StoryCorridor() {
     // Guard against a transient 0-width layout (e.g. a hidden/not-yet-laid-out
     // container) falsely matching the mobile media query at mount time.
     const isMobile = window.innerWidth > 0 && window.innerWidth <= 768;
-    const skipCameraTravel = prefersReducedMotion || isMobile;
+    // Reduced motion disables all scroll-driven animation (camera drift,
+    // dock/burst). Mobile only skips the camera dolly for perf — the
+    // dock/burst transition is cheap and stays on so the logo still
+    // travels to its corner on every device.
+    const skipCameraTravel = prefersReducedMotion;
+    const skipScrollTracking = prefersReducedMotion;
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x0a0b0d, 18, 62);
+    scene.fog = new THREE.Fog(0x0a0b0d, 12, 40);
 
     const camera = new THREE.PerspectiveCamera(
       55,
@@ -54,23 +50,36 @@ export default function StoryCorridor() {
     container.appendChild(renderer.domElement);
 
     scene.add(new THREE.AmbientLight(0x22332e, isMobile ? 0.9 : 0.55));
-    const fillLight = new THREE.PointLight(0x5fe3c8, 0.5, 120);
+    const fillLight = new THREE.PointLight(0x28c2ff, 0.4, 60);
     fillLight.position.set(0, 6, 6);
     scene.add(fillLight);
 
     const textureLoader = new THREE.TextureLoader();
-    const logoTexture = textureLoader.load("/Logo/image.png");
-    const galleryTextures = isMobile
-      ? []
-      : GALLERY_IMAGES.map((src) => textureLoader.load(src));
+    const logoTexture = textureLoader.load("/Logo/logo-transparent.png");
 
-    const rooms = buildRooms(logoTexture, galleryTextures);
-    rooms.forEach((room) => scene.add(room));
+    scene.add(buildStarfield());
+
+    // Persistent logo + constellation companion, attached to the camera so
+    // it stays on screen for the entire scroll instead of living in one spot.
+    const { group: companion, cloud, badge } = buildCompanion(logoTexture, isMobile ? 500 : 1400);
+    const badgeMaterial = badge.material as THREE.MeshBasicMaterial;
+    const HERO_POS = new THREE.Vector3(isMobile ? 0 : 2.3, -0.9, -5.2);
+    const DOCK_POS = new THREE.Vector3(isMobile ? -1.15 : -2.7, 1.85, -4.2);
+    const HERO_SCALE = isMobile ? 0.85 : 1;
+    const DOCK_SCALE = 0.3;
+    companion.position.copy(HERO_POS);
+    companion.scale.setScalar(HERO_SCALE);
+    camera.add(companion);
+    scene.add(camera);
+    const cloudMaterial = cloud.material as THREE.PointsMaterial;
+    const cloudBaseOpacity = cloudMaterial.opacity;
 
     const scrollState = { progress: 0 };
+    const dockState = { progress: 0 };
     let scrollTriggerInstance: ScrollTrigger | null = null;
+    let dockTriggerInstance: ScrollTrigger | null = null;
     const ctx = gsap.context(() => {
-      if (!skipCameraTravel) {
+      if (!skipScrollTracking) {
         scrollTriggerInstance = ScrollTrigger.create({
           trigger: document.body,
           start: "top top",
@@ -80,45 +89,100 @@ export default function StoryCorridor() {
             scrollState.progress = self.progress;
           },
         });
+
+        // Docks relative to the Hero section's own height, not the whole
+        // page — so it always completes right as the hero scrolls away,
+        // regardless of how long the rest of the page is.
+        const heroEl = document.getElementById("home");
+        dockTriggerInstance = ScrollTrigger.create({
+          trigger: heroEl ?? document.body,
+          start: "top top",
+          end: "bottom top",
+          scrub: 0.6,
+          onUpdate: (self) => {
+            dockState.progress = self.progress;
+          },
+        });
       }
     });
 
-    const totalDepth = ROOM_SPACING * (ROOM_COUNT - 1);
+    // A short, gentle forward drift — there's no room-to-room journey to
+    // travel any more, just a subtle sense of depth as the page scrolls.
     const startZ = 10;
-    const endZ = -(totalDepth - 6);
+    const endZ = 2;
 
     let raf = 0;
     let isVisible = true;
     let tabVisible = document.visibilityState !== "hidden";
     let contextLost = false;
+    let loopBroken = false;
+    let smoothedProgress = 0;
+    let lastProgress = 0;
     const clock = new THREE.Clock();
 
     const render = () => {
-      if (contextLost || !isVisible || !tabVisible) return;
-      const elapsed = clock.getElapsedTime();
+      if (contextLost || !isVisible || !tabVisible || loopBroken) return;
 
-      scene.traverse((obj) => {
-        if (obj.userData.spinY) obj.rotation.y += obj.userData.spinY as number;
-        if (obj.userData.bob) {
-          const { amp, speed, phase, baseY } = obj.userData.bob as {
-            amp: number;
-            speed: number;
-            phase: number;
-            baseY: number;
-          };
-          obj.position.y = baseY + Math.sin(elapsed * speed + phase) * amp;
+      try {
+        const elapsed = clock.getElapsedTime();
+
+        // How fast the user is actually scrolling right now — drives the
+        // constellation's motion so it feels driven by scroll, not autoplay.
+        smoothedProgress += (scrollState.progress - smoothedProgress) * 0.08;
+        const scrollDelta = Math.abs(scrollState.progress - lastProgress);
+        lastProgress = scrollState.progress;
+
+        scene.traverse((obj) => {
+          if (obj.userData.spinY) {
+            const boost = 1 + scrollDelta * 400;
+            obj.rotation.y += (obj.userData.spinY as number) * boost;
+          }
+          if (obj.userData.bob) {
+            const { amp, speed, phase, baseY } = obj.userData.bob as {
+              amp: number;
+              speed: number;
+              phase: number;
+              baseY: number;
+            };
+            obj.position.y = baseY + Math.sin(elapsed * speed + phase) * amp;
+          }
+        });
+
+        // Dock progress is scoped to the Hero section itself (dockState),
+        // so it completes exactly as the hero scrolls away — independent of
+        // total page length — then holds at 1 for the rest of the page.
+        const dockEased = dockState.progress * dockState.progress * (3 - 2 * dockState.progress); // smoothstep
+
+        // The constellation bursts outward and fades as the logo docks.
+        const burstScale = 1 + dockEased * 2.4;
+        cloud.scale.setScalar(burstScale);
+        cloudMaterial.opacity = cloudBaseOpacity * (1 - dockEased);
+
+        companion.position.lerpVectors(HERO_POS, DOCK_POS, dockEased);
+        const scale = THREE.MathUtils.lerp(HERO_SCALE, DOCK_SCALE, dockEased);
+        companion.scale.setScalar(scale);
+
+        // The 3D logo dissolves in the final stretch of its dock travel
+        // rather than trying to land exactly on the 2D "TBC" nav mark —
+        // that mark is already correctly positioned and always visible, so
+        // this just hands off to it instead of fighting for the same spot.
+        const fadeStart = 0.55;
+        const fadeT = THREE.MathUtils.clamp((dockEased - fadeStart) / (1 - fadeStart), 0, 1);
+        badgeMaterial.opacity = 1 - fadeT;
+
+        if (!skipCameraTravel) {
+          const targetZ = THREE.MathUtils.lerp(startZ, endZ, scrollState.progress);
+          camera.position.z += (targetZ - camera.position.z) * 0.06;
         }
-      });
 
-      if (!skipCameraTravel) {
-        const targetZ = THREE.MathUtils.lerp(startZ, endZ, scrollState.progress);
-        camera.position.z += (targetZ - camera.position.z) * 0.08;
-        camera.position.x = Math.sin(scrollState.progress * Math.PI * 2) * 0.6;
+        renderer.render(scene, camera);
+        raf = requestAnimationFrame(render);
+      } catch (err) {
+        // A single bad frame must never permanently blank the canvas — stop
+        // cleanly instead of leaving a broken half-rendered scene on screen.
+        loopBroken = true;
+        console.error("StoryCorridor render loop stopped:", err);
       }
-      camera.lookAt(0, 0, camera.position.z - 25);
-
-      renderer.render(scene, camera);
-      raf = requestAnimationFrame(render);
     };
 
     const handleResize = () => {
@@ -135,6 +199,7 @@ export default function StoryCorridor() {
     };
     const handleContextRestored = () => {
       contextLost = false;
+      loopBroken = false;
       raf = requestAnimationFrame(render);
     };
     renderer.domElement.addEventListener("webglcontextlost", handleContextLost);
@@ -175,6 +240,7 @@ export default function StoryCorridor() {
       io.disconnect();
       ctx.revert();
       scrollTriggerInstance?.kill();
+      dockTriggerInstance?.kill();
 
       scene.traverse((obj) => {
         const mesh = obj as THREE.Mesh | THREE.Points | THREE.Line;
@@ -184,7 +250,6 @@ export default function StoryCorridor() {
         else if (material) (material as THREE.Material).dispose();
       });
       logoTexture.dispose();
-      galleryTextures.forEach((t) => t.dispose());
       renderer.dispose();
       try {
         container.removeChild(renderer.domElement);
