@@ -215,9 +215,14 @@ export default function StoryCorridor() {
     const shardMaterials = shards.children.map((s) => (s as THREE.LineSegments).material as THREE.LineBasicMaterial);
     const shardBaseOpacities = shardMaterials.map((m) => m.opacity);
     const badgeMaterial = badge.material as THREE.MeshBasicMaterial;
-    const HERO_POS = new THREE.Vector3(isTabletOrSmaller ? 0 : 2.3, 0, -5.2);
+    // On phones and tablets the hero text sits close enough to full-width
+    // that a dead-center logo lands directly on top of the headline,
+    // paragraph, buttons, and stats — reported as "very clustered". Push it
+    // down below that text block and shrink it so it clears the content
+    // instead of fighting it, while staying horizontally centered as asked.
+    const HERO_POS = new THREE.Vector3(isTabletOrSmaller ? 0 : 2.3, isTabletOrSmaller ? -2.2 : 0, -5.2);
     const DOCK_POS = new THREE.Vector3(isMobile ? -1.15 : -2.7, 1.85, -4.2);
-    const HERO_SCALE = isMobile ? 0.85 : 1;
+    const HERO_SCALE = isTabletOrSmaller ? 0.55 : 1;
     const DOCK_SCALE = 0.3;
     companion.position.copy(HERO_POS);
     companion.scale.setScalar(HERO_SCALE);
