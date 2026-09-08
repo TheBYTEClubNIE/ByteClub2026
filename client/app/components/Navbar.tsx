@@ -144,9 +144,9 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
         {`
           :root {
             --linear-ease: linear(0, 0.068, 0.19 2.7%, 0.804 8.1%, 1.037, 1.199 13.2%, 1.245, 1.27 15.8%, 1.274, 1.272 17.4%, 1.249 19.1%, 0.996 28%, 0.949, 0.928 33.3%, 0.926, 0.933 36.8%, 1.001 45.6%, 1.013, 1.019 50.8%, 1.018 54.4%, 1 63.1%, 0.995 68%, 1.001 85%, 1);
-            --color-1: #00d4ff;
-            --color-2: #00f0ff;
-            --color-3: #38bdf8;
+            --color-1: #5fe3c8;
+            --color-2: #8ff0da;
+            --color-3: #7fb8ac;
             --color-4: #ffffff;
           }
           .effect {
@@ -178,7 +178,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             content: "";
             position: absolute;
             inset: 0;
-            background: #ffffff;
+            background: var(--ink, #f3f5f7);
             transform: scale(0);
             opacity: 0;
             z-index: -1;
@@ -279,8 +279,8 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             position: absolute;
             inset: 0;
             border-radius: 9999px;
-            background: linear-gradient(135deg, #ffffff 0%, #e0f2fe 100%);
-            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4), 0 0 8px rgba(255, 255, 255, 0.6);
+            background: linear-gradient(135deg, #ffffff 0%, #e5f9f2 100%);
+            box-shadow: 0 0 20px rgba(95, 227, 200, 0.35), 0 0 8px rgba(255, 255, 255, 0.5);
             opacity: 0;
             transform: scale(0.85);
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -290,7 +290,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
       </style>
       <div className="relative inline-block" ref={containerRef}>
         <nav
-          className="flex relative items-center px-2 py-1.5 sm:px-3 sm:py-2 bg-slate-950/80 backdrop-blur-xl border border-cyan-500/30 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.6),0_0_20px_rgba(0,212,255,0.15)]"
+          className="flex relative items-center px-2 py-1.5 sm:px-3 sm:py-2 bg-black/70 backdrop-blur-xl border border-white/10 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.5)]"
           style={{ transform: 'translate3d(0,0,0.01px)' }}
         >
           <ul
@@ -306,7 +306,7 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
                 <li
                   key={index}
                   className={`rounded-full relative cursor-pointer transition-all duration-300 ease group ${
-                    isActive ? 'active' : 'text-slate-300 hover:text-cyan-300'
+                    isActive ? 'active' : 'text-slate-300 hover:text-[var(--accent)]'
                   }`}
                 >
                   <a
@@ -328,7 +328,10 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
 
                   {/* Floating Tooltip */}
                   <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 pointer-events-none z-50">
-                    <span className="px-2 py-0.5 rounded-md bg-slate-950/95 text-cyan-300 text-[10px] font-mono tracking-wider border border-cyan-400/30 whitespace-nowrap shadow-xl backdrop-blur-md">
+                    <span
+                      className="px-2 py-0.5 rounded-md bg-black/95 text-[10px] tracking-wider border border-white/10 whitespace-nowrap shadow-xl backdrop-blur-md"
+                      style={{ fontFamily: "var(--font-mono)", color: "var(--accent)" }}
+                    >
                       {item.label}
                     </span>
                   </div>

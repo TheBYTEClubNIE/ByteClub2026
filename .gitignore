@@ -12,3 +12,10 @@ node_modules/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local Claude Code / agent tooling (not project source)
+.claude/
+**/.claude/
+**/.agents/
+**/skills-lock.json
+scratch/

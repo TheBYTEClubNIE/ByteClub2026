@@ -6,12 +6,21 @@ interface Blog {
   blog_id: string;
   title: string;
   content: string;
+  category?: BlogCategory;
   created_at: string;
   is_published?: boolean;
 }
 
 type View = "login" | "dashboard";
 type EditorMode = "create" | "edit";
+type BlogCategory = "webdev" | "ml" | "agentic-ai" | "opensource";
+
+const BLOG_CATEGORIES: { value: BlogCategory; label: string }[] = [
+  { value: "webdev", label: "Web Dev" },
+  { value: "ml", label: "ML" },
+  { value: "agentic-ai", label: "Agentic AI" },
+  { value: "opensource", label: "Open Source" },
+];
 
 const API = process.env.NEXT_PUBLIC_SERVER_URI;
 
@@ -281,6 +290,9 @@ function Dashboard({
                     })}
                   </span>
                 </div>
+                <span className="blog-card-category">
+                  {BLOG_CATEGORIES.find((c) => c.value === blog.category)?.label || "Web Dev"}
+                </span>
                 <h3 className="blog-card-title">{blog.title}</h3>
                 <p className="blog-card-preview">
                   {blog.content.replace(/<[^>]*>/g, "").slice(0, 110)}…
@@ -369,6 +381,7 @@ function BlogEditor({
 }) {
   const [title, setTitle] = useState(blog?.title || "");
   const [content, setContent] = useState(blog?.content || "");
+  const [category, setCategory] = useState<BlogCategory>(blog?.category || "webdev");
   const [isPublished, setIsPublished] = useState(blog?.is_published ?? true);
   const [saving, setSaving] = useState(false);
 
@@ -382,12 +395,13 @@ function BlogEditor({
     try {
       const payload =
         mode === "create"
-          ? { action: "create", title, content, is_published: isPublished }
+          ? { action: "create", title, content, category, is_published: isPublished }
           : {
               action: "update",
               blog_id: blog!.blog_id,
               title,
               content,
+              category,
               is_published: isPublished,
             };
       const res = await fetch(`${API}/admin`, {
@@ -447,6 +461,20 @@ function BlogEditor({
               placeholder="Post title…"
               required
             />
+          </div>
+          <div className="field-group">
+            <label className="field-label">BOOK / CATEGORY</label>
+            <select
+              className="cyber-input"
+              value={category}
+              onChange={(e) => setCategory(e.target.value as BlogCategory)}
+            >
+              {BLOG_CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="field-group">
             <label className="field-label">CONTENT DATA</label>
@@ -808,6 +836,15 @@ const css = `
     font-size: 10px; color: rgba(0,212,255,0.4); letter-spacing: 2px;
   }
   .blog-card-date { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--muted); }
+  .blog-card-category {
+    align-self: flex-start;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--cyan);
+    border: 1px solid var(--border);
+    background: rgba(0,212,255,0.08);
+    padding: 3px 9px; border-radius: 999px;
+  }
   .blog-card-title {
     font-family: 'Orbitron', sans-serif;
     font-size: 14px; font-weight: 700; line-height: 1.4;

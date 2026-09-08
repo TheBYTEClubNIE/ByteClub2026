@@ -247,13 +247,13 @@ export default function TeamLeads() {
           onClick={handleJumpToCover}
           className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
             activeLeadIndex === -1
-              ? "bg-blue-600/20 text-blue-200 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] scale-105"
+              ? "bg-[rgba(95,227,200,0.14)] text-[#8ff0da] border-[rgba(95,227,200,0.55)] shadow-[0_0_15px_rgba(95,227,200,0.3)] scale-105"
               : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/30"
           }`}
         >
           <span
             className={`w-1.5 h-1.5 rounded-full transition-colors ${
-              activeLeadIndex === -1 ? "bg-blue-400 animate-pulse" : "bg-white/40"
+              activeLeadIndex === -1 ? "bg-[#5fe3c8] animate-pulse" : "bg-white/40"
             }`}
           />
           <span>Cover</span>
@@ -267,13 +267,13 @@ export default function TeamLeads() {
               onClick={() => handleJumpToLead(idx)}
               className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
                 isActive
-                  ? "bg-blue-600/20 text-blue-200 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] scale-105"
+                  ? "bg-[rgba(95,227,200,0.14)] text-[#8ff0da] border-[rgba(95,227,200,0.55)] shadow-[0_0_15px_rgba(95,227,200,0.3)] scale-105"
                   : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/30"
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  isActive ? "bg-blue-400 animate-pulse" : "bg-white/40"
+                  isActive ? "bg-[#5fe3c8] animate-pulse" : "bg-white/40"
                 }`}
               />
               <span>{lead.name}</span>
@@ -297,7 +297,7 @@ export default function TeamLeads() {
           peekAngle={15}
           spineShift={true}
           showPageNumbers={true}
-          accentColor="#3b82f6"
+          accentColor="#5fe3c8"
           showControls={true}
           onPageChange={handlePageChange}
         />

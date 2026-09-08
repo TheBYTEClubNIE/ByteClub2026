@@ -143,8 +143,13 @@ export default function TeamMembers({ teamId }: { teamId: string }) {
     const label = teamLabels[teamId] ?? "Team";
 
     return (
-        <section className="px-10 py-10">
-            <h3 className="text-2xl font-bold text-white mb-8 text-center">{label}</h3>
+        <section className="px-4 sm:px-10 py-6">
+            <h3
+                style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
+                className="text-2xl font-bold mb-8 text-center"
+            >
+                {label}
+            </h3>
             <div className="flex flex-wrap justify-center gap-8">
                 {members.map((member) => (
                     <MemberCard key={member.id} member={member} />

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link"; 
+import Link from "next/link";
 import React from "react";
 
 interface TechEvent {
@@ -27,103 +27,63 @@ const EVENTS: TechEvent[] = [
 export default function UpcomingEvents() {
   return (
     <>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600&display=swap"
-        rel="stylesheet"
-      />
-
       <style>{`
-        .events-wrapper {
-          padding: 5rem 1.5rem;
-          font-family: 'Sora', sans-serif;
-        }
-
-        .events-title {
-          font-size: 1.75rem;
-          font-weight: 600;
-          color: black;
-          margin-bottom: 2rem;
-        }
-
-        .events-list {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 1.5rem;
-        }
-
+        .events-wrapper { padding: 1rem 0; }
+        .events-list { display: flex; flex-wrap: wrap; gap: 1.25rem; }
         .event-card {
           position: relative;
-          width: 280px;
+          width: 300px;
           border-radius: 18px;
-          padding: 1.4rem;
-          background: rgba(0, 0, 0, 0.65);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255,255,255,0.1);
+          padding: 1.5rem;
+          background: var(--bg-elevated);
+          border: 1px solid var(--line);
           overflow: hidden;
           cursor: pointer;
-          transition: all 0.4s cubic-bezier(0.16,1,0.3,1);
+          transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), border-color 0.35s ease;
         }
-
         .event-card:hover {
-          transform: translateY(-8px) scale(1.03);
-          box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+          transform: translateY(-6px);
+          border-color: var(--accent-border);
         }
-
-        .event-card::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: 18px;
-          background: linear-gradient(120deg, transparent, rgba(255,255,255,0.15), transparent);
-          opacity: 0;
-          transition: opacity 0.4s;
+        .event-tag {
+          display: inline-block;
+          font-family: var(--font-mono);
+          font-size: 10px;
+          letter-spacing: 0.14em;
+          color: var(--accent);
+          border: 1px solid var(--accent-border);
+          background: var(--accent-soft);
+          padding: 3px 10px;
+          border-radius: 999px;
+          margin-bottom: 0.9rem;
         }
-
-        .event-card:hover::before {
-          opacity: 1;
-        }
-
         .event-name {
-          font-size: 1rem;
-          font-weight: 600;
-          color: white;
-          margin-bottom: 0.4rem;
+          font-family: var(--font-display);
+          font-size: 1.15rem;
+          font-weight: 700;
+          color: var(--ink);
+          margin-bottom: 0.5rem;
         }
-
         .event-about {
-          font-size: 0.82rem;
-          color: rgba(255,255,255,0.75);
-          line-height: 1.6;
-          margin-bottom: 1rem;
+          font-family: var(--font-body);
+          font-size: 0.85rem;
+          color: var(--ink-muted);
+          line-height: 1.65;
+          margin-bottom: 1.1rem;
         }
-
-        .event-meta {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-
+        .event-meta { display: flex; flex-wrap: wrap; gap: 1rem; }
         .meta-item {
           display: flex;
           align-items: center;
           gap: 6px;
-          font-size: 0.72rem;
-          color: rgba(255,255,255,0.6);
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          color: var(--ink-faint);
         }
-
-        .meta-dot {
-          width: 4px;
-          height: 4px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.4);
-        }
+        .meta-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
       `}</style>
 
-      <div className="relative events-wrapper -mt-25">
-        {/* TITLE */}
-       
-
-        {/* EVENTS */}
+      <div className="events-wrapper">
         <div className="events-list">
           {EVENTS.map((event) => (
             <Link
@@ -133,6 +93,7 @@ export default function UpcomingEvents() {
               rel="noopener noreferrer"
             >
               <div className="event-card">
+                <span className="event-tag">REGISTRATION OPEN</span>
                 <p className="event-name">{event.name}</p>
                 <p className="event-about">{event.about}</p>
 

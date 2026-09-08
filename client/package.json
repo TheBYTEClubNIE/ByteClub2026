@@ -17,6 +17,7 @@
     "cn": "^0.2.5",
     "framer-motion": "^12.38.0",
     "github-markdown-css": "^5.9.0",
+    "gsap": "^3.15.0",
     "highlight.js": "^11.11.1",
     "lenis": "^1.3.26",
     "lightswind": "^3.2.4",

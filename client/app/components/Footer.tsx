@@ -4,27 +4,35 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="mt-20 border-t border-white/10 bg-black backdrop-blur-xl">
+    <footer
+      className="mt-20 border-t"
+      style={{ borderColor: "var(--line)", background: "var(--bg)" }}
+    >
       <div className="max-w-7xl mx-auto px-6 py-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div>
-            <h2 className="text-xl font-bold text-white">THE BYTE CLUB</h2>
-            <p className="text-white/60 text-sm mt-3 leading-relaxed">
-              Building the future, one byte at a time.
-              A community of developers, creators, and innovators.
+            <h2
+              style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
+              className="text-xl font-bold"
+            >
+              The Byte Club
+            </h2>
+            <p style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="text-sm mt-3 leading-relaxed">
+              NIE&apos;s student-run technical club. Fun-first tech events,
+              real skills, since 2023.
             </p>
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-3">Quick Links</h3>
-            <ul className="space-y-2 text-white/60 text-sm">
+            <h3 style={{ color: "var(--ink)", fontFamily: "var(--font-body)" }} className="font-semibold mb-3">Quick Links</h3>
+            <ul style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="space-y-2 text-sm">
               <li>
                 <Link href="/#home" className="hover:text-white transition cursor-pointer">
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/#events" className="hover:text-white transition cursor-pointer">
+                <Link href="/#info" className="hover:text-white transition cursor-pointer">
                   Events
                 </Link>
               </li>
@@ -47,22 +55,20 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-3">Connect</h3>
-            <div className="flex gap-4">
-              <a href="https://www.instagram.com/thebyteclubnie?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition">🌐</a>
-              <a href="https://www.linkedin.com/company/thebyteclubnie" className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition">💼</a>
-              <a href="https://github.com/The-Byte-Club" className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition">🐙</a>
-              <a href="https://www.facebook.com/thebyteclubnie" className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition">📸</a>
+            <h3 style={{ color: "var(--ink)", fontFamily: "var(--font-body)" }} className="font-semibold mb-3">Connect</h3>
+            <div className="flex gap-3">
+              <a href="https://www.instagram.com/thebyteclubnie?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" className="p-2 rounded-full transition" style={{ background: "var(--bg-elevated)", border: "1px solid var(--line)" }}>🌐</a>
+              <a href="https://www.linkedin.com/company/thebyteclubnie" className="p-2 rounded-full transition" style={{ background: "var(--bg-elevated)", border: "1px solid var(--line)" }}>💼</a>
+              <a href="https://github.com/The-Byte-Club" className="p-2 rounded-full transition" style={{ background: "var(--bg-elevated)", border: "1px solid var(--line)" }}>🐙</a>
+              <a href="https://www.facebook.com/thebyteclubnie" className="p-2 rounded-full transition" style={{ background: "var(--bg-elevated)", border: "1px solid var(--line)" }}>📸</a>
             </div>
           </div>
         </div>
 
-        <div className="my-8 h-px bg-white/10" />
+        <div className="my-8 h-px" style={{ background: "var(--line)" }} />
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-white/50">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm" style={{ color: "var(--ink-faint)", fontFamily: "var(--font-mono)" }}>
           <p>© {new Date().getFullYear()} The Byte Club. All rights reserved.</p>
-
-         
         </div>
       </div>
     </footer>

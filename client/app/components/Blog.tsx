@@ -39,21 +39,21 @@ function BlogCard({ blog, onClick }: { blog: Blog; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
-      className="group relative overflow-hidden rounded-3xl border border-cyan-400/10 bg-[#020812]/80 backdrop-blur-xl p-7 md:p-9 cursor-pointer transition-all duration-300"
+      className="group relative overflow-hidden rounded-3xl border border-teal-400/10 bg-[#020812]/80 backdrop-blur-xl p-7 md:p-9 cursor-pointer transition-all duration-300"
       style={{
-        boxShadow: "0 0 20px rgba(0,212,255,0.04)",
+        boxShadow: "0 0 20px rgba(95,227,200,0.04)",
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.boxShadow =
-          "0 0 40px rgba(0,212,255,0.12), inset 0 0 20px rgba(0,212,255,0.04)";
+          "0 0 40px rgba(95,227,200,0.12), inset 0 0 20px rgba(95,227,200,0.04)";
         (e.currentTarget as HTMLDivElement).style.borderColor =
-          "rgba(0,212,255,0.25)";
+          "rgba(95,227,200,0.25)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.boxShadow =
-          "0 0 20px rgba(0,212,255,0.04)";
+          "0 0 20px rgba(95,227,200,0.04)";
         (e.currentTarget as HTMLDivElement).style.borderColor =
-          "rgba(0,212,255,0.1)";
+          "rgba(95,227,200,0.1)";
       }}
     >
       {/* Top accent line */}
@@ -61,7 +61,7 @@ function BlogCard({ blog, onClick }: { blog: Blog; onClick: () => void }) {
         className="absolute top-0 left-10 right-10 h-[1px] transition-opacity duration-300 opacity-40 group-hover:opacity-100"
         style={{
           background:
-            "linear-gradient(90deg, transparent, rgba(0,212,255,0.5), rgba(0,255,200,0.4), transparent)",
+            "linear-gradient(90deg, transparent, rgba(95,227,200,0.5), rgba(143,240,218,0.4), transparent)",
         }}
       />
 
@@ -70,29 +70,29 @@ function BlogCard({ blog, onClick }: { blog: Blog; onClick: () => void }) {
         className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
           background:
-            "linear-gradient(135deg, rgba(0,212,255,0.04), transparent 60%)",
+            "linear-gradient(135deg, rgba(95,227,200,0.04), transparent 60%)",
         }}
       />
 
       {/* Meta row */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <span
-          className="text-cyan-300 text-xs"
-          style={{ fontFamily: "'Share Tech Mono', monospace" }}
+          className="text-teal-300 text-xs"
+          style={{ fontFamily: "var(--font-mono)" }}
         >
           {blog.full_name}
         </span>
-        <span className="text-cyan-500">•</span>
+        <span className="text-teal-500">•</span>
         <span
-          className="text-cyan-200/60 text-xs"
-          style={{ fontFamily: "'Share Tech Mono', monospace" }}
+          className="text-teal-200/60 text-xs"
+          style={{ fontFamily: "var(--font-mono)" }}
         >
           {new Date(blog.created_at).toDateString()}
         </span>
-        <span className="text-cyan-500">•</span>
+        <span className="text-teal-500">•</span>
         <span
-          className="text-cyan-200/50 text-xs"
-          style={{ fontFamily: "'Share Tech Mono', monospace" }}
+          className="text-teal-200/50 text-xs"
+          style={{ fontFamily: "var(--font-mono)" }}
         >
           {readTime} min read
         </span>
@@ -100,9 +100,9 @@ function BlogCard({ blog, onClick }: { blog: Blog; onClick: () => void }) {
 
       {/* Title */}
       <h2
-        className="text-2xl md:text-3xl text-white mb-4 leading-tight transition-colors duration-200 group-hover:text-cyan-100"
+        className="text-2xl md:text-3xl text-white mb-4 leading-tight transition-colors duration-200 group-hover:text-teal-100"
         style={{
-          fontFamily: "'Orbitron', sans-serif",
+          fontFamily: "var(--font-display)",
           textShadow: "0 0 12px rgba(255,255,255,0.1)",
         }}
       >
@@ -114,7 +114,7 @@ function BlogCard({ blog, onClick }: { blog: Blog; onClick: () => void }) {
         className="text-sm leading-relaxed mb-6"
         style={{
           color: "rgba(180,220,230,0.65)",
-          fontFamily: "'Share Tech Mono', monospace",
+          fontFamily: "var(--font-mono)",
         }}
       >
         {excerpt}
@@ -123,13 +123,13 @@ function BlogCard({ blog, onClick }: { blog: Blog; onClick: () => void }) {
       {/* Read more */}
       <div className="flex items-center gap-2">
         <span
-          className="text-xs text-cyan-400 group-hover:text-cyan-300 transition-colors"
-          style={{ fontFamily: "'Share Tech Mono', monospace" }}
+          className="text-xs text-teal-400 group-hover:text-teal-300 transition-colors"
+          style={{ fontFamily: "var(--font-mono)" }}
         >
           READ FULL ARTICLE
         </span>
         <svg
-          className="w-4 h-4 text-cyan-400 group-hover:translate-x-1 transition-transform duration-200"
+          className="w-4 h-4 text-teal-400 group-hover:translate-x-1 transition-transform duration-200"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -149,10 +149,10 @@ function BlogDetail({ blog, onBack }: { blog: Blog; onBack: () => void }) {
       <button
         onClick={onBack}
         className="flex items-center gap-2 mb-8 group"
-        style={{ fontFamily: "'Share Tech Mono', monospace" }}
+        style={{ fontFamily: "var(--font-mono)" }}
       >
         <svg
-          className="w-4 h-4 text-cyan-400 group-hover:-translate-x-1 transition-transform duration-200"
+          className="w-4 h-4 text-teal-400 group-hover:-translate-x-1 transition-transform duration-200"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -160,17 +160,17 @@ function BlogDetail({ blog, onBack }: { blog: Blog; onBack: () => void }) {
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
         </svg>
-        <span className="text-xs text-cyan-400 group-hover:text-cyan-300 transition-colors">
+        <span className="text-xs text-teal-400 group-hover:text-teal-300 transition-colors">
           BACK TO BLOGS
         </span>
       </button>
 
       {/* Article card */}
       <div
-        className="relative overflow-hidden rounded-[28px] border border-cyan-400/15 bg-[#020812]/90 backdrop-blur-xl p-8 md:p-12"
+        className="relative overflow-hidden rounded-[28px] border border-teal-400/15 bg-[#020812]/90 backdrop-blur-xl p-8 md:p-12"
         style={{
           boxShadow:
-            "0 0 60px rgba(0,212,255,0.08), inset 0 0 30px rgba(0,212,255,0.03)",
+            "0 0 60px rgba(95,227,200,0.08), inset 0 0 30px rgba(95,227,200,0.03)",
         }}
       >
         {/* Top accent line */}
@@ -178,7 +178,7 @@ function BlogDetail({ blog, onBack }: { blog: Blog; onBack: () => void }) {
           className="absolute top-0 left-10 right-10 h-[1px]"
           style={{
             background:
-              "linear-gradient(90deg, transparent, rgba(0,212,255,0.5), rgba(0,255,200,0.4), transparent)",
+              "linear-gradient(90deg, transparent, rgba(95,227,200,0.5), rgba(143,240,218,0.4), transparent)",
           }}
         />
 
@@ -187,22 +187,22 @@ function BlogDetail({ blog, onBack }: { blog: Blog; onBack: () => void }) {
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(135deg, rgba(0,212,255,0.05), transparent 50%)",
+              "linear-gradient(135deg, rgba(95,227,200,0.05), transparent 50%)",
           }}
         />
 
         {/* Meta */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <span
-            className="text-cyan-300 text-xs"
-            style={{ fontFamily: "'Share Tech Mono', monospace" }}
+            className="text-teal-300 text-xs"
+            style={{ fontFamily: "var(--font-mono)" }}
           >
             {blog.full_name}
           </span>
-          <span className="text-cyan-500">•</span>
+          <span className="text-teal-500">•</span>
           <span
-            className="text-cyan-200/60 text-xs"
-            style={{ fontFamily: "'Share Tech Mono', monospace" }}
+            className="text-teal-200/60 text-xs"
+            style={{ fontFamily: "var(--font-mono)" }}
           >
             {new Date(blog.created_at).toDateString()}
           </span>
@@ -212,9 +212,9 @@ function BlogDetail({ blog, onBack }: { blog: Blog; onBack: () => void }) {
         <h1
           className="text-4xl md:text-6xl text-white mb-10 leading-tight"
           style={{
-            fontFamily: "'Orbitron', sans-serif",
+            fontFamily: "var(--font-display)",
             textShadow:
-              "0 0 16px rgba(255,255,255,0.18), 0 0 40px rgba(0,212,255,0.15)",
+              "0 0 16px rgba(255,255,255,0.18), 0 0 40px rgba(95,227,200,0.15)",
           }}
         >
           {blog.title}
@@ -225,7 +225,7 @@ function BlogDetail({ blog, onBack }: { blog: Blog; onBack: () => void }) {
           className="w-full h-[1px] mb-10"
           style={{
             background:
-              "linear-gradient(90deg, rgba(0,212,255,0.3), rgba(0,255,200,0.2), transparent)",
+              "linear-gradient(90deg, rgba(95,227,200,0.3), rgba(143,240,218,0.2), transparent)",
           }}
         />
 
@@ -273,58 +273,56 @@ export default function BlogsPage() {
           {/* ── HEADER ── */}
           <div className="max-w-6xl mx-auto mb-16">
             <div
-              className="relative overflow-hidden rounded-[28px] border border-cyan-400/20 bg-[#020812]/90 backdrop-blur-xl p-8 md:p-10"
+              className="relative overflow-hidden rounded-[28px] border border-teal-400/20 bg-[#020812]/90 backdrop-blur-xl p-8 md:p-10"
               style={{
                 boxShadow:
-                  "0 0 40px rgba(0,212,255,0.08), inset 0 0 20px rgba(0,212,255,0.04)",
+                  "0 0 40px rgba(95,227,200,0.08), inset 0 0 20px rgba(95,227,200,0.04)",
               }}
             >
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
                   background:
-                    "linear-gradient(135deg, rgba(0,212,255,0.05), transparent 50%)",
+                    "linear-gradient(135deg, rgba(95,227,200,0.05), transparent 50%)",
                 }}
               />
               <div
                 className="absolute top-0 left-10 right-10 h-[1px]"
                 style={{
                   background:
-                    "linear-gradient(90deg, transparent, rgba(0,212,255,0.4), rgba(0,255,200,0.4), transparent)",
+                    "linear-gradient(90deg, transparent, rgba(95,227,200,0.4), rgba(143,240,218,0.4), transparent)",
                 }}
               />
               <p
                 className="mb-3"
                 style={{
-                  fontFamily: "'Share Tech Mono', monospace",
+                  fontFamily: "var(--font-mono)",
                   fontSize: "11px",
-                  color: "rgba(0,212,255,0.65)",
+                  color: "var(--accent)",
                   letterSpacing: "0.18em",
                 }}
               >
-                BYTE.BLOGS
+                FROM THE CLUB
               </p>
               <h1
-                className="text-5xl md:text-7xl font-black text-white leading-none mb-6"
+                className="text-5xl md:text-7xl font-black leading-none mb-6"
                 style={{
-                  fontFamily: "'Orbitron', sans-serif",
-                  textShadow:
-                    "0 0 16px rgba(255,255,255,0.22), 0 0 40px rgba(0,212,255,0.18)",
+                  fontFamily: "var(--font-display)",
+                  color: "var(--ink)",
                 }}
               >
-                BYTE ARTICLES
+                Byte Blog
               </h1>
               <p
                 className="max-w-2xl leading-relaxed"
-                style={{ color: "rgba(180,220,230,0.7)", fontSize: "15px" }}
+                style={{ color: "var(--ink-muted)", fontSize: "15px" }}
               >
-                Read technical blogs, tutorials, cybersecurity insights,
-                hackathon experiences, and innovation stories from The Byte Club
-                community.
+                Write-ups, tutorials, and behind-the-scenes notes from our
+                events and projects — written by the members who built them.
               </p>
               <div
                 className="absolute -bottom-6 left-20 right-20 h-10 rounded-full blur-3xl"
-                style={{ background: "rgba(0,212,255,0.08)" }}
+                style={{ background: "rgba(95,227,200,0.08)" }}
               />
             </div>
           </div>
@@ -333,15 +331,15 @@ export default function BlogsPage() {
           <div className="max-w-6xl mx-auto space-y-6">
             {loading ? (
               <div
-                className="text-center text-cyan-300 py-20"
-                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                className="text-center text-teal-300 py-20"
+                style={{ fontFamily: "var(--font-mono)" }}
               >
                 Loading blogs...
               </div>
             ) : blogs.length === 0 ? (
               <div
-                className="text-center text-cyan-300/70 py-20"
-                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                className="text-center text-teal-300/70 py-20"
+                style={{ fontFamily: "var(--font-mono)" }}
               >
                 No blogs available.
               </div>

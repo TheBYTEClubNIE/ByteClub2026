@@ -1,20 +1,20 @@
 import "./globals.css";
 
 
-import ModernImage from "./components/LogoComponent";
-import FlashCard from "./components/FlashCard";
+import Hero from "./components/Hero";
 import UpcomingEvents from "./components/UpcomingEvents";
 import PastEvents from "./components/PastEvents";
 import TeamLeads from "./components/TeamLeads";
 import CoreTeams from "./components/CoreTeams";
 import Footer from "./components/Footer";
-import DesktopNotice from "./components/Header";
 import ContactForm from "./components/ContactForm";
 import NewCard from "./components/About";
-import AnimatedBackground from "./components/AnimatedBackground";
-import BlogsPage from "./components/Blog";
+import StoryCorridor from "./components/StoryCorridor";
+import ChapterMarker from "./components/ChapterMarker";
+import BlogTeaser from "./components/BlogTeaser";
 import Countdown from "./components/CountDowntimer";
 import GooeyNav from "./components/Navbar";
+import ScrollRing from "./components/ScrollRing";
 import SplitFlapText from "@/components/SplitFlapText";
 import {
   Home as HomeIcon,
@@ -26,60 +26,89 @@ import {
   Info,
 } from "lucide-react";
 
+const SECTION_LABEL_PROPS = {
+  flipDuration: 0.1,
+  stagger: 0.04,
+  cycleDelay: 3200,
+  charset: "alphanumeric" as const,
+  flipsPerChar: 6,
+  tileColor: "#101317",
+  textColor: "#5fe3c8",
+  tileRadius: "clamp(4px, 0.6vw, 7px)",
+  gap: "clamp(2px, 0.4vw, 5px)",
+  loop: true,
+};
+
 const navItems = [
   { label: "Home", href: "#home", icon: <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  { label: "Story", href: "#idea", icon: <Info className="w-4 h-4 sm:w-5 sm:h-5" /> },
   { label: "Events", href: "#info", icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" /> },
   { label: "Leads", href: "#cores", icon: <Users className="w-4 h-4 sm:w-5 sm:h-5" /> },
   { label: "Past Events", href: "#pastevents", icon: <History className="w-4 h-4 sm:w-5 sm:h-5" /> },
   { label: "Blogs", href: "#blogs", icon: <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" /> },
   { label: "Contact", href: "#write", icon: <Mail className="w-4 h-4 sm:w-5 sm:h-5" /> },
-  { label: "About", href: "#idea", icon: <Info className="w-4 h-4 sm:w-5 sm:h-5" /> },
 ];
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen overflow-x-hidden text-white">
-      <AnimatedBackground />
+    <div className="relative min-h-screen overflow-x-hidden" style={{ color: "var(--ink)" }}>
+      <StoryCorridor />
 
       {/* Floating Navbar */}
-      <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-center px-4 pointer-events-none">
-        <div className="pointer-events-auto">
-          <GooeyNav
-            items={navItems}
-            particleCount={15}
-            particleDistances={[90, 10]}
-            particleR={100}
-            initialActiveIndex={0}
-            animationTime={600}
-            timeVariance={300}
-            colors={[1, 2, 3, 1, 2, 3, 1, 4]}
-          />
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none pt-5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="pointer-events-auto">
+            <ScrollRing />
+          </div>
+          <div className="pointer-events-auto flex-1 flex justify-center">
+            <GooeyNav
+              items={navItems}
+              particleCount={15}
+              particleDistances={[90, 10]}
+              particleR={100}
+              initialActiveIndex={0}
+              animationTime={600}
+              timeVariance={300}
+              colors={[1, 2, 3, 1, 2, 3, 1, 4]}
+            />
+          </div>
+          <a
+            href="#write"
+            className="pointer-events-auto hidden sm:inline-flex items-center rounded-full px-5 py-2.5 text-xs font-semibold shrink-0"
+            style={{ background: "var(--ink)", color: "var(--bg)", fontFamily: "var(--font-body)" }}
+          >
+            Join
+          </a>
         </div>
       </div>
-      
+
 
       {/* Main Container */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12">
 
         {/* ───────────────── HOME ───────────────── */}
-        <main
-          id="home"
-          className="relative flex items-center justify-center min-h-screen py-16 sm:py-20"
+        <Hero />
+
+        <ChapterMarker index="01" title="Why We Exist" />
+
+        {/* ───────────────── STORY ───────────────── */}
+        <section
+          id="idea"
+          className="w-full py-12 sm:py-16 md:py-20 flex flex-col items-center"
         >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-8 sm:gap-10 w-full">
-
-            {/* Logo */}
-            <div className="flex items-center justify-center w-full md:w-1/3">
-              <ModernImage />
-            </div>
-
-            {/* Hero Card */}
-            <div className="flex items-center justify-center w-full md:w-2/3">
-              <FlashCard />
-            </div>
-
+          <div className="mb-10 sm:mb-14">
+            <SplitFlapText
+              words={["WHO WE ARE", "OUR STORY", "WHY BYTE CLUB"]}
+              {...SECTION_LABEL_PROPS}
+              fontSize="clamp(20px, 3.4vw, 36px)"
+              padTo={13}
+            />
           </div>
-        </main>
+
+          <NewCard />
+        </section>
+
+        <ChapterMarker index="02" title="What We Do" />
 
         {/* ───────────────── EVENTS SECTION ───────────────── */}
         <section
@@ -92,18 +121,9 @@ export default function Home() {
 
             <div className="mb-8 sm:mb-12">
               <SplitFlapText
-                words={["UPCOMING EVENTS", "TECH WORKSHOPS", "HACKATHONS LIVE"]}
-                flipDuration={0.1}
-                stagger={0.04}
-                cycleDelay={2800}
-                charset="alphanumeric"
-                flipsPerChar={6}
-                tileColor="#071026"
-                textColor="#38bdf8"
-                tileRadius="clamp(4px, 0.8vw, 8px)"
-                gap="clamp(3px, 0.5vw, 6px)"
-                fontSize="clamp(22px, 3.8vw, 42px)"
-                loop
+                words={["UPCOMING EVENTS", "LEARN BY DOING", "SHOW UP + BUILD"]}
+                {...SECTION_LABEL_PROPS}
+                fontSize="clamp(20px, 3.4vw, 36px)"
                 padTo={15}
               />
             </div>
@@ -116,18 +136,9 @@ export default function Home() {
 
             <div className="mb-8 sm:mb-10 text-center lg:text-right w-full">
               <SplitFlapText
-                words={["COUNTDOWN TIMER", "EVENT TICKING", "TIME REMAINING"]}
-                flipDuration={0.1}
-                stagger={0.04}
-                cycleDelay={2800}
-                charset="alphanumeric"
-                flipsPerChar={6}
-                tileColor="#071026"
-                textColor="#38bdf8"
-                tileRadius="clamp(4px, 0.8vw, 8px)"
-                gap="clamp(3px, 0.5vw, 6px)"
-                fontSize="clamp(20px, 3.2vw, 36px)"
-                loop
+                words={["NEXT SESSION", "CLOCK'S TICKING", "BE THERE"]}
+                {...SECTION_LABEL_PROPS}
+                fontSize="clamp(18px, 2.8vw, 30px)"
                 padTo={15}
               />
             </div>
@@ -137,23 +148,16 @@ export default function Home() {
 
         </section>
 
+        <ChapterMarker index="03" title="Who's Behind It" />
+
         {/* ───────────────── OUR LEADS ───────────────── */}
         <section id="cores" className="w-full py-12 sm:py-16 md:py-20">
 
           <div className="flex justify-center mb-10 sm:mb-14">
             <SplitFlapText
-              words={["OUR LEADS", "LEADERSHIP 2026", "DOMAINS IN CHARGE"]}
-              flipDuration={0.1}
-              stagger={0.04}
-              cycleDelay={2800}
-              charset="alphanumeric"
-              flipsPerChar={6}
-              tileColor="#071026"
-              textColor="#38bdf8"
-              tileRadius="clamp(4px, 0.8vw, 8px)"
-              gap="clamp(3px, 0.5vw, 6px)"
-              fontSize="clamp(22px, 3.8vw, 42px)"
-              loop
+              words={["THE LEADS", "WHO RUNS THIS", "MEET THE TEAM"]}
+              {...SECTION_LABEL_PROPS}
+              fontSize="clamp(20px, 3.4vw, 36px)"
               padTo={18}
             />
           </div>
@@ -166,24 +170,17 @@ export default function Home() {
 
           <div className="flex justify-center mb-10 sm:mb-14">
             <SplitFlapText
-              words={["CORE TEAMS", "COMMUNITY SQUAD", "BYTE BUILDERS"]}
-              flipDuration={0.1}
-              stagger={0.04}
-              cycleDelay={2800}
-              charset="alphanumeric"
-              flipsPerChar={6}
-              tileColor="#071026"
-              textColor="#38bdf8"
-              tileRadius="clamp(4px, 0.8vw, 8px)"
-              gap="clamp(3px, 0.5vw, 6px)"
-              fontSize="clamp(22px, 3.8vw, 42px)"
-              loop
-              padTo={15}
+              words={["CORE TEAMS", "TECH · OPS · CREATIVE", "THE PEOPLE BEHIND IT"]}
+              {...SECTION_LABEL_PROPS}
+              fontSize="clamp(20px, 3.4vw, 36px)"
+              padTo={21}
             />
           </div>
 
           <CoreTeams />
         </section>
+
+        <ChapterMarker index="04" title="Where We've Been" />
 
         {/* ───────────────── PAST EVENTS ───────────────── */}
         <section id="pastevents" className="w-full py-12 sm:py-16 md:py-20">
@@ -195,24 +192,21 @@ export default function Home() {
 
           <div className="flex justify-center mb-10 sm:mb-14">
             <SplitFlapText
-              words={["BYTE BLOGS", "TECH ARTICLES", "LATEST STORIES"]}
-              flipDuration={0.1}
-              stagger={0.04}
-              cycleDelay={2800}
-              charset="alphanumeric"
-              flipsPerChar={6}
-              tileColor="#071026"
-              textColor="#38bdf8"
-              tileRadius="clamp(4px, 0.8vw, 8px)"
-              gap="clamp(3px, 0.5vw, 6px)"
-              fontSize="clamp(22px, 3.8vw, 42px)"
-              loop
-              padTo={14}
+              words={["FROM THE CLUB", "BYTE BLOG", "WHAT WE'RE WRITING"]}
+              {...SECTION_LABEL_PROPS}
+              fontSize="clamp(20px, 3.4vw, 36px)"
+              padTo={18}
             />
           </div>
 
-          <BlogsPage />
+          <BlogTeaser />
         </section>
+
+        <ChapterMarker
+          index="05"
+          title="Join The Loop"
+          quote="You don't need to already know how to code. You just need to show up."
+        />
 
         {/* ───────────────── CONTACT ───────────────── */}
         <section
@@ -222,50 +216,14 @@ export default function Home() {
 
           <div className="mb-10 sm:mb-14">
             <SplitFlapText
-              words={["CONTACT US", "GET IN TOUCH", "JOIN BYTE CLUB"]}
-              flipDuration={0.1}
-              stagger={0.04}
-              cycleDelay={2800}
-              charset="alphanumeric"
-              flipsPerChar={6}
-              tileColor="#071026"
-              textColor="#38bdf8"
-              tileRadius="clamp(4px, 0.8vw, 8px)"
-              gap="clamp(3px, 0.5vw, 6px)"
-              fontSize="clamp(22px, 3.8vw, 42px)"
-              loop
+              words={["SAY HELLO", "GET IN TOUCH", "JOIN THE CLUB"]}
+              {...SECTION_LABEL_PROPS}
+              fontSize="clamp(20px, 3.4vw, 36px)"
               padTo={14}
             />
           </div>
 
           <ContactForm />
-        </section>
-
-        {/* ───────────────── OUR VIEW ───────────────── */}
-        <section
-          id="idea"
-          className="w-full py-12 sm:py-16 md:py-20 flex flex-col items-center"
-        >
-
-          <div className="mb-10 sm:mb-14">
-            <SplitFlapText
-              words={["OUR VIEW", "BYTE MISSION", "FUTURE VISION"]}
-              flipDuration={0.1}
-              stagger={0.04}
-              cycleDelay={2800}
-              charset="alphanumeric"
-              flipsPerChar={6}
-              tileColor="#071026"
-              textColor="#38bdf8"
-              tileRadius="clamp(4px, 0.8vw, 8px)"
-              gap="clamp(3px, 0.5vw, 6px)"
-              fontSize="clamp(22px, 3.8vw, 42px)"
-              loop
-              padTo={13}
-            />
-          </div>
-
-          <NewCard />
         </section>
 
       </div>

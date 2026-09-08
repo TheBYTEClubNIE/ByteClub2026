@@ -27,6 +27,29 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* ============ Byte Club — Minimal Deep-Tech tokens ============ */
+:root {
+  --bg: #0a0b0d;
+  --bg-elevated: #101317;
+  --bg-elevated-2: #14181c;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --ink: #f3f5f7;
+  --ink-muted: #9aa2ab;
+  --ink-faint: #5b6167;
+  --accent: #5fe3c8;
+  --accent-strong: #8ff0da;
+  --accent-soft: rgba(95, 227, 200, 0.12);
+  --accent-border: rgba(95, 227, 200, 0.35);
+  --font-display: var(--font-display), "Bricolage Grotesque", sans-serif;
+  --font-body: var(--font-body), "IBM Plex Sans", sans-serif;
+  --font-mono: var(--font-mono), "IBM Plex Mono", monospace;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
 /* Preserve your theme */
 .markdown-body {
   background: transparent !important;

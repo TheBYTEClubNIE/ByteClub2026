@@ -56,6 +56,8 @@ app.post("/send", async (req, res) => {
 
 
 
+const BLOG_CATEGORIES = ["webdev", "ml", "agentic-ai", "opensource"];
+
 app.get("/blog", async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -64,6 +66,7 @@ app.get("/blog", async (req, res) => {
         blog_id,
         title,
         content,
+        category,
         created_at,
         author_id
       `)
@@ -76,6 +79,7 @@ app.get("/blog", async (req, res) => {
       blog_id: blog.blog_id,
       title: blog.title,
       content: blog.content,
+      category: blog.category || "webdev",
       created_at: blog.created_at,
       full_name: "Byte Club",
     }));
@@ -106,18 +110,22 @@ app.post("/login", (req, res) => {
 
 
 app.post("/admin", async (req, res) => {
-  const { action, blog_id, title, content, is_published, author_id } = req.body;
+  const { action, blog_id, title, content, category, is_published, author_id } = req.body;
 
   try {
     if (action === "create") {
       if (!title || !content) {
         return res.status(400).json({ error: "Title and content are required" });
       }
+      if (category && !BLOG_CATEGORIES.includes(category)) {
+        return res.status(400).json({ error: `category must be one of ${BLOG_CATEGORIES.join(", ")}` });
+      }
       const { data, error } = await supabase
         .from("blogs")
         .insert([{
           title,
           content,
+          category: category || "webdev",
           is_published: is_published !== undefined ? is_published : false,
           author_id: author_id || null,
         }])
@@ -127,9 +135,13 @@ app.post("/admin", async (req, res) => {
 
     } else if (action === "update") {
       if (!blog_id) return res.status(400).json({ error: "blog_id is required for update" });
+      if (category && !BLOG_CATEGORIES.includes(category)) {
+        return res.status(400).json({ error: `category must be one of ${BLOG_CATEGORIES.join(", ")}` });
+      }
       const updates = {};
       if (title !== undefined) updates.title = title;
       if (content !== undefined) updates.content = content;
+      if (category !== undefined) updates.category = category;
       if (is_published !== undefined) updates.is_published = is_published;
 
       const { data, error } = await supabase

@@ -22,10 +22,10 @@ function Field({ label, children }: FieldProps) {
       <label
         style={{
           display: "block",
-          fontFamily: "'Share Tech Mono', monospace",
+          fontFamily: "var(--font-mono)",
           fontSize: "10px",
-          color: "#00d4ff",
-          letterSpacing: "0.15em",
+          color: "var(--ink-faint)",
+          letterSpacing: "0.14em",
           marginBottom: "8px",
         }}
       >
@@ -67,319 +67,99 @@ export default function ContactForm() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Share+Tech+Mono&family=DM+Sans:wght@400;500&display=swap');
-
-        @keyframes fadeUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        @keyframes pulseGlow {
-          0%,100% {
-            box-shadow:
-              0 0 30px rgba(0,212,255,0.15),
-              0 0 60px rgba(0,212,255,0.08);
-          }
-          50% {
-            box-shadow:
-              0 0 50px rgba(0,212,255,0.25),
-              0 0 100px rgba(0,212,255,0.15);
-          }
-        }
-
-        @keyframes scanline {
-          0% {
-            transform: translateY(-100%);
-          }
-          100% {
-            transform: translateY(500px);
-          }
-        }
-
+        @keyframes fadeUp { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
         .contact-card {
           position: relative;
-          overflow: hidden;
-          background: rgba(2,8,18,0.94);
-          border: 1px solid rgba(0,212,255,0.25);
-          border-radius: 26px;
-          padding: 2.5rem;
+          background: var(--bg-elevated);
+          border: 1px solid var(--line);
+          border-radius: 24px;
+          padding: 2.25rem;
           width: 100%;
-          max-width: 700px;
-          animation:
-            fadeUp 0.9s cubic-bezier(0.16,1,0.3,1),
-            pulseGlow 4s ease-in-out infinite;
-          backdrop-filter: blur(16px);
+          max-width: 640px;
+          animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
         }
-
-        .contact-card::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background:
-            linear-gradient(
-              135deg,
-              rgba(0,212,255,0.06) 0%,
-              transparent 50%,
-              rgba(26,255,228,0.04) 100%
-            );
-          pointer-events: none;
-        }
-
-        .contact-card::after {
-          content: '';
-          position: absolute;
-          top: -100%;
-          left: 0;
-          right: 0;
-          height: 35%;
-          background: linear-gradient(
-            transparent,
-            rgba(0,212,255,0.04),
-            transparent
-          );
-          animation: scanline 4s linear infinite;
-          pointer-events: none;
-        }
-
-        .corner {
-          position: absolute;
-          width: 14px;
-          height: 14px;
-          z-index: 10;
-        }
-
-        .corner-tl {
-          top: 10px;
-          left: 10px;
-          border-top: 2px solid #00d4ff;
-          border-left: 2px solid #00d4ff;
-        }
-
-        .corner-tr {
-          top: 10px;
-          right: 10px;
-          border-top: 2px solid #00d4ff;
-          border-right: 2px solid #00d4ff;
-        }
-
-        .corner-bl {
-          bottom: 10px;
-          left: 10px;
-          border-bottom: 2px solid #00d4ff;
-          border-left: 2px solid #00d4ff;
-        }
-
-        .corner-br {
-          bottom: 10px;
-          right: 10px;
-          border-bottom: 2px solid #00d4ff;
-          border-right: 2px solid #00d4ff;
-        }
-
-        .neon-title {
-          color: #00d4ff;
-          text-shadow:
-            0 0 12px rgba(0,212,255,0.8),
-            0 0 35px rgba(0,212,255,0.4);
-        }
-
-        .cyan-line {
-          height: 1px;
-          width: 100%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(0,212,255,0.5),
-            rgba(26,255,228,0.5),
-            transparent
-          );
-        }
-
-        .cyber-input {
+        .contact-line { height: 1px; width: 100%; background: var(--line); }
+        .contact-input {
           width: 100%;
           background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(0,212,255,0.25);
+          border: 1px solid var(--line);
           border-radius: 12px;
-          padding: 14px 16px;
-          color: white;
-          font-family: 'DM Sans', sans-serif;
+          padding: 13px 16px;
+          color: var(--ink);
+          font-family: var(--font-body);
           font-size: 14px;
           outline: none;
-          transition: all 0.25s ease;
+          transition: border-color 0.2s ease;
           box-sizing: border-box;
         }
-
-        .cyber-input:focus {
-          border-color: rgba(0,212,255,0.8);
-          box-shadow: 0 0 20px rgba(0,212,255,0.18);
-        }
-
-        .cyber-input::placeholder {
-          color: rgba(255,255,255,0.35);
-        }
-
-        .cyber-btn {
-          height: 52px;
+        .contact-input:focus { border-color: var(--accent-border); }
+        .contact-input::placeholder { color: var(--ink-faint); }
+        .contact-btn {
+          height: 50px;
           border: none;
           border-radius: 12px;
-          background: linear-gradient(
-            135deg,
-            #00d4ff,
-            #1affe4
-          );
-          color: black;
-          font-family: 'Orbitron', sans-serif;
-          font-size: 13px;
-          font-weight: 800;
-          letter-spacing: 0.12em;
+          background: var(--ink);
+          color: var(--bg);
+          font-family: var(--font-body);
+          font-size: 13.5px;
+          font-weight: 600;
           cursor: pointer;
-          transition: all 0.25s ease;
+          transition: transform 0.2s ease, opacity 0.2s ease;
         }
-
-        .cyber-btn:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 0 25px rgba(0,212,255,0.35);
-        }
-
-        .toast {
-          padding: 14px 16px;
-          border-radius: 12px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 14px;
-        }
+        .contact-btn:hover { transform: translateY(-2px); }
+        .toast { padding: 13px 16px; border-radius: 12px; font-family: var(--font-body); font-size: 13.5px; }
       `}</style>
 
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem 1rem",
-          fontFamily: "'DM Sans', sans-serif",
-        }}
-      >
+      <div className="w-full flex items-center justify-center py-4">
         <div className="contact-card">
-          <div className="corner corner-tl" />
-          <div className="corner corner-tr" />
-          <div className="corner corner-bl" />
-          <div className="corner corner-br" />
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "1.2rem",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
-              <span
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  background: "#00d4ff",
-                  boxShadow: "0 0 10px #00d4ff",
-                }}
-              />
-
-              <span
-                style={{
-                  fontFamily: "'Share Tech Mono', monospace",
-                  fontSize: "10px",
-                  color: "rgba(0,212,255,0.7)",
-                  letterSpacing: "0.2em",
-                }}
-              >
-                THE.BYTE.CLUB
-              </span>
-            </div>
-
-            <div
-              style={{
-                fontFamily: "'Share Tech Mono', monospace",
-                fontSize: "10px",
-                color: "#00d4ff",
-                border: "1px solid rgba(0,212,255,0.3)",
-                padding: "4px 10px",
-                borderRadius: "999px",
-                background: "rgba(0,212,255,0.08)",
-              }}
-            >
-              CONTACT PORTAL
-            </div>
-          </div>
-
-          <div className="cyan-line" style={{ marginBottom: "1.5rem" }} />
-
           <p
             style={{
-              fontFamily: "'Share Tech Mono', monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: "10px",
-              color: "rgba(0,212,255,0.5)",
+              color: "var(--accent)",
               letterSpacing: "0.18em",
-              marginBottom: "8px",
+              margin: "0 0 8px",
             }}
           >
-            SEND TRANSMISSION
+            SAY HELLO
           </p>
 
-          <h1
-            className="neon-title"
+          <h2
             style={{
-              fontFamily: "'Orbitron', sans-serif",
-              fontWeight: 900,
-              fontSize: "clamp(2rem,5vw,3rem)",
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              fontSize: "clamp(1.7rem,4.4vw,2.4rem)",
+              color: "var(--ink)",
               margin: 0,
               lineHeight: 1.1,
             }}
           >
-            CONTACT BYTE CLUB_
-          </h1>
+            Got a question, idea, or want to join?
+          </h2>
 
           <p
             style={{
-              marginTop: "1rem",
-              color: "rgba(180,220,230,0.72)",
+              marginTop: "0.9rem",
+              color: "var(--ink-muted)",
+              fontFamily: "var(--font-body)",
               fontSize: "14px",
-              lineHeight: 1.8,
-              maxWidth: "580px",
+              lineHeight: 1.75,
+              maxWidth: "520px",
             }}
           >
-            Have an idea, project, collaboration, or recommendation?
-            Connect with the Byte Club team through our secure cyber portal.
+            Whether you want to join the club, collaborate on something, or
+            just have a question about an upcoming event — drop us a line and
+            we&apos;ll get back to you.
           </p>
+
+          <div className="contact-line" style={{ margin: "1.5rem 0" }} />
 
           <form
             onSubmit={handleSubmit}
-            style={{
-              marginTop: "2rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1.2rem",
-            }}
+            style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}
           >
-            <div
-              style={{
-                display: "flex",
-                gap: "1rem",
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ flex: 1, minWidth: "240px" }}>
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: "220px" }}>
                 <Field label="YOUR NAME">
                   <input
                     name="name"
@@ -387,12 +167,12 @@ export default function ContactForm() {
                     onChange={handleChange}
                     placeholder="Rahul Kumar"
                     required
-                    className="cyber-input"
+                    className="contact-input"
                   />
                 </Field>
               </div>
 
-              <div style={{ flex: 1, minWidth: "240px" }}>
+              <div style={{ flex: 1, minWidth: "220px" }}>
                 <Field label="EMAIL ADDRESS">
                   <input
                     name="email"
@@ -401,53 +181,48 @@ export default function ContactForm() {
                     onChange={handleChange}
                     placeholder="you@example.com"
                     required
-                    className="cyber-input"
+                    className="contact-input"
                   />
                 </Field>
               </div>
             </div>
 
-            <Field label={`MESSAGE DATA (${form.message.length}/1000)`}>
+            <Field label={`MESSAGE (${form.message.length}/1000)`}>
               <textarea
                 name="message"
                 value={form.message}
                 onChange={handleChange}
-                rows={6}
+                rows={5}
                 required
                 maxLength={1000}
                 placeholder="Write your message here..."
-                className="cyber-input"
-                style={{ resize: "none", lineHeight: 1.8 }}
+                className="contact-input"
+                style={{ resize: "none", lineHeight: 1.7 }}
               />
             </Field>
 
             <button
               type="submit"
               disabled={status === "sending"}
-              className="cyber-btn"
+              className="contact-btn"
               style={{
                 opacity: status === "sending" ? 0.7 : 1,
-                cursor:
-                  status === "sending"
-                    ? "not-allowed"
-                    : "pointer",
+                cursor: status === "sending" ? "not-allowed" : "pointer",
               }}
             >
-              {status === "sending"
-                ? "SENDING..."
-                : "SEND MESSAGE →"}
+              {status === "sending" ? "Sending..." : "Send message"}
             </button>
 
             {status === "success" && (
               <div
                 className="toast"
                 style={{
-                  background: "rgba(0,255,150,0.12)",
-                  color: "#00ff9c",
-                  border: "1px solid rgba(0,255,150,0.25)",
+                  background: "rgba(95,227,200,0.1)",
+                  color: "var(--accent-strong)",
+                  border: "1px solid var(--accent-border)",
                 }}
               >
-                ✓ Transmission successful. Message delivered.
+                Message sent — we&apos;ll get back to you soon.
               </div>
             )}
 
@@ -455,12 +230,12 @@ export default function ContactForm() {
               <div
                 className="toast"
                 style={{
-                  background: "rgba(255,0,0,0.12)",
-                  color: "#ff7a7a",
-                  border: "1px solid rgba(255,0,0,0.25)",
+                  background: "rgba(255,90,90,0.1)",
+                  color: "#ff8a8a",
+                  border: "1px solid rgba(255,90,90,0.25)",
                 }}
               >
-                ✗ Transmission failed. Retry connection.
+                Something went wrong — please try again.
               </div>
             )}
           </form>
@@ -468,6 +243,4 @@ export default function ContactForm() {
       </div>
     </>
   );
-
-  //kjfopajw rj gofpjpawerjgpojpeorjpgo
 }
