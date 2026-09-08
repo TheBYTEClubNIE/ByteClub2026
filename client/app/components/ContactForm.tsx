@@ -217,7 +217,7 @@ export default function ContactForm() {
               <div
                 className="toast"
                 style={{
-                  background: "rgba(95,227,200,0.1)",
+                  background: "rgba(40,194,255,0.1)",
                   color: "var(--accent-strong)",
                   border: "1px solid var(--accent-border)",
                 }}

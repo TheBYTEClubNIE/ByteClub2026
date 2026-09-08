@@ -90,45 +90,82 @@ function MemberCard({ member }: { member: Member }) {
 
     return (
         <div
+            className="tbc-card"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className={`relative w-[260px] h-[340px] rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 ${
-                hovered ? "shadow-2xl -translate-y-2" : "shadow-md"
-            }`}
+            style={{
+                position: "relative",
+                width: 250,
+                height: 320,
+                overflow: "hidden",
+                cursor: "pointer",
+                transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)",
+                transform: hovered ? "translateY(-6px)" : "translateY(0)",
+            }}
         >
+            <span className="tbc-card-corner tbc-card-corner--tl" />
+            <span className="tbc-card-corner tbc-card-corner--br" />
+
             <img
                 src={member.image}
                 alt={member.name}
-                className={`w-full h-full object-cover transition-transform duration-500 ${hovered ? "scale-110" : ""}`}
+                style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                    transition: "transform 0.5s ease, filter 0.5s ease",
+                    // Baseline zoom (not just on hover) so object-fit: cover
+                    // crops past any edge artifacts baked into source photos
+                    // (some of the submitted photos have a thin white frame).
+                    transform: hovered ? "scale(1.13)" : "scale(1.06)",
+                    filter: hovered ? "grayscale(0.05)" : "grayscale(0.6) brightness(0.92)",
+                }}
             />
 
-            {/* Bottom strip */}
-            <div className={`absolute bottom-0 w-full px-4 py-3 backdrop-blur-md bg-white/40 transition-opacity duration-300 ${hovered ? "opacity-0" : "opacity-100"}`}>
-                <p className="text-black font-semibold">{member.name}</p>
-            </div>
+            <div
+                style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "linear-gradient(180deg, transparent 45%, rgba(10,11,13,0.92) 100%)",
+                }}
+            />
 
-            {/* Hover overlay */}
-            <div className={`absolute inset-0 flex flex-col items-center justify-center gap-4 backdrop-blur-xl bg-white/10 transition-opacity duration-300 ${hovered ? "opacity-100" : "opacity-0"}`}>
-                <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white">
-                    <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="text-center">
-                    <p className="font-bold text-black">{member.name}</p>
-                    <p className="text-xs uppercase text-gray-600">{member.role}</p>
-                </div>
-                <div className="flex gap-4 text-gray-800">
+            <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "1rem" }}>
+                <p
+                    className="tbc-eyebrow"
+                    style={{ marginBottom: 4, opacity: hovered ? 1 : 0, transition: "opacity 0.3s ease" }}
+                >
+                    {member.role}
+                </p>
+                <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.05rem", color: "var(--ink)", margin: 0 }}>
+                    {member.name}
+                </p>
+
+                <div
+                    style={{
+                        display: "flex",
+                        gap: 14,
+                        marginTop: 10,
+                        maxHeight: hovered ? 24 : 0,
+                        opacity: hovered ? 1 : 0,
+                        overflow: "hidden",
+                        transition: "max-height 0.3s ease, opacity 0.3s ease",
+                        color: "var(--ink-muted)",
+                    }}
+                >
                     {isValidUrl(member.insta) && (
-                        <a href={member.insta} target="_blank" rel="noopener noreferrer" className="hover:text-pink-500 transition-colors">
+                        <a href={member.insta} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }} className="hover:text-[var(--accent)] transition-colors">
                             <InstagramIcon />
                         </a>
                     )}
                     {isValidUrl(member.linkedin) && (
-                        <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">
+                        <a href={member.linkedin} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }} className="hover:text-[var(--accent)] transition-colors">
                             <LinkedInIcon />
                         </a>
                     )}
                     {isValidUrl(member.github) && (
-                        <a href={member.github} target="_blank" rel="noopener noreferrer" className="hover:text-gray-600 transition-colors">
+                        <a href={member.github} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }} className="hover:text-[var(--accent)] transition-colors">
                             <GithubIcon />
                         </a>
                     )}

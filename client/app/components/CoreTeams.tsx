@@ -37,19 +37,21 @@ function TeamCard({ team, index, onView }: { team: typeof teams[0]; index: numbe
 
   return (
     <div
+      className="tbc-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={() => onView(team.id)}
       style={{
-        borderRadius: 20,
         overflow: "hidden",
         cursor: "pointer",
-        border: `1px solid ${hovered ? "var(--accent-border)" : "var(--line)"}`,
-        background: "var(--bg-elevated)",
-        transition: "transform 0.35s ease, border-color 0.35s ease",
+        transition: "transform 0.35s ease",
         transform: hovered ? "translateY(-8px)" : "translateY(0)",
         animation: `cardIn 0.6s ease ${index * 0.1}s both`,
       }}
     >
+      <span className="tbc-card-corner tbc-card-corner--tl" />
+      <span className="tbc-card-corner tbc-card-corner--br" />
+
       <div style={{ height: 170, overflow: "hidden", position: "relative" }}>
         <img
           src={team.image}
@@ -59,43 +61,56 @@ function TeamCard({ team, index, onView }: { team: typeof teams[0]; index: numbe
             height: "100%",
             objectFit: "cover",
             display: "block",
-            transition: "transform 0.5s ease",
+            transition: "transform 0.5s ease, filter 0.5s ease",
             transform: hovered ? "scale(1.06)" : "scale(1)",
-            filter: "saturate(0.85)",
+            filter: hovered ? "grayscale(0.1) saturate(1.05)" : "grayscale(0.55) saturate(0.9)",
           }}
         />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, transparent 40%, rgba(10,11,13,0.75) 100%)" }} />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(180deg, transparent 35%, var(--bg-elevated) 108%)",
+            mixBlendMode: "normal",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(160deg, rgba(40,194,255,0.16), transparent 55%)",
+          }}
+        />
+        <span
+          className="tbc-index"
+          style={{ position: "absolute", top: 10, right: 14, fontSize: "2.2rem", opacity: 0.9 }}
+        >
+          {String(index + 1).padStart(2, "0")}
+        </span>
       </div>
 
       <div style={{ padding: "1.3rem 1.4rem" }}>
-        <p style={{ fontFamily: "var(--font-display)", fontSize: "1.05rem", fontWeight: 700, color: "var(--ink)", margin: "0 0 0.4rem" }}>
+        <p className="tbc-heading" style={{ fontSize: "1.1rem", fontWeight: 700, margin: "0 0 0.5rem" }}>
           {team.name}
         </p>
-        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.83rem", color: "var(--ink-muted)", lineHeight: 1.6, margin: "0 0 1.1rem" }}>
+        <p style={{ fontFamily: "var(--font-body)", fontSize: "0.86rem", color: "var(--ink-muted)", lineHeight: 1.6, margin: "0 0 1.2rem" }}>
           {team.description}
         </p>
-        <button
-          onClick={() => onView(team.id)}
+        <span
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: 6,
             fontFamily: "var(--font-mono)",
             fontSize: "0.68rem",
-            color: "var(--ink)",
-            border: "1px solid var(--line-strong)",
-            borderRadius: 100,
-            padding: "6px 13px",
-            cursor: "pointer",
-            background: "transparent",
-            transition: "border-color 0.2s, color 0.2s",
-            letterSpacing: "0.04em",
+            color: hovered ? "var(--accent)" : "var(--ink-faint)",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            transition: "color 0.2s",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent-border)"; e.currentTarget.style.color = "var(--accent)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--line-strong)"; e.currentTarget.style.color = "var(--ink)"; }}
         >
           View members <ArrowIcon />
-        </button>
+        </span>
       </div>
     </div>
   );

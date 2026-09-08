@@ -51,7 +51,94 @@ html {
 body {
   background: var(--bg);
   color: var(--ink);
+  font-feature-settings: "tnum" 1, "ss01" 1;
 }
+
+/* ============ Typography system ============ */
+/* One shared "eyebrow" label style instead of ad hoc inline mono spans
+   scattered per-component — a tiny bracketed mono tag reads more like a
+   real technical label than a generic pill badge. */
+.tbc-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.tbc-eyebrow::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--accent);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+.tbc-eyebrow--muted { color: var(--ink-faint); }
+.tbc-eyebrow--muted::before { background: var(--ink-faint); }
+
+/* Display headings: tighter tracking at large sizes reads more considered
+   than the browser default, without leaning on extra font weights. */
+.tbc-heading {
+  font-family: var(--font-display);
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+
+/* Oversized index numerals used as a recurring structural device (card
+   ordinals, timeline milestones) — outlined rather than filled so they sit
+   behind content as texture, not compete with it. */
+.tbc-index {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--line-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============ Dossier card ============ */
+/* Shared "spec sheet" card used for the everyday content cards (About,
+   team/event cards) — corner brackets + a hairline top accent replace the
+   generic soft-rounded-card-with-pill-badge look those used to share. */
+.tbc-card {
+  position: relative;
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  isolation: isolate;
+}
+.tbc-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, var(--accent-border), transparent 32%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.tbc-card:hover::before { opacity: 1; }
+.tbc-card-corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--accent-border);
+  opacity: 0.7;
+  transition: opacity 0.35s ease, border-color 0.35s ease;
+  pointer-events: none;
+}
+.tbc-card:hover .tbc-card-corner { opacity: 1; border-color: var(--accent); }
+.tbc-card-corner--tl { top: -1px; left: -1px; border-right: none; border-bottom: none; border-top-left-radius: 6px; }
+.tbc-card-corner--br { bottom: -1px; right: -1px; border-left: none; border-top: none; border-bottom-right-radius: 6px; }
 /* Preserve your theme */
 .markdown-body {
   background: transparent !important;
@@ -189,8 +276,6 @@ body {
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
@@ -224,8 +309,6 @@ body {
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);

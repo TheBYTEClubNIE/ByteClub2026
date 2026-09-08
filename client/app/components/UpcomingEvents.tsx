@@ -32,52 +32,36 @@ export default function UpcomingEvents() {
         .events-list { display: flex; flex-wrap: wrap; gap: 1.25rem; }
         .event-card {
           position: relative;
-          width: 300px;
-          border-radius: 18px;
-          padding: 1.5rem;
-          background: var(--bg-elevated);
-          border: 1px solid var(--line);
+          width: 320px;
+          padding: 1.6rem 1.5rem;
           overflow: hidden;
           cursor: pointer;
-          transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), border-color 0.35s ease;
+          transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
         }
-        .event-card:hover {
-          transform: translateY(-6px);
-          border-color: var(--accent-border);
-        }
-        .event-tag {
-          display: inline-block;
-          font-family: var(--font-mono);
-          font-size: 10px;
-          letter-spacing: 0.14em;
-          color: var(--accent);
-          border: 1px solid var(--accent-border);
-          background: var(--accent-soft);
-          padding: 3px 10px;
-          border-radius: 999px;
-          margin-bottom: 0.9rem;
-        }
+        .event-card:hover { transform: translateY(-6px); }
         .event-name {
           font-family: var(--font-display);
-          font-size: 1.15rem;
+          font-size: 1.2rem;
           font-weight: 700;
           color: var(--ink);
-          margin-bottom: 0.5rem;
+          letter-spacing: -0.01em;
+          margin: 0.6rem 0 0.6rem;
         }
         .event-about {
           font-family: var(--font-body);
-          font-size: 0.85rem;
+          font-size: 0.88rem;
           color: var(--ink-muted);
           line-height: 1.65;
-          margin-bottom: 1.1rem;
+          margin-bottom: 1.2rem;
         }
-        .event-meta { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .event-meta { display: flex; flex-wrap: wrap; gap: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
         .meta-item {
           display: flex;
           align-items: center;
           gap: 6px;
           font-family: var(--font-mono);
-          font-size: 0.7rem;
+          font-size: 0.68rem;
+          letter-spacing: 0.04em;
           color: var(--ink-faint);
         }
         .meta-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
@@ -92,8 +76,15 @@ export default function UpcomingEvents() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <div className="event-card">
-                <span className="event-tag">REGISTRATION OPEN</span>
+              <div className="tbc-card event-card">
+                <span className="tbc-card-corner tbc-card-corner--tl" />
+                <span className="tbc-card-corner tbc-card-corner--br" />
+
+                <div className="flex items-center justify-between">
+                  <span className="tbc-eyebrow">Registration open</span>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-strong)", boxShadow: "0 0 8px var(--accent-strong)" }} />
+                </div>
+
                 <p className="event-name">{event.name}</p>
                 <p className="event-about">{event.about}</p>
 

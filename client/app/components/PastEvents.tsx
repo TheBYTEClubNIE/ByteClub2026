@@ -80,12 +80,12 @@ function TimelineEntry({
       {/* node dot — mobile: left rail · desktop: centre spine */}
       <div className="absolute left-[19px] md:left-1/2 top-2 md:-translate-x-1/2 z-10">
         <span className="relative flex h-9 w-9 items-center justify-center">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400/20" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#28c2ff]/20" />
           <span
-            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-teal-300/50 bg-[#020812] text-[11px] font-bold text-teal-300"
+            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#2af5ff]/50 bg-[#020812] text-[11px] font-bold text-[#2af5ff]"
             style={{
               fontFamily: "var(--font-mono)",
-              boxShadow: '0 0 20px rgba(95,227,200,0.45)',
+              boxShadow: '0 0 20px rgba(40,194,255,0.45)',
             }}
           >
             {String(seq).padStart(2, '0')}
@@ -156,7 +156,7 @@ function TimelineHeader({
       className="relative"
     >
       <p
-        className="text-[10px] uppercase text-teal-400/70"
+        className="text-[10px] uppercase text-[#28c2ff]/70"
         style={{ fontFamily: "var(--font-mono)", letterSpacing: '0.22em' }}
       >
         {String(seq).padStart(2, '0')} // MILESTONE
@@ -167,13 +167,13 @@ function TimelineHeader({
           className="text-2xl sm:text-3xl font-black text-white leading-tight"
           style={{
             fontFamily: "var(--font-display)",
-            textShadow: '0 0 18px rgba(95,227,200,0.2)',
+            textShadow: '0 0 18px rgba(40,194,255,0.2)',
           }}
         >
           {eventName}
         </h3>
         <span
-          className="text-[11px] text-teal-200/60"
+          className="text-[11px] text-[#60afff]/60"
           style={{ fontFamily: "var(--font-mono)", letterSpacing: '0.14em' }}
         >
           {photos.length} PHOTOS
@@ -223,7 +223,7 @@ function EventCarousel({
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              'radial-gradient(55% 45% at 50% 40%, rgba(95,227,200,0.12), transparent 70%)',
+              'radial-gradient(55% 45% at 50% 40%, rgba(40,194,255,0.12), transparent 70%)',
           }}
         />
         <div className="relative w-full">
@@ -244,8 +244,8 @@ function EventCarousel({
       {/* current caption */}
       <div className="flex items-center justify-center mt-1 select-none">
         <div
-          className="flex items-center gap-3 max-w-full rounded-full border border-teal-400/20 bg-[#020812]/80 backdrop-blur px-4 py-2"
-          style={{ boxShadow: '0 0 24px rgba(95,227,200,0.08)' }}
+          className="flex items-center gap-3 max-w-full rounded-full border border-[#28c2ff]/20 bg-[#020812]/80 backdrop-blur px-4 py-2"
+          style={{ boxShadow: '0 0 24px rgba(40,194,255,0.08)' }}
         >
           <span
             className="min-w-0 truncate text-[11px] text-slate-300"
@@ -253,9 +253,9 @@ function EventCarousel({
           >
             {current ? current.date : ''}
           </span>
-          <span className="h-3 w-px shrink-0 bg-teal-400/25" />
+          <span className="h-3 w-px shrink-0 bg-[#28c2ff]/25" />
           <span
-            className="shrink-0 text-[11px] text-teal-300"
+            className="shrink-0 text-[11px] text-[#2af5ff]"
             style={{ fontFamily: "var(--font-mono)" }}
           >
             {Math.min(focused + 1, photos.length)} / {photos.length}
@@ -312,13 +312,13 @@ function Lightbox({
         <div className="w-full flex items-center justify-between">
           <span
             style={{ fontFamily: "var(--font-mono)" }}
-            className="text-teal-400 text-xs"
+            className="text-[#28c2ff] text-xs"
           >
             {current + 1} / {total}
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-full border border-teal-400/20 text-teal-300 text-xs hover:bg-teal-400/10 transition-all duration-300"
+            className="px-4 py-1.5 rounded-full border border-[#28c2ff]/20 text-[#2af5ff] text-xs hover:bg-[#28c2ff]/10 transition-all duration-300"
           >
             ✕ close
           </button>
@@ -327,7 +327,7 @@ function Lightbox({
         <div className="flex items-center gap-4 w-full">
           <button
             onClick={onPrev}
-            className="w-10 h-10 shrink-0 rounded-full border border-teal-400/20 text-teal-300 hover:bg-teal-400/10 transition-all duration-300"
+            className="w-10 h-10 shrink-0 rounded-full border border-[#28c2ff]/20 text-[#2af5ff] hover:bg-[#28c2ff]/10 transition-all duration-300"
           >
             ←
           </button>
@@ -338,11 +338,11 @@ function Lightbox({
             transition={{ duration: 0.3 }}
             src={image.url}
             alt={image.eventName}
-            className="flex-1 min-w-0 max-h-[75vh] object-contain rounded-2xl border border-teal-400/10"
+            className="flex-1 min-w-0 max-h-[75vh] object-contain rounded-2xl border border-[#28c2ff]/10"
           />
           <button
             onClick={onNext}
-            className="w-10 h-10 shrink-0 rounded-full border border-teal-400/20 text-teal-300 hover:bg-teal-400/10 transition-all duration-300"
+            className="w-10 h-10 shrink-0 rounded-full border border-[#28c2ff]/20 text-[#2af5ff] hover:bg-[#28c2ff]/10 transition-all duration-300"
           >
             →
           </button>
@@ -350,8 +350,8 @@ function Lightbox({
 
         <div className="flex items-center gap-3 text-sm">
           <span className="text-white">{image.eventName}</span>
-          <span className="text-teal-500">•</span>
-          <span className="text-teal-300">{image.date}</span>
+          <span className="text-[#3066be]">•</span>
+          <span className="text-[#2af5ff]">{image.date}</span>
         </div>
       </div>
     </motion.div>
@@ -402,24 +402,24 @@ export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsPr
       {/* ── Title ── */}
       <div className="max-w-7xl mx-auto mb-14">
         <div
-          className="relative overflow-hidden rounded-[28px] border border-teal-400/20 bg-[#020812]/90 backdrop-blur-xl p-8 md:p-10"
+          className="relative overflow-hidden rounded-[28px] border border-[#28c2ff]/20 bg-[#020812]/90 backdrop-blur-xl p-8 md:p-10"
           style={{
             boxShadow:
-              '0 0 40px rgba(95,227,200,0.08), inset 0 0 20px rgba(95,227,200,0.04)',
+              '0 0 40px rgba(40,194,255,0.08), inset 0 0 20px rgba(40,194,255,0.04)',
           }}
         >
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
               background:
-                'linear-gradient(135deg, rgba(95,227,200,0.05) 0%, transparent 50%, rgba(143,240,218,0.03) 100%)',
+                'linear-gradient(135deg, rgba(40,194,255,0.05) 0%, transparent 50%, rgba(42,245,255,0.03) 100%)',
             }}
           />
           <div
             className="absolute top-0 left-10 right-10 h-[1px]"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(95,227,200,0.4), rgba(143,240,218,0.4), transparent)',
+                'linear-gradient(90deg, transparent, rgba(40,194,255,0.4), rgba(42,245,255,0.4), transparent)',
             }}
           />
           <p
@@ -427,7 +427,7 @@ export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsPr
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: '11px',
-              color: 'rgba(95,227,200,0.65)',
+              color: 'rgba(40,194,255,0.65)',
               letterSpacing: '0.18em',
             }}
           >
@@ -460,7 +460,7 @@ export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsPr
                 scaleY: progress,
                 background:
                   'linear-gradient(180deg, #28c2ff, #2af5ff, #28c2ff)',
-                boxShadow: '0 0 16px rgba(95,227,200,0.6)',
+                boxShadow: '0 0 16px rgba(40,194,255,0.6)',
               }}
             />
           </div>
@@ -484,7 +484,7 @@ export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsPr
           {/* end cap */}
           <div className="relative flex justify-start md:justify-center mt-12 pl-[14px] md:pl-0">
             <span
-              className="inline-flex items-center gap-2 rounded-full border border-teal-400/25 bg-[#020812] px-5 py-2 text-[11px] text-teal-300"
+              className="inline-flex items-center gap-2 rounded-full border border-[#28c2ff]/25 bg-[#020812] px-5 py-2 text-[11px] text-[#2af5ff]"
               style={{ fontFamily: "var(--font-mono)", letterSpacing: '0.15em' }}
             >
               ◉ END OF TIMELINE

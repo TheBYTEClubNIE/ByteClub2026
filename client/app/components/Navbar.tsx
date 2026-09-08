@@ -279,8 +279,8 @@ const GooeyNav: React.FC<GooeyNavProps> = ({
             position: absolute;
             inset: 0;
             border-radius: 9999px;
-            background: linear-gradient(135deg, #ffffff 0%, #e5f9f2 100%);
-            box-shadow: 0 0 20px rgba(95, 227, 200, 0.35), 0 0 8px rgba(255, 255, 255, 0.5);
+            background: linear-gradient(135deg, #ffffff 0%, #e6f6ff 100%);
+            box-shadow: 0 0 20px rgba(40, 194, 255, 0.35), 0 0 8px rgba(255, 255, 255, 0.5);
             opacity: 0;
             transform: scale(0.85);
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
