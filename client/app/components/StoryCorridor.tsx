@@ -49,8 +49,8 @@ export default function StoryCorridor() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0x22332e, isMobile ? 0.9 : 0.55));
-    const fillLight = new THREE.PointLight(0x28c2ff, 0.4, 60);
+    scene.add(new THREE.AmbientLight(0x2c4054, isMobile ? 1.0 : 0.7));
+    const fillLight = new THREE.PointLight(0x28c2ff, 0.7, 60);
     fillLight.position.set(0, 6, 6);
     scene.add(fillLight);
 
@@ -61,7 +61,9 @@ export default function StoryCorridor() {
 
     // Persistent logo + constellation companion, attached to the camera so
     // it stays on screen for the entire scroll instead of living in one spot.
-    const { group: companion, cloud, badge } = buildCompanion(logoTexture, isMobile ? 500 : 1400);
+    const { group: companion, cloud, badge, shards } = buildCompanion(logoTexture, isMobile ? 500 : 1400);
+    const shardMaterials = shards.children.map((s) => (s as THREE.LineSegments).material as THREE.LineBasicMaterial);
+    const shardBaseOpacities = shardMaterials.map((m) => m.opacity);
     const badgeMaterial = badge.material as THREE.MeshBasicMaterial;
     const HERO_POS = new THREE.Vector3(isMobile ? 0 : 2.3, -0.9, -5.2);
     const DOCK_POS = new THREE.Vector3(isMobile ? -1.15 : -2.7, 1.85, -4.2);
@@ -137,6 +139,11 @@ export default function StoryCorridor() {
             const boost = 1 + scrollDelta * 400;
             obj.rotation.y += (obj.userData.spinY as number) * boost;
           }
+          if (obj.userData.tumble) {
+            const { x, y } = obj.userData.tumble as { x: number; y: number };
+            obj.rotation.x += x;
+            obj.rotation.y += y;
+          }
           if (obj.userData.bob) {
             const { amp, speed, phase, baseY } = obj.userData.bob as {
               amp: number;
@@ -157,6 +164,10 @@ export default function StoryCorridor() {
         const burstScale = 1 + dockEased * 2.4;
         cloud.scale.setScalar(burstScale);
         cloudMaterial.opacity = cloudBaseOpacity * (1 - dockEased);
+        shards.scale.setScalar(burstScale);
+        shardMaterials.forEach((m, i) => {
+          m.opacity = shardBaseOpacities[i] * (1 - dockEased);
+        });
 
         companion.position.lerpVectors(HERO_POS, DOCK_POS, dockEased);
         const scale = THREE.MathUtils.lerp(HERO_SCALE, DOCK_SCALE, dockEased);

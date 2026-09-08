@@ -3,7 +3,8 @@ import * as THREE from "three";
 // Single accent family (blue -> cyan) — several tonal stops for depth in the
 // particle cloud, never a second hue. This is our equivalent of the
 // reference's multicolor triangle field, kept disciplined to one brand hue.
-const TONES = [0x3066be, 0x60afff, 0x28c2ff, 0x2af5ff];
+// Biased toward the brighter end so the field reads as vivid, not muddy.
+const TONES = [0x60afff, 0x28c2ff, 0x2af5ff, 0x2af5ff];
 
 let triangleSprite: THREE.Texture | null = null;
 function getTriangleSprite(): THREE.Texture {
@@ -19,8 +20,12 @@ function getTriangleSprite(): THREE.Texture {
   ctx.lineTo(size * 0.92, size * 0.88);
   ctx.lineTo(size * 0.08, size * 0.88);
   ctx.closePath();
-  ctx.strokeStyle = "rgba(255,255,255,0.95)";
-  ctx.lineWidth = 3;
+  // Bright translucent fill plus a crisp bright stroke — a bare 3px outline
+  // read too dim once composited additively; the fill gives it real punch.
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,1)";
+  ctx.lineWidth = 4;
   ctx.stroke();
   triangleSprite = new THREE.CanvasTexture(canvas);
   triangleSprite.needsUpdate = true;
@@ -43,6 +48,40 @@ export interface Companion {
   group: THREE.Group;
   cloud: THREE.Points;
   badge: THREE.Mesh;
+  shards: THREE.Group;
+}
+
+/**
+ * A handful of real 3D wireframe shapes (tetrahedra — four-faced, so every
+ * angle still reads as "a triangle") tumbling around the companion. Unlike
+ * the flat billboard sprites in the main cloud, these are actual geometry —
+ * they catch perspective and rotate in three axes, giving the field real
+ * depth instead of a flat sheet of dots.
+ */
+function buildAmbientShards(count: number): THREE.Group {
+  const group = new THREE.Group();
+  for (let i = 0; i < count; i++) {
+    const radius = 0.14 + Math.random() * 0.22;
+    const geo = new THREE.TetrahedronGeometry(radius, 0);
+    const edges = new THREE.EdgesGeometry(geo);
+    const material = new THREE.LineBasicMaterial({
+      color: TONES[i % TONES.length],
+      transparent: true,
+      opacity: 0.9,
+    });
+    const shard = new THREE.LineSegments(edges, material);
+
+    const angle = Math.random() * Math.PI * 2;
+    const r = 1.6 + Math.random() * 2.6;
+    shard.position.set(Math.cos(angle) * r, Math.sin(angle) * r * 0.9, (Math.random() - 0.5) * 1.4);
+    shard.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+    shard.userData.tumble = {
+      x: (Math.random() - 0.5) * 0.01,
+      y: (Math.random() - 0.5) * 0.01,
+    };
+    group.add(shard);
+  }
+  return group;
 }
 
 export function buildCompanion(logoTexture: THREE.Texture, particleCount = 1400): Companion {
@@ -99,11 +138,11 @@ export function buildCompanion(logoTexture: THREE.Texture, particleCount = 1400)
   const cloud = new THREE.Points(
     geo,
     new THREE.PointsMaterial({
-      size: 0.09,
+      size: 0.1,
       map: getTriangleSprite(),
       vertexColors: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 1,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       sizeAttenuation: true,
@@ -113,11 +152,16 @@ export function buildCompanion(logoTexture: THREE.Texture, particleCount = 1400)
   cloud.renderOrder = 1;
   group.add(cloud);
 
-  const light = new THREE.PointLight(TONES[2], 1.1, 10);
+  // Real 3D tumbling shards for depth — the reference's ambient triangles
+  // read as actual rotated geometry, not flat dots, so these are too.
+  const shards = buildAmbientShards(12);
+  group.add(shards);
+
+  const light = new THREE.PointLight(TONES[2], 1.8, 12);
   light.position.set(0, 0, 1.5);
   group.add(light);
 
-  return { group, cloud, badge };
+  return { group, cloud, badge, shards };
 }
 
 /**
