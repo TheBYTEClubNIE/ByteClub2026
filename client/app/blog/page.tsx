@@ -70,12 +70,8 @@ export default function BlogRoute() {
 
   useEffect(() => {
     const fetchBlogs = async () => {
-      if (!process.env.NEXT_PUBLIC_SERVER_URI) {
-        setLoading(false);
-        return;
-      }
       try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_SERVER_URI}/blog`);
+        const res = await axios.get("/api/blog");
         setBlogs(res.data);
       } catch (err) {
         console.error("Failed to fetch blogs:", err);
@@ -155,10 +151,20 @@ export default function BlogRoute() {
           <BooksShowcase
             books={books}
             heroTitle="Byte Blog"
-            navTitle="Pick a book"
+            showNav={false}
             showDetailPanel={false}
             className="h-full min-h-0"
             onBookSelect={(book) => setSelectedCategory(book?.id ?? null)}
+            themeColors={{
+              bg: "var(--bg)",
+              foregroundLight: "var(--ink)",
+              foregroundDark: "var(--ink)",
+              navy: "var(--bg-elevated)",
+              cream: "var(--ink)",
+              peri: "var(--accent)",
+              pink: "var(--accent-strong)",
+              lav: "var(--ink-muted)",
+            }}
           />
 
           {activeMeta && (
