@@ -81,8 +81,8 @@ export default function UpcomingEvents() {
                 <span className="tbc-card-corner tbc-card-corner--br" />
 
                 <div className="flex items-center justify-between">
-                  <span className="tbc-eyebrow">Registration open</span>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent-strong)", boxShadow: "0 0 8px var(--accent-strong)" }} />
+                  <span className="tbc-eyebrow tbc-eyebrow--muted">Registration closed</span>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ink-faint)" }} />
                 </div>
 
                 <p className="event-name">{event.name}</p>

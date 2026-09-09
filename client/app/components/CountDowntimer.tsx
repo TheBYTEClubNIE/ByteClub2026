@@ -1,11 +1,15 @@
 "use client";
+
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+
+const CELL_SIZE = "clamp(48px, 11vw, 76px)";
 
 function getCountdown(targetDate: string) {
     const diff = new Date(targetDate).getTime() - Date.now();
 
     if (diff <= 0) {
-        return { d: 0, h: 0, m: 0, s: 0 };
+        return { d: 0, h: 0, m: 0, s: 0, expired: true };
     }
 
     return {
@@ -13,20 +17,96 @@ function getCountdown(targetDate: string) {
         h: Math.floor((diff / (1000 * 60 * 60)) % 24),
         m: Math.floor((diff / (1000 * 60)) % 60),
         s: Math.floor((diff / 1000) % 60),
+        expired: false,
     };
 }
 
-export default function Countdown({
-    targetDate,
-}: {
-    targetDate: string;
-}) {
-    const [time, setTime] = useState<{
-        d: number;
-        h: number;
-        m: number;
-        s: number;
-    } | null>(null);
+function FlipDigit({ value, label }: { value: number; label: string }) {
+    const padded = String(value).padStart(2, "0");
+    return (
+        <div className="flex flex-col items-center">
+            <div
+                className="relative overflow-hidden flex items-center justify-center"
+                style={{
+                    width: CELL_SIZE,
+                    height: CELL_SIZE,
+                    borderRadius: 10,
+                    background: "var(--bg-elevated)",
+                    border: "1px solid var(--line)",
+                }}
+            >
+                <AnimatePresence mode="popLayout">
+                    <motion.span
+                        key={padded}
+                        initial={{ y: "-100%", opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: "100%", opacity: 0 }}
+                        transition={{ duration: 0.28, ease: [0.32, 0, 0.67, 0] }}
+                        style={{
+                            position: "absolute",
+                            fontFamily: "var(--font-display)",
+                            fontWeight: 800,
+                            fontSize: "clamp(1.4rem, 5vw, 2.4rem)",
+                            letterSpacing: "-0.02em",
+                            lineHeight: 1,
+                            color: "var(--ink)",
+                        }}
+                    >
+                        {padded}
+                    </motion.span>
+                </AnimatePresence>
+            </div>
+            <span
+                className="mt-2 uppercase"
+                style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "10px",
+                    letterSpacing: "0.14em",
+                    color: "var(--ink-faint)",
+                }}
+            >
+                {label}
+            </span>
+        </div>
+    );
+}
+
+function Colon() {
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        const id = setInterval(() => setVisible((v) => !v), 1000);
+        return () => clearInterval(id);
+    }, []);
+
+    return (
+        <div className="flex flex-col items-center" aria-hidden="true">
+            <div className="flex items-center justify-center" style={{ height: CELL_SIZE }}>
+                <span
+                    style={{
+                        fontFamily: "var(--font-display)",
+                        fontWeight: 700,
+                        fontSize: "clamp(1.2rem, 4vw, 2rem)",
+                        color: "var(--accent)",
+                        opacity: visible ? 0.85 : 0.2,
+                        transition: "opacity 0.3s ease",
+                        lineHeight: 1,
+                    }}
+                >
+                    :
+                </span>
+            </div>
+            {/* invisible spacer so the colon lines up with the digit cells,
+                not the cell+label column as a whole */}
+            <span className="mt-2" style={{ fontSize: "10px", visibility: "hidden" }}>
+                :
+            </span>
+        </div>
+    );
+}
+
+export default function Countdown({ targetDate }: { targetDate: string }) {
+    const [time, setTime] = useState<ReturnType<typeof getCountdown> | null>(null);
 
     useEffect(() => {
         setTime(getCountdown(targetDate));
@@ -40,48 +120,15 @@ export default function Countdown({
 
     if (!time) return null;
 
-    const data = [
-        { label: "Days", value: time.d },
-        { label: "Hours", value: time.h },
-        { label: "Minutes", value: time.m },
-        { label: "Seconds", value: time.s },
-    ];
-
     return (
-        <div className="flex flex-col items-center gap-8 text-center w-full">
-            <div className="flex gap-2 sm:gap-4 md:gap-6 w-full justify-center px-2">
-                {data.map((item, i) => (
-                    <div
-                        key={i}
-                        className="
-                            flex flex-col items-center justify-center
-                            bg-gradient-to-br from-gray-900 to-black
-                            text-white
-                            rounded-xl sm:rounded-2xl
-                            shadow-xl border border-gray-700
-                            hover:scale-105 transition-transform duration-300
-                            flex-1 min-w-0
-                            py-3 sm:py-5
-                            px-1 sm:px-4 md:px-6
-                            max-w-[90px] sm:max-w-none
-                        "
-                    >
-                        <span
-                            className="font-bold tracking-wide animate-bounce leading-none"
-                            style={{ fontSize: "clamp(1.5rem, 6vw, 3rem)" }}
-                        >
-                            {String(item.value).padStart(2, "0")}
-                        </span>
-
-                        <span
-                            className="mt-1 sm:mt-2 text-gray-400 uppercase tracking-widest font-medium"
-                            style={{ fontSize: "clamp(0.5rem, 2vw, 0.75rem)" }}
-                        >
-                            {item.label}
-                        </span>
-                    </div>
-                ))}
-            </div>
+        <div className="flex items-start justify-center gap-1.5 sm:gap-3 w-full">
+            <FlipDigit value={time.d} label="Days" />
+            <Colon />
+            <FlipDigit value={time.h} label="Hours" />
+            <Colon />
+            <FlipDigit value={time.m} label="Min" />
+            <Colon />
+            <FlipDigit value={time.s} label="Sec" />
         </div>
     );
 }
