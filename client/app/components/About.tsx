@@ -59,7 +59,7 @@ export default function NewCard() {
             <p style={{ fontFamily: "var(--font-body)", color: "var(--ink-muted)", fontSize: "15px", lineHeight: "1.7", margin: 0, maxWidth: "52ch" }}>
               The Byte Club began in 2023 as a handful of first-years who
               wanted tech events that didn&apos;t feel like another lecture.
-              It&apos;s grown into a full community — but the idea hasn&apos;t
+              It&apos;s grown into a full community, but the idea hasn&apos;t
               changed: get people writing code, building things, and helping
               each other get better at it, one fun event at a time.
             </p>
@@ -100,7 +100,7 @@ export default function NewCard() {
 
             <p style={{ fontFamily: "var(--font-body)", fontSize: "15px", color: "var(--ink-muted)", lineHeight: "1.7", margin: 0, maxWidth: "46ch" }}>
               To make tech feel approachable for whoever&apos;s just starting
-              out — and to make sure that by the time you graduate, the skills
+              out, and to make sure that by the time you graduate, the skills
               you picked up here helped you get where you wanted to go.
             </p>
 

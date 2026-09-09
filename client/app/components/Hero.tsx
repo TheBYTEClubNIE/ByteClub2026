@@ -59,7 +59,7 @@ export default function Hero() {
             className="hero-fade-3 mt-6 max-w-lg text-base sm:text-lg leading-relaxed"
             style={{ fontFamily: "var(--font-body)", color: "var(--ink-muted)" }}
           >
-            We run fun, hands-on tech events for NIE students — no dry
+            We run fun, hands-on tech events for NIE students, no dry
             lectures. You&apos;ll write real code, build real things
             alongside people who&apos;ll actually help you get better, and
             leave every session a little more ready for what comes after
@@ -84,29 +84,6 @@ export default function Hero() {
             >
               See Upcoming Events
             </Link>
-          </div>
-
-          <div className="hero-fade-4 mt-12 flex flex-wrap items-center gap-x-8 gap-y-3">
-            {[
-              ["3", "Core teams"],
-              ["1st–4th", "Years welcome"],
-              ["2023", "Since"],
-            ].map(([value, label]) => (
-              <div key={label} className="flex items-baseline gap-2">
-                <span
-                  style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
-                  className="text-xl font-bold"
-                >
-                  {value}
-                </span>
-                <span
-                  style={{ fontFamily: "var(--font-mono)", color: "var(--ink-faint)" }}
-                  className="text-[11px] uppercase tracking-wider"
-                >
-                  {label}
-                </span>
-              </div>
-            ))}
           </div>
         </div>
       </div>

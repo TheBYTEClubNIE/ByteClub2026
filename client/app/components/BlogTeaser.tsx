@@ -31,7 +31,7 @@ export default function BlogTeaser() {
             Four books. Every post we've written.
           </h3>
           <p style={{ fontFamily: "var(--font-body)", color: "var(--ink-muted)" }} className="text-sm leading-relaxed">
-            Web Dev, Machine Learning, Agentic AI, and Open Source — pick a
+            Web Dev, Machine Learning, Agentic AI, and Open Source: pick a
             book, flip it open, and read what the club's been building and
             learning.
           </p>

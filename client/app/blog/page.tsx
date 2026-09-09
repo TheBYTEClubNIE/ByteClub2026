@@ -24,7 +24,7 @@ const CATEGORY_META: Record<
 > = {
   webdev: {
     label: "Web Dev",
-    desc: "Frontend, backend, and everything in between — how we actually build things.",
+    desc: "Frontend, backend, and everything in between: how we actually build things.",
     spineBg: "#0d3b34",
     spineInk: "#eafff8",
     backBg: "#0d3b34",
@@ -33,7 +33,7 @@ const CATEGORY_META: Record<
   },
   ml: {
     label: "Machine Learning",
-    desc: "Models, data, and the math underneath — notes from the ML side of the club.",
+    desc: "Models, data, and the math underneath: notes from the ML side of the club.",
     spineBg: "#122a45",
     spineInk: "#e8f1ff",
     backBg: "#122a45",
@@ -42,7 +42,7 @@ const CATEGORY_META: Record<
   },
   "agentic-ai": {
     label: "Agentic AI",
-    desc: "Agents, tools, and autonomous systems — the newest chapter in tech.",
+    desc: "Agents, tools, and autonomous systems: the newest chapter in tech.",
     spineBg: "#241a3a",
     spineInk: "#f1e9ff",
     backBg: "#241a3a",
@@ -114,7 +114,7 @@ export default function BlogRoute() {
           backBg: meta.backBg,
           backInk: meta.backInk,
           edge: meta.edge,
-          chapters: posts.length > 0 ? posts.map((p) => p.title) : ["Nothing posted yet — check back soon"],
+          chapters: posts.length > 0 ? posts.map((p) => p.title) : ["Nothing posted yet, check back soon"],
         } as BookCfg;
       }),
     [postsByCategory]

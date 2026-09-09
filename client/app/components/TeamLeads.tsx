@@ -65,7 +65,7 @@ export const leads: Lead[] = [
     badge: "Technical Co-Lead",
     image: "/Leads/tanishq-technicalcolead.jpeg",
     description:
-      "Partners with the Tech Lead on engineering direction — building and maintaining the platforms members actually use, and helping new developers get comfortable in a real codebase.",
+      "Partners with the Tech Lead on engineering direction, building and maintaining the platforms members actually use, and helping new developers get comfortable in a real codebase.",
     skills: ["Full-Stack", "Next.js", "Mentorship"],
     insta: "https://www.instagram.com/okay.tanishq",
     linkedin: "https://www.linkedin.com/in/tanishq-dhawan",

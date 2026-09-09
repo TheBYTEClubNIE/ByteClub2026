@@ -148,7 +148,7 @@ export default function ContactForm() {
             }}
           >
             Whether you want to join the club, collaborate on something, or
-            just have a question about an upcoming event — drop us a line and
+            just have a question about an upcoming event, drop us a line and
             we&apos;ll get back to you.
           </p>
 
@@ -222,7 +222,7 @@ export default function ContactForm() {
                   border: "1px solid var(--accent-border)",
                 }}
               >
-                Message sent — we&apos;ll get back to you soon.
+                Message sent. We&apos;ll get back to you soon.
               </div>
             )}
 
@@ -235,7 +235,7 @@ export default function ContactForm() {
                   border: "1px solid rgba(255,90,90,0.25)",
                 }}
               >
-                Something went wrong — please try again.
+                Something went wrong. Please try again.
               </div>
             )}
           </form>

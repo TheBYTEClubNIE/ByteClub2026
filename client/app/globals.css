@@ -44,7 +44,7 @@ html {
   --accent-strong: #2af5ff;
   --accent-soft: rgba(40, 194, 255, 0.12);
   --accent-border: rgba(40, 194, 255, 0.35);
-  --font-display: var(--font-display), "Bricolage Grotesque", sans-serif;
+  --font-display: var(--font-display), "Unbounded", sans-serif;
   --font-body: var(--font-body), "IBM Plex Sans", sans-serif;
   --font-mono: var(--font-mono), "IBM Plex Mono", monospace;
 }

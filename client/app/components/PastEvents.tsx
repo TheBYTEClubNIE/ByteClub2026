@@ -43,9 +43,9 @@ const EVENT_DESCRIPTIONS: Record<string, string> = {
   'Beyond BYTE Ideathon':
     'Our flagship ideathon where student teams pitched bold ideas beyond the classroom. From high-energy team presentations and a buzzing audience to intense Q&A rounds, the event celebrated creativity, collaboration, and out-of-the-box problem solving.',
   'Bits to Bytes':
-    'A welcoming community event that walked newcomers from the basics of tech to building real things. Packed with curious faces, live engagement, and the organizers who started it all — the perfect first step into the Byte Club journey.',
+    'A welcoming community event that walked newcomers from the basics of tech to building real things. Packed with curious faces, live engagement, and the organizers who started it all: the perfect first step into the Byte Club journey.',
   'Annual Assembly':
-    'The biggest gathering of our community — members old and new under one roof. A day of reflection, celebration, and group photos that capture the true scale and spirit of the Byte Club family.',
+    'The biggest gathering of our community, members old and new under one roof. A day of reflection, celebration, and group photos that capture the true scale and spirit of the Byte Club family.',
   'Beyond Labs':
     'A hands-on learning series that took members beyond theory into real building. Through interactive sessions, technical discussions, and team collaboration, participants experimented, broke things, and learned together.',
 };
@@ -104,7 +104,7 @@ function TimelineEntry({
               align="right"
               description={
                 EVENT_DESCRIPTIONS[eventName] ??
-                'Moments from this event — browse the gallery to relive them.'
+                'Moments from this event: browse the gallery to relive them.'
               }
             />
             <div className="hidden md:block" />
@@ -119,7 +119,7 @@ function TimelineEntry({
               align="left"
               description={
                 EVENT_DESCRIPTIONS[eventName] ??
-                'Moments from this event — browse the gallery to relive them.'
+                'Moments from this event: browse the gallery to relive them.'
               }
             />
           </>
@@ -443,7 +443,7 @@ export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsPr
             Past Events
           </h2>
           <p className="max-w-xl leading-relaxed" style={{ color: 'var(--ink-muted)', fontSize: '14px' }}>
-            Everything from ideathons to first-timer workshops — scroll
+            Everything from ideathons to first-timer workshops, scroll
             through what we&apos;ve run so far, milestone by milestone.
           </p>
         </div>
