@@ -16,27 +16,27 @@ interface PastEventsProps {
 }
 
 const PLACEHOLDER_IMAGES: PastEventImage[] = [
-  { id: 1, url: '/events/1.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Team Presentations' },
-  { id: 2, url: '/events/2.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Audience Engagement' },
-  { id: 3, url: '/events/3.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Team Briefing' },
-  { id: 4, url: '/events/4.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Q&A Session' },
-  { id: 5, url: '/events/5.png', eventName: 'Beyond BYTE Ideathon', date: 'Event Logo' },
+  { id: 1, url: '/Events/1.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Team Presentations' },
+  { id: 2, url: '/Events/2.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Audience Engagement' },
+  { id: 3, url: '/Events/3.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Team Briefing' },
+  { id: 4, url: '/Events/4.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Q&A Session' },
+  { id: 5, url: '/Events/5.png', eventName: 'Beyond BYTE Ideathon', date: 'Event Logo' },
 
-  { id: 6, url: '/events/bits-1.jpg', eventName: 'Bits to Bytes', date: 'Student Audience' },
-  { id: 7, url: '/events/bits-2.jpg', eventName: 'Bits to Bytes', date: 'Event Engagement' },
-  { id: 8, url: '/events/bits-3.png', eventName: 'Bits to Bytes', date: 'Official Poster' },
-  { id: 9, url: '/events/bits-4.jpg', eventName: 'Bits to Bytes', date: 'The Byte Club Organizers' },
+  { id: 6, url: '/Events/bits-1.jpg', eventName: 'Bits to Bytes', date: 'Student Audience' },
+  { id: 7, url: '/Events/bits-2.jpg', eventName: 'Bits to Bytes', date: 'Event Engagement' },
+  { id: 8, url: '/Events/bits-3.png', eventName: 'Bits to Bytes', date: 'Official Poster' },
+  { id: 9, url: '/Events/bits-4.jpg', eventName: 'Bits to Bytes', date: 'The Byte Club Organizers' },
 
-  { id: 10, url: '/events/group-1.jpg', eventName: 'Annual Assembly', date: 'Mass Gathering' },
-  { id: 11, url: '/events/group-2.png', eventName: 'Annual Assembly', date: 'Community Photo' },
+  { id: 10, url: '/Events/group-1.jpg', eventName: 'Annual Assembly', date: 'Mass Gathering' },
+  { id: 11, url: '/Events/group-2.png', eventName: 'Annual Assembly', date: 'Community Photo' },
 
   // Beyond Labs
-  { id: 14, url: '/events/beyondlabs3.jpg', eventName: 'Beyond Labs', date: 'Student Participation' },
-  { id: 15, url: '/events/beyondlabs4.jpg', eventName: 'Beyond Labs', date: 'Hands-on Activity' },
-  { id: 16, url: '/events/beyondlabs5.jpg', eventName: 'Beyond Labs', date: 'Interactive Learning' },
-  { id: 17, url: '/events/beyondlabs6.jpg', eventName: 'Beyond Labs', date: 'Technical Discussion' },
-  { id: 18, url: '/events/beyondlabs7.jpg', eventName: 'Beyond Labs', date: 'Team Collaboration' },
-  { id: 19, url: '/events/beyondlabs8.jpg', eventName: 'Beyond Labs', date: 'Closing Moments' },
+  { id: 14, url: '/Events/beyondlabs3.jpg', eventName: 'Beyond Labs', date: 'Student Participation' },
+  { id: 15, url: '/Events/beyondlabs4.jpg', eventName: 'Beyond Labs', date: 'Hands-on Activity' },
+  { id: 16, url: '/Events/beyondlabs5.jpg', eventName: 'Beyond Labs', date: 'Interactive Learning' },
+  { id: 17, url: '/Events/beyondlabs6.jpg', eventName: 'Beyond Labs', date: 'Technical Discussion' },
+  { id: 18, url: '/Events/beyondlabs7.jpg', eventName: 'Beyond Labs', date: 'Team Collaboration' },
+  { id: 19, url: '/Events/beyondlabs8.jpg', eventName: 'Beyond Labs', date: 'Closing Moments' },
 ];
 
 const EVENT_DESCRIPTIONS: Record<string, string> = {
