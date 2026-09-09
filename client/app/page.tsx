@@ -13,7 +13,7 @@ import StoryCorridor from "./components/StoryCorridor";
 import ChapterMarker from "./components/ChapterMarker";
 import BlogTeaser from "./components/BlogTeaser";
 import Countdown from "./components/CountDowntimer";
-import GooeyNav from "./components/Navbar";
+import { FloatingDock } from "@/components/ui/floating-dock";
 import ScrollRing from "./components/ScrollRing";
 import SplitFlapText from "@/components/SplitFlapText";
 import {
@@ -40,13 +40,13 @@ const SECTION_LABEL_PROPS = {
 };
 
 const navItems = [
-  { label: "Home", href: "#home", icon: <HomeIcon className="w-4 h-4 sm:w-5 sm:h-5" /> },
-  { label: "Story", href: "#idea", icon: <Info className="w-4 h-4 sm:w-5 sm:h-5" /> },
-  { label: "Events", href: "#info", icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" /> },
-  { label: "Leads", href: "#cores", icon: <Users className="w-4 h-4 sm:w-5 sm:h-5" /> },
-  { label: "Past Events", href: "#pastevents", icon: <History className="w-4 h-4 sm:w-5 sm:h-5" /> },
-  { label: "Blogs", href: "#blogs", icon: <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" /> },
-  { label: "Contact", href: "#write", icon: <Mail className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  { title: "Home", href: "#home", icon: <HomeIcon className="h-full w-full" />, active: true },
+  { title: "Story", href: "#idea", icon: <Info className="h-full w-full" /> },
+  { title: "Events", href: "#info", icon: <Calendar className="h-full w-full" /> },
+  { title: "Leads", href: "#cores", icon: <Users className="h-full w-full" /> },
+  { title: "Past Events", href: "#pastevents", icon: <History className="h-full w-full" /> },
+  { title: "Blogs", href: "#blogs", icon: <BookOpen className="h-full w-full" /> },
+  { title: "Contact", href: "#write", icon: <Mail className="h-full w-full" /> },
 ];
 
 export default function Home() {
@@ -55,22 +55,13 @@ export default function Home() {
       <StoryCorridor />
 
       {/* Floating Navbar */}
-      <div className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none pt-5">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="pointer-events-auto">
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none pt-5 overflow-x-hidden">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+          <div className="pointer-events-auto shrink-0">
             <ScrollRing />
           </div>
-          <div className="pointer-events-auto flex-1 flex justify-center">
-            <GooeyNav
-              items={navItems}
-              particleCount={15}
-              particleDistances={[90, 10]}
-              particleR={100}
-              initialActiveIndex={0}
-              animationTime={600}
-              timeVariance={300}
-              colors={[1, 2, 3, 1, 2, 3, 1, 4]}
-            />
+          <div className="pointer-events-auto flex-1 min-w-0 flex justify-center">
+            <FloatingDock items={navItems} />
           </div>
           <a
             href="#write"

@@ -1,12 +1,6 @@
 "use client";
-/**
- * Note: Use position fixed according to your needs
- * Desktop navbar is better positioned at the bottom
- * Mobile navbar is better positioned at bottom right.
- **/
 
 import { cn } from "@/lib/utils";
-import { IconLayoutNavbarCollapse } from "@tabler/icons-react";
 import {
   AnimatePresence,
   MotionValue,
@@ -18,83 +12,21 @@ import {
 
 import { useRef, useState } from "react";
 
+/**
+ * A single dock that always renders directly (no hamburger-style collapse
+ * hidden behind a tap, and no separate desktop/mobile variant) — most of
+ * this site's traffic is mobile, so the nav needs to be visible outright,
+ * not one extra tap away. Sized small enough (34px rest / 60px on hover)
+ * that all 7 items comfortably fit even a narrow phone screen without
+ * overflowing — the original larger Aceternity sizing (40-80px) added up
+ * to more than a 375px-wide screen could hold and dragged the whole fixed
+ * header (and the page) into horizontal overflow.
+ */
 export const FloatingDock = ({
   items,
-  desktopClassName,
-  mobileClassName,
-}: {
-  items: { title: string; icon: React.ReactNode; href: string }[];
-  desktopClassName?: string;
-  mobileClassName?: string;
-}) => {
-  return (
-    <>
-      <FloatingDockDesktop items={items} className={desktopClassName} />
-      <FloatingDockMobile items={items} className={mobileClassName} />
-    </>
-  );
-};
-
-const FloatingDockMobile = ({
-  items,
   className,
 }: {
-  items: { title: string; icon: React.ReactNode; href: string }[];
-  className?: string;
-}) => {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className={cn("relative block md:hidden", className)}>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            layoutId="nav"
-            className="absolute inset-x-0 bottom-full mb-2 flex flex-col gap-2"
-          >
-            {items.map((item, idx) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                  y: 10,
-                  transition: {
-                    delay: idx * 0.05,
-                  },
-                }}
-                transition={{ delay: (items.length - 1 - idx) * 0.05 }}
-              >
-                <a
-                  href={item.href}
-                  key={item.title}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-900"
-                >
-                  <div className="h-4 w-4">{item.icon}</div>
-                </a>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 dark:bg-neutral-800"
-      >
-        <IconLayoutNavbarCollapse className="h-5 w-5 text-neutral-500 dark:text-neutral-400" />
-      </button>
-    </div>
-  );
-};
-
-const FloatingDockDesktop = ({
-  items,
-  className,
-}: {
-  items: { title: string; icon: React.ReactNode; href: string }[];
+  items: { title: string; icon: React.ReactNode; href: string; active?: boolean }[];
   className?: string;
 }) => {
   let mouseX = useMotionValue(Infinity);
@@ -103,9 +35,14 @@ const FloatingDockDesktop = ({
       onMouseMove={(e) => mouseX.set(e.pageX)}
       onMouseLeave={() => mouseX.set(Infinity)}
       className={cn(
-        "mx-auto hidden h-16 items-end gap-4 rounded-2xl bg-gray-50 px-4 pb-3 md:flex dark:bg-neutral-900",
+        "mx-auto flex h-12 sm:h-14 items-end gap-1.5 sm:gap-2.5 rounded-2xl px-2.5 sm:px-3.5 pb-2 sm:pb-2.5 max-w-full",
         className,
       )}
+      style={{
+        background: "rgba(16,19,23,0.85)",
+        border: "1px solid var(--line)",
+        backdropFilter: "blur(14px)",
+      }}
     >
       {items.map((item) => (
         <IconContainer mouseX={mouseX} key={item.title} {...item} />
@@ -119,11 +56,13 @@ function IconContainer({
   title,
   icon,
   href,
+  active,
 }: {
   mouseX: MotionValue;
   title: string;
   icon: React.ReactNode;
   href: string;
+  active?: boolean;
 }) {
   let ref = useRef<HTMLDivElement>(null);
 
@@ -133,14 +72,16 @@ function IconContainer({
     return val - bounds.x - bounds.width / 2;
   });
 
-  let widthTransform = useTransform(distance, [-150, 0, 150], [40, 80, 40]);
-  let heightTransform = useTransform(distance, [-150, 0, 150], [40, 80, 40]);
+  // Rest/peak sizes are deliberately small (not the original 40/80) so
+  // 7 of these side by side always fit within a phone-width screen.
+  let widthTransform = useTransform(distance, [-150, 0, 150], [30, 52, 30]);
+  let heightTransform = useTransform(distance, [-150, 0, 150], [30, 52, 30]);
 
-  let widthTransformIcon = useTransform(distance, [-150, 0, 150], [20, 40, 20]);
+  let widthTransformIcon = useTransform(distance, [-150, 0, 150], [15, 26, 15]);
   let heightTransformIcon = useTransform(
     distance,
     [-150, 0, 150],
-    [20, 40, 20],
+    [15, 26, 15],
   );
 
   let width = useSpring(widthTransform, {
@@ -168,13 +109,18 @@ function IconContainer({
   const [hovered, setHovered] = useState(false);
 
   return (
-    <a href={href}>
+    <a href={href} className="shrink-0">
       <motion.div
         ref={ref}
-        style={{ width, height }}
+        style={{
+          width,
+          height,
+          background: active ? "var(--accent-soft)" : "var(--bg-elevated)",
+          border: `1px solid ${active ? "var(--accent-border)" : "var(--line)"}`,
+        }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="relative flex aspect-square items-center justify-center rounded-full bg-gray-200 dark:bg-neutral-800"
+        className="relative flex aspect-square items-center justify-center rounded-full"
       >
         <AnimatePresence>
           {hovered && (
@@ -182,15 +128,25 @@ function IconContainer({
               initial={{ opacity: 0, y: 10, x: "-50%" }}
               animate={{ opacity: 1, y: 0, x: "-50%" }}
               exit={{ opacity: 0, y: 2, x: "-50%" }}
-              className="absolute -top-8 left-1/2 w-fit rounded-md border border-gray-200 bg-gray-100 px-2 py-0.5 text-xs whitespace-pre text-neutral-700 dark:border-neutral-900 dark:bg-neutral-800 dark:text-white"
+              className="absolute -top-8 left-1/2 w-fit rounded-md px-2 py-0.5 text-xs whitespace-pre hidden sm:block"
+              style={{
+                fontFamily: "var(--font-mono)",
+                background: "var(--bg-elevated)",
+                border: "1px solid var(--line)",
+                color: "var(--ink)",
+              }}
             >
               {title}
             </motion.div>
           )}
         </AnimatePresence>
         <motion.div
-          style={{ width: widthIcon, height: heightIcon }}
-          className="flex items-center justify-center"
+          style={{
+            width: widthIcon,
+            height: heightIcon,
+            color: active ? "var(--accent)" : "var(--ink-muted)",
+          }}
+          className="flex items-center justify-center transition-colors"
         >
           {icon}
         </motion.div>
