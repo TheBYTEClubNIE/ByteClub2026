@@ -21,11 +21,10 @@ export async function POST(request: Request) {
             from: "Byte Club <onboarding@resend.dev>",
             // Resend's sandbox sender (onboarding@resend.dev) can only
             // deliver to the account's own verified address until a real
-            // domain is verified at resend.com/domains - thebyteclub@nie.ac.in
-            // isn't it, so sends there 403. Using the verified address for
-            // now so the form actually works; switch back once a domain is
-            // verified.
-            to: "diwakarsharma1327@gmail.com",
+            // domain is verified at resend.com/domains. The current
+            // RESEND_API_KEY's account is verified for thebyteclub@nie.ac.in
+            // itself, so this is the correct recipient for this key.
+            to: "thebyteclub@nie.ac.in",
             replyTo: email,
             subject: `New Message from ${name}`,
             html: `
