@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { motion, useScroll, useTransform } from "motion/react";
 
 interface Member {
     id: number;
@@ -83,95 +84,165 @@ function GithubIcon() {
     );
 }
 
-function MemberCard({ member }: { member: Member }) {
-    const [hovered, setHovered] = useState(false);
+const ACCENT_TONES = ["#3066be", "#60afff", "#28c2ff", "#2af5ff"];
+const isValidUrl = (val: string) => val.startsWith("http");
 
-    const isValidUrl = (val: string) => val.startsWith("http");
+/**
+ * Scroll-jacked horizontal gallery (matching motion.dev's react/scroll-
+ * horizontal example): the container is tall, its inner track pins via
+ * `sticky` for the duration, and page-scroll progress across that tall
+ * container drives a horizontal `x` transform on the card row instead of
+ * the usual vertical reveal. The sticky window itself is only as wide as
+ * one card and centered (`overflow: visible`), so neighboring cards peek
+ * in from the sides as they slide through — same framing as the reference.
+ */
+function ScrollGallery({ members, label }: { members: Member[]; label: string }) {
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const [cardWidth, setCardWidth] = useState(260);
+    const gap = 24;
+
+    useEffect(() => {
+        const handleResize = () => setCardWidth(window.innerWidth <= 640 ? 210 : 260);
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    const { scrollYProgress } = useScroll({
+        target: containerRef,
+        offset: ["start start", "end end"],
+    });
+
+    const totalDistance = Math.max(0, (members.length - 1) * (cardWidth + gap));
+    const x = useTransform(scrollYProgress, [0, 1], [0, -totalDistance]);
+
+    // Scroll distance scales with member count so a 10-person team doesn't
+    // feel rushed and a 4-person team doesn't drag — same per-card pacing
+    // regardless of how many people are in the gallery.
+    const containerHeightVh = Math.max(180, members.length * 55 + 60);
+
+    if (members.length === 0) return null;
 
     return (
-        <div
-            className="tbc-card"
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            style={{
-                position: "relative",
-                width: 250,
-                height: 320,
-                overflow: "hidden",
-                cursor: "pointer",
-                transition: "transform 0.4s cubic-bezier(0.16,1,0.3,1)",
-                transform: hovered ? "translateY(-6px)" : "translateY(0)",
-            }}
-        >
-            <span className="tbc-card-corner tbc-card-corner--tl" />
-            <span className="tbc-card-corner tbc-card-corner--br" />
+        <section className="px-4 sm:px-10">
+            <div className="flex flex-col items-center justify-end text-center pb-10 sm:pb-14" style={{ minHeight: "38vh" }}>
+                <span className="tbc-eyebrow" style={{ marginBottom: 10 }}>Meet the team</span>
+                <h3 className="tbc-heading" style={{ fontSize: "clamp(2rem, 6vw, 3.4rem)", fontWeight: 700 }}>
+                    {label}
+                </h3>
+            </div>
 
-            <img
-                src={member.image}
-                alt={member.name}
-                style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                    transition: "transform 0.5s ease, filter 0.5s ease",
-                    // Baseline zoom (not just on hover) so object-fit: cover
-                    // crops past any edge artifacts baked into source photos
-                    // (some of the submitted photos have a thin white frame).
-                    transform: hovered ? "scale(1.13)" : "scale(1.06)",
-                    filter: hovered ? "grayscale(0.05)" : "grayscale(0.6) brightness(0.92)",
-                }}
-            />
-
-            <div
-                style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "linear-gradient(180deg, transparent 45%, rgba(10,11,13,0.92) 100%)",
-                }}
-            />
-
-            <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "1rem" }}>
-                <p
-                    className="tbc-eyebrow"
-                    style={{ marginBottom: 4, opacity: hovered ? 1 : 0, transition: "opacity 0.3s ease" }}
-                >
-                    {member.role}
-                </p>
-                <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: "1.05rem", color: "var(--ink)", margin: 0 }}>
-                    {member.name}
-                </p>
-
+            <div ref={containerRef} className="relative" style={{ height: `${containerHeightVh}vh` }}>
                 <div
+                    className="sticky top-0 h-screen mx-auto flex items-center"
                     style={{
-                        display: "flex",
-                        gap: 14,
-                        marginTop: 10,
-                        maxHeight: hovered ? 24 : 0,
-                        opacity: hovered ? 1 : 0,
-                        overflow: "hidden",
-                        transition: "max-height 0.3s ease, opacity 0.3s ease",
-                        color: "var(--ink-muted)",
+                        width: cardWidth,
+                        overflow: "visible",
+                        // Guarantees clearance under the floating nav pill
+                        // regardless of viewport height — without this, a
+                        // short/laptop-height viewport centers the card row
+                        // right underneath (sometimes touching) the nav.
+                        paddingTop: "clamp(72px, 14vh, 140px)",
                     }}
                 >
-                    {isValidUrl(member.insta) && (
-                        <a href={member.insta} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }} className="hover:text-[var(--accent)] transition-colors">
-                            <InstagramIcon />
-                        </a>
-                    )}
-                    {isValidUrl(member.linkedin) && (
-                        <a href={member.linkedin} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }} className="hover:text-[var(--accent)] transition-colors">
-                            <LinkedInIcon />
-                        </a>
-                    )}
-                    {isValidUrl(member.github) && (
-                        <a href={member.github} target="_blank" rel="noopener noreferrer" style={{ color: "inherit" }} className="hover:text-[var(--accent)] transition-colors">
-                            <GithubIcon />
-                        </a>
-                    )}
+                    <motion.div className="flex" style={{ x, gap }}>
+                        {members.map((member, index) => (
+                            <div
+                                key={member.id}
+                                className="tbc-card shrink-0 relative overflow-hidden"
+                                style={{ width: cardWidth, height: cardWidth * 1.3 }}
+                            >
+                                <span className="tbc-card-corner tbc-card-corner--tl" />
+                                <span className="tbc-card-corner tbc-card-corner--br" />
+
+                                <img
+                                    src={member.image}
+                                    alt={member.name}
+                                    loading="lazy"
+                                    style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "cover",
+                                        display: "block",
+                                        // Baseline zoom so object-fit: cover crops past any
+                                        // edge artifacts baked into a couple of source photos.
+                                        transform: "scale(1.06)",
+                                        filter: "grayscale(0.5) brightness(0.9)",
+                                    }}
+                                />
+
+                                <div
+                                    className="absolute inset-0 pointer-events-none"
+                                    style={{
+                                        background: `linear-gradient(180deg, transparent 45%, ${ACCENT_TONES[index % ACCENT_TONES.length]}22 78%, rgba(10,11,13,0.94) 100%)`,
+                                    }}
+                                />
+
+                                <span className="tbc-index absolute top-3 right-3.5" style={{ fontSize: "1.6rem" }}>
+                                    {String(index + 1).padStart(2, "0")}
+                                </span>
+
+                                <div className="absolute left-0 right-0 bottom-0 p-4">
+                                    <p className="tbc-eyebrow" style={{ marginBottom: 4 }}>
+                                        {member.role}
+                                    </p>
+                                    <p
+                                        style={{
+                                            fontFamily: "var(--font-display)",
+                                            fontWeight: 700,
+                                            fontSize: "1.05rem",
+                                            color: "var(--ink)",
+                                            margin: 0,
+                                        }}
+                                    >
+                                        {member.name}
+                                    </p>
+
+                                    <div className="flex gap-3.5 mt-2.5" style={{ color: "var(--ink-muted)" }}>
+                                        {isValidUrl(member.insta) && (
+                                            <a
+                                                href={member.insta}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                aria-label={`${member.name} on Instagram`}
+                                                style={{ color: "inherit" }}
+                                                className="hover:text-[var(--accent)] transition-colors"
+                                            >
+                                                <InstagramIcon />
+                                            </a>
+                                        )}
+                                        {isValidUrl(member.linkedin) && (
+                                            <a
+                                                href={member.linkedin}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                aria-label={`${member.name} on LinkedIn`}
+                                                style={{ color: "inherit" }}
+                                                className="hover:text-[var(--accent)] transition-colors"
+                                            >
+                                                <LinkedInIcon />
+                                            </a>
+                                        )}
+                                        {isValidUrl(member.github) && (
+                                            <a
+                                                href={member.github}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                aria-label={`${member.name} on GitHub`}
+                                                style={{ color: "inherit" }}
+                                                className="hover:text-[var(--accent)] transition-colors"
+                                            >
+                                                <GithubIcon />
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </motion.div>
                 </div>
             </div>
-        </div>
+        </section>
     );
 }
 
@@ -179,19 +250,5 @@ export default function TeamMembers({ teamId }: { teamId: string }) {
     const members = teamData[teamId] ?? [];
     const label = teamLabels[teamId] ?? "Team";
 
-    return (
-        <section className="px-4 sm:px-10 py-6">
-            <h3
-                style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
-                className="text-2xl font-bold mb-8 text-center"
-            >
-                {label}
-            </h3>
-            <div className="flex flex-wrap justify-center gap-8">
-                {members.map((member) => (
-                    <MemberCard key={member.id} member={member} />
-                ))}
-            </div>
-        </section>
-    );
+    return <ScrollGallery members={members} label={label} />;
 }
