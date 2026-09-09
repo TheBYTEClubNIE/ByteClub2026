@@ -19,7 +19,13 @@ export async function POST(request: Request) {
         // the call alone silently "succeeds" even when nothing was sent.
         const { error } = await resend.emails.send({
             from: "Byte Club <onboarding@resend.dev>",
-            to: "thebyteclub@nie.ac.in",
+            // Resend's sandbox sender (onboarding@resend.dev) can only
+            // deliver to the account's own verified address until a real
+            // domain is verified at resend.com/domains - thebyteclub@nie.ac.in
+            // isn't it, so sends there 403. Using the verified address for
+            // now so the form actually works; switch back once a domain is
+            // verified.
+            to: "diwakarsharma1327@gmail.com",
             replyTo: email,
             subject: `New Message from ${name}`,
             html: `
