@@ -26,6 +26,12 @@
 }
 html {
   scroll-behavior: smooth;
+  /* Same reasoning as body's overflow-x below: the horizontal-scroll
+     galleries intentionally let cards peek past their own narrow window
+     via overflow:visible, and without this on BOTH html and body, some
+     mobile browsers still let that wide content pan/scroll the whole
+     page sideways instead of staying visually clipped to the viewport. */
+  overflow-x: hidden;
 }
 
 /* ============ Byte Club — Minimal Deep-Tech tokens ============ */
