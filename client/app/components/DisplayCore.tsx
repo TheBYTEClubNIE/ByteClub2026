@@ -87,6 +87,127 @@ function GithubIcon() {
 const ACCENT_TONES = ["#3066be", "#60afff", "#28c2ff", "#2af5ff"];
 const isValidUrl = (val: string) => val.startsWith("http");
 
+function MemberCard({ member, index, cardWidth }: { member: Member; index: number; cardWidth: number }) {
+    return (
+        <div
+            className="tbc-card shrink-0 relative overflow-hidden"
+            style={{ width: cardWidth, height: cardWidth * 1.3, scrollSnapAlign: "start" }}
+        >
+            <span className="tbc-card-corner tbc-card-corner--tl" />
+            <span className="tbc-card-corner tbc-card-corner--br" />
+
+            <img
+                src={member.image}
+                alt={member.name}
+                loading="lazy"
+                style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                    // Baseline zoom so object-fit: cover crops past any
+                    // edge artifacts baked into a couple of source photos.
+                    transform: "scale(1.06)",
+                    filter: "grayscale(0.5) brightness(0.9)",
+                }}
+            />
+
+            <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                    background: `linear-gradient(180deg, transparent 45%, ${ACCENT_TONES[index % ACCENT_TONES.length]}22 78%, rgba(10,11,13,0.94) 100%)`,
+                }}
+            />
+
+            <span className="tbc-index absolute top-3 right-3.5" style={{ fontSize: "1.6rem" }}>
+                {String(index + 1).padStart(2, "0")}
+            </span>
+
+            <div className="absolute left-0 right-0 bottom-0 p-4">
+                <p
+                    style={{
+                        fontFamily: "var(--font-display)",
+                        fontWeight: 700,
+                        fontSize: "1.05rem",
+                        color: "var(--ink)",
+                        margin: 0,
+                    }}
+                >
+                    {member.name}
+                </p>
+
+                <div className="flex gap-3.5 mt-2.5" style={{ color: "var(--ink-muted)" }}>
+                    {isValidUrl(member.insta) && (
+                        <a
+                            href={member.insta}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`${member.name} on Instagram`}
+                            style={{ color: "inherit" }}
+                            className="hover:text-[var(--accent)] transition-colors"
+                        >
+                            <InstagramIcon />
+                        </a>
+                    )}
+                    {isValidUrl(member.linkedin) && (
+                        <a
+                            href={member.linkedin}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`${member.name} on LinkedIn`}
+                            style={{ color: "inherit" }}
+                            className="hover:text-[var(--accent)] transition-colors"
+                        >
+                            <LinkedInIcon />
+                        </a>
+                    )}
+                    {isValidUrl(member.github) && (
+                        <a
+                            href={member.github}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`${member.name} on GitHub`}
+                            style={{ color: "inherit" }}
+                            className="hover:text-[var(--accent)] transition-colors"
+                        >
+                            <GithubIcon />
+                        </a>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * Phones (the large majority of this site's traffic) get a plain, native
+ * horizontally-scrollable row: swipe to browse, no pinning, no vertical-
+ * centering math, no scroll-jacking. That whole class of bug (overflow,
+ * mis-centering, sticky-timing edge cases) simply can't happen here,
+ * which matters more on mobile than the fancier desktop effect below.
+ */
+function MobileMemberRow({ members, label }: { members: Member[]; label: string }) {
+    if (members.length === 0) return null;
+    return (
+        <section className="px-4">
+            <div className="text-center mb-6">
+                <span className="tbc-eyebrow" style={{ marginBottom: 8 }}>Meet the team</span>
+                <h3 className="tbc-heading" style={{ fontSize: "clamp(1.6rem, 7vw, 2.2rem)", fontWeight: 700 }}>
+                    {label}
+                </h3>
+            </div>
+            <div
+                className="flex overflow-x-auto pb-3 -mx-4 px-4"
+                style={{ gap: 14, scrollSnapType: "x mandatory", scrollbarWidth: "none" }}
+            >
+                {members.map((member, index) => (
+                    <MemberCard key={member.id} member={member} index={index} cardWidth={168} />
+                ))}
+            </div>
+        </section>
+    );
+}
+
 /**
  * Scroll-jacked horizontal gallery (matching motion.dev's react/scroll-
  * horizontal example): the container is tall, its inner track pins via
@@ -95,6 +216,7 @@ const isValidUrl = (val: string) => val.startsWith("http");
  * the usual vertical reveal. The sticky window itself is only as wide as
  * one card and centered (`overflow: visible`), so neighboring cards peek
  * in from the sides as they slide through — same framing as the reference.
+ * Desktop only (see MobileMemberRow above for phones).
  */
 function ScrollGallery({ members, label }: { members: Member[]; label: string }) {
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -126,10 +248,7 @@ function ScrollGallery({ members, label }: { members: Member[]; label: string })
     return (
         <section className="px-4 sm:px-10">
             <div ref={containerRef} className="relative" style={{ height: `${containerHeightVh}vh` }}>
-                <div
-                    className="sticky top-0 h-screen w-full flex flex-col items-center justify-center"
-                    style={{ paddingTop: 70 }}
-                >
+                <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center">
                     <div className="text-center mb-6 sm:mb-8">
                         <span className="tbc-eyebrow" style={{ marginBottom: 8 }}>Meet the team</span>
                         <h3 className="tbc-heading" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 700 }}>
@@ -143,94 +262,7 @@ function ScrollGallery({ members, label }: { members: Member[]; label: string })
                     >
                     <motion.div className="flex" style={{ x, gap }}>
                         {members.map((member, index) => (
-                            <div
-                                key={member.id}
-                                className="tbc-card shrink-0 relative overflow-hidden"
-                                style={{ width: cardWidth, height: cardWidth * 1.3 }}
-                            >
-                                <span className="tbc-card-corner tbc-card-corner--tl" />
-                                <span className="tbc-card-corner tbc-card-corner--br" />
-
-                                <img
-                                    src={member.image}
-                                    alt={member.name}
-                                    loading="lazy"
-                                    style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "cover",
-                                        display: "block",
-                                        // Baseline zoom so object-fit: cover crops past any
-                                        // edge artifacts baked into a couple of source photos.
-                                        transform: "scale(1.06)",
-                                        filter: "grayscale(0.5) brightness(0.9)",
-                                    }}
-                                />
-
-                                <div
-                                    className="absolute inset-0 pointer-events-none"
-                                    style={{
-                                        background: `linear-gradient(180deg, transparent 45%, ${ACCENT_TONES[index % ACCENT_TONES.length]}22 78%, rgba(10,11,13,0.94) 100%)`,
-                                    }}
-                                />
-
-                                <span className="tbc-index absolute top-3 right-3.5" style={{ fontSize: "1.6rem" }}>
-                                    {String(index + 1).padStart(2, "0")}
-                                </span>
-
-                                <div className="absolute left-0 right-0 bottom-0 p-4">
-                                    <p
-                                        style={{
-                                            fontFamily: "var(--font-display)",
-                                            fontWeight: 700,
-                                            fontSize: "1.05rem",
-                                            color: "var(--ink)",
-                                            margin: 0,
-                                        }}
-                                    >
-                                        {member.name}
-                                    </p>
-
-                                    <div className="flex gap-3.5 mt-2.5" style={{ color: "var(--ink-muted)" }}>
-                                        {isValidUrl(member.insta) && (
-                                            <a
-                                                href={member.insta}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                aria-label={`${member.name} on Instagram`}
-                                                style={{ color: "inherit" }}
-                                                className="hover:text-[var(--accent)] transition-colors"
-                                            >
-                                                <InstagramIcon />
-                                            </a>
-                                        )}
-                                        {isValidUrl(member.linkedin) && (
-                                            <a
-                                                href={member.linkedin}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                aria-label={`${member.name} on LinkedIn`}
-                                                style={{ color: "inherit" }}
-                                                className="hover:text-[var(--accent)] transition-colors"
-                                            >
-                                                <LinkedInIcon />
-                                            </a>
-                                        )}
-                                        {isValidUrl(member.github) && (
-                                            <a
-                                                href={member.github}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                aria-label={`${member.name} on GitHub`}
-                                                style={{ color: "inherit" }}
-                                                className="hover:text-[var(--accent)] transition-colors"
-                                            >
-                                                <GithubIcon />
-                                            </a>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                            <MemberCard key={member.id} member={member} index={index} cardWidth={cardWidth} />
                         ))}
                         </motion.div>
                     </div>
@@ -244,5 +276,20 @@ export default function TeamMembers({ teamId }: { teamId: string }) {
     const members = teamData[teamId] ?? [];
     const label = teamLabels[teamId] ?? "Team";
 
-    return <ScrollGallery members={members} label={label} />;
+    // Mobile gets the plain swipeable row (no sticky/scroll-jacking — see
+    // MobileMemberRow above); desktop keeps the pinned scroll gallery.
+    const [isMobile, setIsMobile] = useState<boolean | null>(null);
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    if (isMobile === null) return null;
+    return isMobile ? (
+        <MobileMemberRow members={members} label={label} />
+    ) : (
+        <ScrollGallery members={members} label={label} />
+    );
 }
