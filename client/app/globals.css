@@ -26,12 +26,6 @@
 }
 html {
   scroll-behavior: smooth;
-  /* Same reasoning as body's overflow-x below: the horizontal-scroll
-     galleries intentionally let cards peek past their own narrow window
-     via overflow:visible, and without this on BOTH html and body, some
-     mobile browsers still let that wide content pan/scroll the whole
-     page sideways instead of staying visually clipped to the viewport. */
-  overflow-x: hidden;
 }
 
 /* ============ Byte Club — Minimal Deep-Tech tokens ============ */
@@ -58,12 +52,12 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-feature-settings: "tnum" 1, "ss01" 1;
-  /* Lives on body (not a nested div) specifically so it doesn't disable
-     `position: sticky` for descendants — overflow set to anything but
-     `visible` on ANY ancestor of a sticky element breaks its pinning in
-     every major browser, which is what silently broke the scroll-jacked
-     member galleries when this rule lived on the page's root wrapper. */
-  overflow-x: hidden;
+  /* No overflow-x here on purpose: overflow set to anything but `visible`
+     on ANY ancestor (html/body included) disables `position: sticky` for
+     every descendant — that's what silently broke the scroll-jacked
+     member galleries the last time this lived here. Horizontal overflow
+     must be clipped locally at its actual source (see DisplayCore.tsx's
+     ScrollGallery) instead of papered over at the root. */
 }
 
 /* ============ Typography system ============ */

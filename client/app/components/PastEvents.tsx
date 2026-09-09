@@ -451,7 +451,7 @@ export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsPr
 
       {/* ── Scroll Timeline ── */}
       <div className="max-w-7xl mx-auto">
-        <div ref={timelineRef} className="relative">
+        <div ref={timelineRef} className="relative overflow-x-hidden">
           {/* rail */}
           <div className="absolute left-[32px] md:left-1/2 top-0 bottom-0 md:-translate-x-1/2 w-[2px] bg-white/10 rounded-full overflow-hidden">
             <motion.div

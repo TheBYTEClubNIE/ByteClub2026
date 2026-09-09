@@ -219,22 +219,21 @@ function MobileMemberRow({ members, label }: { members: Member[]; label: string 
  * horizontal example): the container is tall, its inner track pins via
  * `sticky` for the duration, and page-scroll progress across that tall
  * container drives a horizontal `x` transform on the card row instead of
- * the usual vertical reveal. The sticky window itself is only as wide as
- * one card and centered (`overflow: visible`), so neighboring cards peek
- * in from the sides as they slide through — same framing as the reference.
+ * the usual vertical reveal. The card row's window clips with `overflow:
+ * hidden` at its own bounds (not the previous `overflow: visible` bleed
+ * past a narrow window) — that bleed had no ancestor clipping it, which
+ * both caused real page-level horizontal scroll on mobile and, once
+ * clipped via `overflow-x: hidden` on `html`/`body`, silently broke
+ * `position: sticky` everywhere on the page (an ancestor's overflow other
+ * than `visible` disables sticky descendants; see globals.css history).
  * Desktop only (see MobileMemberRow above for phones).
  */
 function ScrollGallery({ members, label }: { members: Member[]; label: string }) {
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const [cardWidth, setCardWidth] = useState(260);
+    // Desktop-only (mobile renders MobileMemberRow instead), so the card
+    // width never needs to respond to viewport size here.
+    const cardWidth = 260;
     const gap = 24;
-
-    useEffect(() => {
-        const handleResize = () => setCardWidth(window.innerWidth <= 640 ? 210 : 260);
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
 
     const { scrollYProgress } = useScroll({
         target: containerRef,
@@ -244,10 +243,12 @@ function ScrollGallery({ members, label }: { members: Member[]; label: string })
     const totalDistance = Math.max(0, (members.length - 1) * (cardWidth + gap));
     const x = useTransform(scrollYProgress, [0, 1], [0, -totalDistance]);
 
-    // Scroll distance scales with member count so a 10-person team doesn't
-    // feel rushed and a 4-person team doesn't drag — same per-card pacing
-    // regardless of how many people are in the gallery.
-    const containerHeightVh = Math.max(180, members.length * 55 + 60);
+    // Scroll distance is tied to how far the cards actually have to travel
+    // (totalDistance), not a flat per-member multiplier — the previous
+    // formula gave a 10-person team a 610vh-tall pin, which read as a huge
+    // dead scroll gap between team sections since most of that height was
+    // scrolled through before the cards finished sliding.
+    const containerHeightVh = Math.min(260, Math.max(140, 100 + totalDistance / 14));
 
     if (members.length === 0) return null;
 
@@ -265,10 +266,7 @@ function ScrollGallery({ members, label }: { members: Member[]; label: string })
                         </h3>
                     </div>
 
-                    <div
-                        className="mx-auto flex items-center"
-                        style={{ width: cardWidth, overflow: "visible" }}
-                    >
+                    <div className="mx-auto w-full max-w-5xl" style={{ overflow: "hidden" }}>
                     <motion.div className="flex" style={{ x, gap }}>
                         {members.map((member, index) => (
                             <MemberCard key={member.id} member={member} index={index} cardWidth={cardWidth} />
