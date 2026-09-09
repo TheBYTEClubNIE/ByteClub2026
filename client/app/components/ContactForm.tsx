@@ -56,7 +56,7 @@ export default function ContactForm() {
     setStatus("sending");
 
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_SERVER_URI}/send`, form);
+      await axios.post("/api/send", form);
       setStatus("success");
       setForm({ name: "", email: "", message: "" });
     } catch {
