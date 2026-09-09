@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(request: Request) {
     const { name, email, message } = await request.json();
 
@@ -10,6 +8,11 @@ export async function POST(request: Request) {
     }
 
     try {
+        // Constructed per-request (not at module scope): Resend's constructor
+        // throws when the key is missing, and Next.js evaluates route modules
+        // during the build's page-data collection step, which crashed the
+        // build outright rather than just failing at request time.
+        const resend = new Resend(process.env.RESEND_API_KEY);
         await resend.emails.send({
             from: "Byte Club <onboarding@resend.dev>",
             to: "thebyteclub@nie.ac.in",
