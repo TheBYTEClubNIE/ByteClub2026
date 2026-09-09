@@ -58,6 +58,20 @@ export const leads: Lead[] = [
     github: "https://github.com/GulshanJha00",
   },
   {
+    id: 7,
+    name: "Tanishq Dhawan",
+    role: "Technical Co-Lead",
+    domain: "Full-Stack Development & Tooling",
+    badge: "Technical Co-Lead",
+    image: "/Leads/tanishq-technicalcolead.jpeg",
+    description:
+      "Partners with the Tech Lead on engineering direction — building and maintaining the platforms members actually use, and helping new developers get comfortable in a real codebase.",
+    skills: ["Full-Stack", "Next.js", "Mentorship"],
+    insta: "https://www.instagram.com/okay.tanishq",
+    linkedin: "https://www.linkedin.com/in/tanishq-dhawan",
+    github: "https://github.com/CALL-ME-TATA",
+  },
+  {
     id: 3,
     name: "Mayank Rai",
     role: "Management Lead",
@@ -192,24 +206,24 @@ export default function TeamLeads() {
 
   // Responsive book sizing (mobile & desktop)
   const [dimensions, setDimensions] = useState<{ width: number; height: number; perspective: number }>({
-    width: 320,
-    height: 480,
-    perspective: 1600,
+    width: 400,
+    height: 580,
+    perspective: 1900,
   });
 
   useEffect(() => {
     const handleResize = () => {
       const w = window.innerWidth;
       if (w < 380) {
-        setDimensions({ width: 145, height: 250, perspective: 850 });
+        setDimensions({ width: 170, height: 290, perspective: 1000 });
       } else if (w < 480) {
-        setDimensions({ width: 165, height: 280, perspective: 950 });
+        setDimensions({ width: 195, height: 330, perspective: 1100 });
       } else if (w < 640) {
-        setDimensions({ width: 210, height: 340, perspective: 1200 });
+        setDimensions({ width: 250, height: 400, perspective: 1400 });
       } else if (w < 1024) {
-        setDimensions({ width: 260, height: 410, perspective: 1400 });
+        setDimensions({ width: 310, height: 480, perspective: 1650 });
       } else {
-        setDimensions({ width: 330, height: 490, perspective: 1600 });
+        setDimensions({ width: 400, height: 580, perspective: 1900 });
       }
     };
 
@@ -248,7 +262,7 @@ export default function TeamLeads() {
           className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
             activeLeadIndex === -1
               ? "bg-[rgba(40,194,255,0.14)] text-[#2af5ff] border-[rgba(40,194,255,0.55)] shadow-[0_0_15px_rgba(40,194,255,0.3)] scale-105"
-              : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/30"
+              : "bg-white/[0.06] text-white border-white/15 hover:bg-white/10 hover:border-white/30"
           }`}
         >
           <span
@@ -268,7 +282,7 @@ export default function TeamLeads() {
               className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
                 isActive
                   ? "bg-[rgba(40,194,255,0.14)] text-[#2af5ff] border-[rgba(40,194,255,0.55)] shadow-[0_0_15px_rgba(40,194,255,0.3)] scale-105"
-                  : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10 hover:text-white hover:border-white/30"
+                  : "bg-white/[0.06] text-white border-white/15 hover:bg-white/10 hover:border-white/30"
               }`}
             >
               <span
@@ -277,7 +291,7 @@ export default function TeamLeads() {
                 }`}
               />
               <span>{lead.name}</span>
-              <span className="text-[10px] opacity-60 font-mono hidden md:inline">
+              <span className="text-[10px] opacity-80 font-mono hidden md:inline">
                 [{lead.role}]
               </span>
             </button>

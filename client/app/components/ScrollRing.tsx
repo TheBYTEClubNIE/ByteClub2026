@@ -35,12 +35,12 @@ export default function ScrollRing() {
           style={{ pathLength: progress, rotate: -90, transformOrigin: "50% 50%" }}
         />
       </svg>
-      <span
-        style={{ fontFamily: "var(--font-mono)", color: "var(--ink)" }}
-        className="text-[10px] font-semibold tracking-wide"
-      >
-        TBC
-      </span>
+      <img
+        src="/Logo/logo-transparent.png"
+        alt="The Byte Club"
+        className="w-[27px] h-[27px] object-contain select-none pointer-events-none"
+        draggable={false}
+      />
     </Link>
   );
 }

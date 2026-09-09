@@ -131,6 +131,7 @@ interface FaceRenderProps {
     isFront: boolean;
     index: number;
     pageNumber: number;
+    totalSpreads: number;
     isTurned: boolean;
     parsedRadius: string;
     shadowIntensity: number;
@@ -143,6 +144,7 @@ function PageFace({
     isFront,
     index,
     pageNumber,
+    totalSpreads,
     isTurned,
     parsedRadius,
     shadowIntensity,
@@ -204,7 +206,7 @@ function PageFace({
                     {showPageNumbers && (
                         <div className="absolute bottom-3.5 right-3.5 z-30 pointer-events-none">
                             <span className="px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-mono text-white/90 bg-black/60 border border-white/20 backdrop-blur-md shadow-sm">
-                                {String(Math.ceil(pageNumber / 2)).padStart(2, "0")} / 06
+                                {String(Math.ceil(pageNumber / 2)).padStart(2, "0")} / {String(totalSpreads).padStart(2, "0")}
                             </span>
                         </div>
                     )}
@@ -281,7 +283,7 @@ function PageFace({
 
                         {/* Bottom Footer */}
                         <div className="relative z-20 w-full pt-2 border-t border-blue-500/20 flex items-center justify-between text-[8px] sm:text-[9px] text-blue-300/80 font-medium">
-                            <span>6 Leadership Domains</span>
+                            <span>{Math.max(totalSpreads - 1, 0)} Leadership Domains</span>
                             <span className="flex items-center gap-1 text-blue-200 font-semibold">
                                 <span>Flip to open</span>
                                 <span>→</span>
@@ -366,7 +368,7 @@ function PageFace({
                         </div>
                         {showPageNumbers && (
                             <span className="text-[9px] sm:text-[10px] font-mono text-blue-200/80 font-medium">
-                                {String(Math.ceil(pageNumber / 2)).padStart(2, "0")} / 06
+                                {String(Math.ceil(pageNumber / 2)).padStart(2, "0")} / {String(totalSpreads).padStart(2, "0")}
                             </span>
                         )}
                     </div>
@@ -690,6 +692,7 @@ export const ThreeDImagePageflip = forwardRef<ThreeDImagePageflipHandle, ThreeDI
                                     isFront={true}
                                     index={index}
                                     pageNumber={index * 2 + 1}
+                                    totalSpreads={totalLeaves}
                                     isTurned={isTurned}
                                     parsedRadius={parsedRadius}
                                     shadowIntensity={shadowIntensity}
@@ -703,6 +706,7 @@ export const ThreeDImagePageflip = forwardRef<ThreeDImagePageflipHandle, ThreeDI
                                     isFront={false}
                                     index={index}
                                     pageNumber={index * 2 + 2}
+                                    totalSpreads={totalLeaves}
                                     isTurned={isTurned}
                                     parsedRadius={parsedRadius}
                                     shadowIntensity={shadowIntensity}
