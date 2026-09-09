@@ -51,7 +51,7 @@ const navItems = [
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen overflow-x-hidden" style={{ color: "var(--ink)" }}>
+    <div className="relative min-h-screen" style={{ color: "var(--ink)" }}>
       <StoryCorridor />
 
       {/* Floating Navbar */}

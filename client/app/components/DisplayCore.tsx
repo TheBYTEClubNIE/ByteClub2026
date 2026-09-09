@@ -125,26 +125,22 @@ function ScrollGallery({ members, label }: { members: Member[]; label: string })
 
     return (
         <section className="px-4 sm:px-10">
-            <div className="flex flex-col items-center justify-end text-center pb-10 sm:pb-14" style={{ minHeight: "38vh" }}>
-                <span className="tbc-eyebrow" style={{ marginBottom: 10 }}>Meet the team</span>
-                <h3 className="tbc-heading" style={{ fontSize: "clamp(2rem, 6vw, 3.4rem)", fontWeight: 700 }}>
-                    {label}
-                </h3>
-            </div>
-
             <div ref={containerRef} className="relative" style={{ height: `${containerHeightVh}vh` }}>
                 <div
-                    className="sticky top-0 h-screen mx-auto flex items-center"
-                    style={{
-                        width: cardWidth,
-                        overflow: "visible",
-                        // Guarantees clearance under the floating nav pill
-                        // regardless of viewport height — without this, a
-                        // short/laptop-height viewport centers the card row
-                        // right underneath (sometimes touching) the nav.
-                        paddingTop: "clamp(72px, 14vh, 140px)",
-                    }}
+                    className="sticky top-0 h-screen w-full flex flex-col items-center justify-center"
+                    style={{ paddingTop: 70 }}
                 >
+                    <div className="text-center mb-6 sm:mb-8">
+                        <span className="tbc-eyebrow" style={{ marginBottom: 8 }}>Meet the team</span>
+                        <h3 className="tbc-heading" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 700 }}>
+                            {label}
+                        </h3>
+                    </div>
+
+                    <div
+                        className="mx-auto flex items-center"
+                        style={{ width: cardWidth, overflow: "visible" }}
+                    >
                     <motion.div className="flex" style={{ x, gap }}>
                         {members.map((member, index) => (
                             <div
@@ -239,7 +235,8 @@ function ScrollGallery({ members, label }: { members: Member[]; label: string })
                                 </div>
                             </div>
                         ))}
-                    </motion.div>
+                        </motion.div>
+                    </div>
                 </div>
             </div>
         </section>

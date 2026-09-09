@@ -52,6 +52,12 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-feature-settings: "tnum" 1, "ss01" 1;
+  /* Lives on body (not a nested div) specifically so it doesn't disable
+     `position: sticky` for descendants — overflow set to anything but
+     `visible` on ANY ancestor of a sticky element breaks its pinning in
+     every major browser, which is what silently broke the scroll-jacked
+     member galleries when this rule lived on the page's root wrapper. */
+  overflow-x: hidden;
 }
 
 /* ============ Typography system ============ */
