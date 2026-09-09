@@ -86,6 +86,12 @@ function GithubIcon() {
 
 const ACCENT_TONES = ["#3066be", "#60afff", "#28c2ff", "#2af5ff"];
 const isValidUrl = (val: string) => val.startsWith("http");
+// Fixed nav's total footprint (pt-5 wrapper padding + dock height + its own
+// bottom padding) — the pinned gallery reserves this much space at the top
+// instead of centering across the full viewport, so on short browser
+// windows (address bar + bookmarks bar eating into height) the centered
+// content can never collide with the nav sitting on top of it.
+const NAV_CLEARANCE = 96;
 
 function MemberCard({ member, index, cardWidth }: { member: Member; index: number; cardWidth: number }) {
     return (
@@ -248,7 +254,10 @@ function ScrollGallery({ members, label }: { members: Member[]; label: string })
     return (
         <section className="px-4 sm:px-10">
             <div ref={containerRef} className="relative" style={{ height: `${containerHeightVh}vh` }}>
-                <div className="sticky top-0 h-screen w-full flex flex-col items-center justify-center">
+                <div
+                    className="sticky w-full flex flex-col items-center justify-center"
+                    style={{ top: NAV_CLEARANCE, height: `calc(100vh - ${NAV_CLEARANCE}px)` }}
+                >
                     <div className="text-center mb-6 sm:mb-8">
                         <span className="tbc-eyebrow" style={{ marginBottom: 8 }}>Meet the team</span>
                         <h3 className="tbc-heading" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 700 }}>
