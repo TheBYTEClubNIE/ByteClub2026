@@ -44,16 +44,6 @@ function updatePointScatter(
     displace = new Float32Array(n);
     points.userData.displace = displace;
   }
-  let driftDirs = points.userData.driftDirs as Float32Array | undefined;
-  if (!driftDirs) {
-    driftDirs = new Float32Array(n);
-    for (let i = 0; i < n; i += 3) {
-      driftDirs[i] = (Math.random() - 0.5) * 2;
-      driftDirs[i + 1] = (Math.random() - 0.5) * 2;
-      driftDirs[i + 2] = (Math.random() - 0.5) * 0.8;
-    }
-    points.userData.driftDirs = driftDirs;
-  }
   let driftVel = points.userData.driftVel as Float32Array | undefined;
   if (!driftVel || driftVel.length !== n) {
     driftVel = new Float32Array(n);
@@ -70,9 +60,12 @@ function updatePointScatter(
   const scrolling = scrollDelta > 0.00003;
   for (let i = 0; i < n; i += 3) {
     if (scrolling) {
-      driftVel[i] += driftDirs[i] * scrollDelta * 14;
-      driftVel[i + 1] += driftDirs[i + 1] * scrollDelta * 14;
-      driftVel[i + 2] += driftDirs[i + 2] * scrollDelta * 14;
+      // A fresh random heading every frame (not a fixed one picked at
+      // creation) — otherwise each triangle always wanders the same way
+      // every time you scroll, which read as "only one direction".
+      driftVel[i] += (Math.random() - 0.5) * scrollDelta * 20;
+      driftVel[i + 1] += (Math.random() - 0.5) * scrollDelta * 20;
+      driftVel[i + 2] += (Math.random() - 0.5) * scrollDelta * 10;
     }
     driftVel[i] *= 0.97;
     driftVel[i + 1] *= 0.97;
@@ -82,13 +75,17 @@ function updatePointScatter(
     driftPos[i + 2] += driftVel[i + 2];
     const dlen = Math.sqrt(driftPos[i] * driftPos[i] + driftPos[i + 1] * driftPos[i + 1] + driftPos[i + 2] * driftPos[i + 2]);
     if (dlen > DRIFT_MAX) {
-      const s = DRIFT_MAX / dlen;
-      driftPos[i] *= s;
-      driftPos[i + 1] *= s;
-      driftPos[i + 2] *= s;
-      driftVel[i] *= -0.4;
-      driftVel[i + 1] *= -0.4;
-      driftVel[i + 2] *= -0.4;
+      // Soft pull back toward home past the boundary instead of a hard
+      // velocity-reversing bounce — a hard bounce combined with a fixed
+      // heading was what made it look "frozen" (oscillating in place on
+      // one axis once it hit the wall).
+      const pull = 1 - DRIFT_MAX / dlen;
+      driftPos[i] -= driftPos[i] * pull * 0.4;
+      driftPos[i + 1] -= driftPos[i + 1] * pull * 0.4;
+      driftPos[i + 2] -= driftPos[i + 2] * pull * 0.4;
+      driftVel[i] *= 0.7;
+      driftVel[i + 1] *= 0.7;
+      driftVel[i + 2] *= 0.7;
     }
 
     if (hoverEnabled) {
@@ -313,29 +310,35 @@ export default function StoryCorridor() {
             const home = obj.userData.home as THREE.Vector3;
             const displace = obj.userData.displace as THREE.Vector3;
             // Scroll-driven wander, same idea as the per-point dust field
-            // below: scrolling adds velocity along the shard's own fixed
-            // heading, velocity only damps gradually, and position keeps
-            // integrating it — so a shard actually travels somewhere and
-            // keeps drifting briefly after you stop scrolling, rather than
-            // springing straight back to home (which read as "static").
-            // A soft bounce off a max radius keeps it from wandering off
-            // into the middle distance forever.
-            const driftDir = obj.userData.driftDir as THREE.Vector3 | undefined;
-            if (driftDir) {
+            // below: scrolling adds velocity in a fresh random direction
+            // every frame (not one fixed heading picked at creation — that
+            // made every shard always wander the same way, which read as
+            // "only one direction"), velocity damps gradually, and position
+            // keeps integrating it so a shard actually travels somewhere
+            // and keeps drifting briefly after you stop scrolling, rather
+            // than springing straight back to home. Past a max radius it's
+            // pulled softly back toward home instead of bouncing — a hard
+            // velocity-reversing bounce combined with a fixed heading was
+            // what made it look "frozen" (oscillating in place once it hit
+            // the wall).
+            if (obj.userData.driftDir) {
               if (!obj.userData.driftVel) obj.userData.driftVel = new THREE.Vector3();
               if (!obj.userData.driftPos) obj.userData.driftPos = new THREE.Vector3();
               const driftVel = obj.userData.driftVel as THREE.Vector3;
               const driftPos = obj.userData.driftPos as THREE.Vector3;
               if (scrollDelta > 0.00003) {
-                driftVel.addScaledVector(driftDir, scrollDelta * 14);
+                driftVel.x += (Math.random() - 0.5) * scrollDelta * 20;
+                driftVel.y += (Math.random() - 0.5) * scrollDelta * 20;
+                driftVel.z += (Math.random() - 0.5) * scrollDelta * 10;
               }
               driftVel.multiplyScalar(0.97);
               driftPos.add(driftVel);
               const driftMax = 0.9;
               const dlen = driftPos.length();
               if (dlen > driftMax) {
-                driftPos.multiplyScalar(driftMax / dlen);
-                driftVel.multiplyScalar(-0.4);
+                const pull = 1 - driftMax / dlen;
+                driftPos.multiplyScalar(1 - pull * 0.4);
+                driftVel.multiplyScalar(0.7);
               }
             }
             if (hoverEnabled) {

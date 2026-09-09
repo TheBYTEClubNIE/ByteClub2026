@@ -155,7 +155,7 @@ function buildBookPages(): PageFlipLeaf[] {
     frontTitle: "Byte Club",
     frontSubtitle: "Leadership Directory",
     frontBadge: "2025–2026",
-    frontLogo: "/Logo/logo-transparent.png",
+    frontLogo: "/Logo/the-byte-club-nie-449d8449.webp",
     frontDescription:
       "A collective of student developers, designers, and innovators leading technical projects, community workshops, and hackathons.",
     frontIsCover: true,
@@ -184,7 +184,7 @@ function buildBookPages(): PageFlipLeaf[] {
       backBadge: isLast ? "Byte Club 2026" : leads[idx + 1].badge,
       backTitle: isLast ? "Byte Club" : leads[idx + 1].name,
       backSubtitle: isLast ? "Join The Community" : `${leads[idx + 1].role} • ${leads[idx + 1].domain}`,
-      backLogo: isLast ? "/Logo/logo-transparent.png" : undefined,
+      backLogo: isLast ? "/Logo/the-byte-club-nie-449d8449.webp" : undefined,
       backDescription: isLast
         ? "Building open-source platforms, conducting workshops, and hosting flagship hackathons. Connect with our community or explore upcoming initiatives."
         : undefined,
