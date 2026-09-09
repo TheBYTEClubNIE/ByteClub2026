@@ -158,7 +158,7 @@ Sends a contact form submission as an email to the club administrators via the R
 **Email Delivery Details**
 
 - **From:** `Byte Club <onboarding@resend.dev>`
-- **To:** `diwakarsharma1327@gmail.com` (hardcoded admin inbox)
+- **To:** `thebyteclub@nie.ac.in` (hardcoded admin inbox)
 - **Subject:** `New Message from {name}`
 - **Body:** HTML-formatted with name, email, and message
 
@@ -428,7 +428,7 @@ The server uses `SUPABASE_SERVICE_ROLE_KEY` to connect, which bypasses Supabase 
 
 2. **Service role key** — The `SUPABASE_SERVICE_ROLE_KEY` bypasses all RLS policies. Always keep this server-side only. Never expose it in client code or public repositories.
 
-3. **Hardcoded recipient email** — The `/send` endpoint sends all contact messages to a single hardcoded address (`diwakarsharma1327@gmail.com`). Move this to an environment variable (`CONTACT_EMAIL`) for flexibility.
+3. **Hardcoded recipient email** — The `/send` endpoint sends all contact messages to a single hardcoded address (`thebyteclub@nie.ac.in`). Move this to an environment variable (`CONTACT_EMAIL`) for flexibility.
 
 4. **No rate limiting** — Consider adding `express-rate-limit` to prevent abuse of the `/send` and `/login` endpoints.
 

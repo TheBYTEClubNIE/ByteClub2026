@@ -35,8 +35,8 @@ app.post("/send", async (req, res) => {
 
   try {
     await resend.emails.send({
-      from: "Byte Club <onboarding@resend.dev>", 
-      to: "diwakarsharma1327@gmail.com",
+      from: "Byte Club <onboarding@resend.dev>",
+      to: "thebyteclub@nie.ac.in",
       subject: `New Message from ${name}`,
       html: `
         <h2>New Contact Message</h2>
