@@ -179,9 +179,6 @@ function ScrollGallery({ members, label }: { members: Member[]; label: string })
                                 </span>
 
                                 <div className="absolute left-0 right-0 bottom-0 p-4">
-                                    <p className="tbc-eyebrow" style={{ marginBottom: 4 }}>
-                                        {member.role}
-                                    </p>
                                     <p
                                         style={{
                                             fontFamily: "var(--font-display)",
