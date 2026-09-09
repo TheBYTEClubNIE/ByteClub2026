@@ -34,9 +34,14 @@ app.post("/send", async (req, res) => {
   }
 
   try {
-    await resend.emails.send({
+    // The Resend SDK resolves with { data, error } instead of throwing on
+    // API-level failures (e.g. the sandbox sender's recipient restriction),
+    // so the resolved value must be checked - awaiting alone silently
+    // "succeeds" even when nothing was actually sent.
+    const { error: resendError } = await resend.emails.send({
       from: "Byte Club <onboarding@resend.dev>",
       to: "thebyteclub@nie.ac.in",
+      replyTo: email,
       subject: `New Message from ${name}`,
       html: `
         <h2>New Contact Message</h2>
@@ -45,6 +50,11 @@ app.post("/send", async (req, res) => {
         <p><b>Message:</b><br/>${message}</p>
       `,
     });
+
+    if (resendError) {
+      console.log("RESEND ERROR:", resendError);
+      return res.status(500).json({ error: "Email failed to send" });
+    }
 
     res.status(200).json({ success: true });
 

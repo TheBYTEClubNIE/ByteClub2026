@@ -13,7 +13,11 @@ export async function POST(request: Request) {
         // during the build's page-data collection step, which crashed the
         // build outright rather than just failing at request time.
         const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
+        // The Resend SDK resolves with { data, error } instead of throwing on
+        // API-level failures (e.g. the sandbox sender's recipient
+        // restriction), so checking the resolved value is required - awaiting
+        // the call alone silently "succeeds" even when nothing was sent.
+        const { error } = await resend.emails.send({
             from: "Byte Club <onboarding@resend.dev>",
             to: "thebyteclub@nie.ac.in",
             replyTo: email,
@@ -25,6 +29,11 @@ export async function POST(request: Request) {
         <p><b>Message:</b><br/>${message}</p>
       `,
         });
+
+        if (error) {
+            console.error("RESEND ERROR:", error);
+            return Response.json({ error: "Email failed to send" }, { status: 500 });
+        }
 
         return Response.json({ success: true });
     } catch (error) {
