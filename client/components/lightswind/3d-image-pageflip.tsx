@@ -349,7 +349,7 @@ function PageFace({
                 /* ══════════════════════════════════════════════════════
                    4. INNER PROFILE PAGE (HIGH CONTRAST BLUE & WHITE)
                    ══════════════════════════════════════════════════════ */
-                <div className="relative w-full h-full bg-gradient-to-b from-[#070e24] via-[#050a1b] to-[#030612] flex flex-col justify-between p-3.5 sm:p-5 text-white overflow-hidden border border-blue-500/25">
+                <div className="relative w-full h-full bg-gradient-to-b from-[#070e24] via-[#050a1b] to-[#030612] flex flex-col justify-between p-3.5 sm:p-5 text-white overflow-y-auto border border-blue-500/25">
                     {/* Subtle Blue & Cyan Lighting */}
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(59,130,246,0.12),transparent_50%)] pointer-events-none" />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_85%,rgba(6,182,212,0.08),transparent_55%)] pointer-events-none" />
