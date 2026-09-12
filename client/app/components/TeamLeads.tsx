@@ -300,7 +300,7 @@ export default function TeamLeads() {
       </div>
 
       {/* Pure 3D Book */}
-      <div className="w-full flex flex-col items-center justify-center overflow-visible py-2">
+      <div className="w-full flex flex-col items-center justify-center overflow-hidden py-2">
         <ThreeDImagePageflip
           ref={bookRef}
           pages={bookPages}

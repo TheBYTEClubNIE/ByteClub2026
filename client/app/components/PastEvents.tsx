@@ -230,8 +230,6 @@ function EventCarousel({
           <ThreeDImageCarousel
             slides={slides}
             itemCount={5}
-            autoplay
-            delay={4}
             onSlideChange={setFocused}
             onSlideClick={(_slide, index) => {
               const photo = photos[index];

@@ -1,6 +1,8 @@
+"use client";
+
 import "./globals.css";
 
-
+import { useEffect, useState } from "react";
 import Hero from "./components/Hero";
 import UpcomingEvents from "./components/UpcomingEvents";
 import PastEvents from "./components/PastEvents";
@@ -40,7 +42,7 @@ const SECTION_LABEL_PROPS = {
 };
 
 const navItems = [
-  { title: "Home", href: "#home", icon: <HomeIcon className="h-full w-full" />, active: true },
+  { title: "Home", href: "#home", icon: <HomeIcon className="h-full w-full" /> },
   { title: "Story", href: "#idea", icon: <Info className="h-full w-full" /> },
   { title: "Events", href: "#info", icon: <Calendar className="h-full w-full" /> },
   { title: "Leads", href: "#cores", icon: <Users className="h-full w-full" /> },
@@ -50,6 +52,28 @@ const navItems = [
 ];
 
 export default function Home() {
+  const [activeSection, setActiveSection] = useState("home");
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((e) => e.isIntersecting);
+        if (visible) setActiveSection(visible.target.id);
+      },
+      { rootMargin: "-40% 0px -40% 0px" }
+    );
+    navItems.forEach(({ href }) => {
+      const el = document.getElementById(href.slice(1));
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const activeNavItems = navItems.map((item) => ({
+    ...item,
+    active: item.href.slice(1) === activeSection,
+  }));
+
   return (
     <div className="relative min-h-screen" style={{ color: "var(--ink)" }}>
       <StoryCorridor />
@@ -61,7 +85,7 @@ export default function Home() {
             <ScrollRing />
           </div>
           <div className="pointer-events-auto flex-1 min-w-0 flex justify-center">
-            <FloatingDock items={navItems} />
+            <FloatingDock items={activeNavItems} />
           </div>
           <a
             href="#write"
