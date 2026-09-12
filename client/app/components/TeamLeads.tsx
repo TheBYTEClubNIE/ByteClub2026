@@ -215,15 +215,15 @@ export default function TeamLeads() {
     const handleResize = () => {
       const w = window.innerWidth;
       if (w < 380) {
-        setDimensions({ width: 170, height: 380, perspective: 1000 });
+        setDimensions({ width: 170, height: 460, perspective: 1000 });
       } else if (w < 480) {
-        setDimensions({ width: 195, height: 420, perspective: 1100 });
+        setDimensions({ width: 195, height: 500, perspective: 1100 });
       } else if (w < 640) {
-        setDimensions({ width: 250, height: 480, perspective: 1400 });
+        setDimensions({ width: 250, height: 560, perspective: 1400 });
       } else if (w < 1024) {
-        setDimensions({ width: 310, height: 560, perspective: 1650 });
+        setDimensions({ width: 310, height: 640, perspective: 1650 });
       } else {
-        setDimensions({ width: 400, height: 640, perspective: 1900 });
+        setDimensions({ width: 400, height: 720, perspective: 1900 });
       }
     };
 
