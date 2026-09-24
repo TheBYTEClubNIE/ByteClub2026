@@ -383,6 +383,18 @@ function BlogEditor({
   const [isPublished, setIsPublished] = useState(blog?.is_published ?? true);
   const [saving, setSaving] = useState(false);
 
+  const handleMdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    setContent(text);
+    if (!title) {
+      const heading = text.match(/^#\s+(.+)$/m)?.[1];
+      setTitle(heading || file.name.replace(/\.md$/i, "").replace(/[-_]/g, " "));
+    }
+    e.target.value = "";
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
@@ -473,6 +485,15 @@ function BlogEditor({
                 </option>
               ))}
             </select>
+          </div>
+          <div className="field-group">
+            <label className="field-label">UPLOAD .MD (OPTIONAL)</label>
+            <input
+              type="file"
+              accept=".md,text/markdown"
+              className="cyber-input file-input"
+              onChange={handleMdUpload}
+            />
           </div>
           <div className="field-group">
             <label className="field-label">CONTENT DATA</label>
@@ -598,6 +619,20 @@ const css = `
   .cyber-input::placeholder { color: rgba(255,255,255,0.25); }
 
   .field-textarea { resize: vertical; min-height: 220px; line-height: 1.7; }
+
+  .file-input { padding: 10px 16px; cursor: pointer; }
+  .file-input::file-selector-button {
+    background: var(--border-bright);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin-right: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
 
   .cyber-btn {
     height: 52px;
