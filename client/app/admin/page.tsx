@@ -22,8 +22,6 @@ const BLOG_CATEGORIES: { value: BlogCategory; label: string }[] = [
   { value: "opensource", label: "Open Source" },
 ];
 
-const API = process.env.NEXT_PUBLIC_SERVER_URI;
-
 export default function AdminPage() {
   const [view, setView] = useState<View>("login");
   const [token, setToken] = useState<string | null>(null);
@@ -73,7 +71,7 @@ function LoginPanel({ onLogin }: { onLogin: (t: string) => void }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/login`, {
+      const res = await fetch(`/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -182,7 +180,7 @@ function Dashboard({
   const fetchBlogs = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/blog`);
+      const res = await fetch(`/api/blog`);
       const data = await res.json();
       setBlogs(Array.isArray(data) ? data : []);
     } catch {
@@ -198,7 +196,7 @@ function Dashboard({
 
   const handleDelete = async (blog_id: string) => {
     try {
-      const res = await fetch(`${API}/admin`, {
+      const res = await fetch(`/api/admin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -404,7 +402,7 @@ function BlogEditor({
               category,
               is_published: isPublished,
             };
-      const res = await fetch(`${API}/admin`, {
+      const res = await fetch(`/api/admin`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
