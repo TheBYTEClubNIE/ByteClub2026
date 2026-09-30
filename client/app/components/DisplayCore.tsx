@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { DOMAINS, LEADS, type Domain, type PhotoFrame, isProfileUrl, photoStyle } from "@/content/team";
 import DomainArt from "./DomainArt";
+import PullBadge from "./PullBadge";
 
 interface Member {
     id: number;
@@ -94,7 +95,7 @@ function Badge({ member }: { member: Member }) {
     ].filter((l) => isProfileUrl(l.href));
 
     return (
-        <li className="badge">
+        <PullBadge>
             <span className="badge-clip" aria-hidden />
             <div className="badge-photo" data-holo-card>
                 <Image
@@ -117,7 +118,7 @@ function Badge({ member }: { member: Member }) {
                     ))}
                 </div>
             )}
-        </li>
+        </PullBadge>
     );
 }
 
@@ -132,7 +133,9 @@ export default function TeamMembers({ teamId }: { teamId: string }) {
 
     return (
         <section className="squad" style={{ ["--squad" as string]: domainColor(teamId) }} aria-labelledby={`squad-${teamId}`}>
-            <DomainArt domain={teamId as Domain} />
+            <span className="squad-art" aria-hidden>
+                <DomainArt domain={teamId as Domain} />
+            </span>
             <header className="squad-head">
                 <div>
                     <h3 id={`squad-${teamId}`} className="team-label">
@@ -173,12 +176,15 @@ export default function TeamMembers({ teamId }: { teamId: string }) {
 }
 
 export const FACE_WALL_CSS = `
-.squad { position: relative; overflow: hidden; padding: 18px 14px 22px; border-radius: 20px; border: 1px solid var(--line);
+.squad { position: relative; padding: 18px 14px 22px; border-radius: 20px; border: 1px solid var(--line);
   background: radial-gradient(70% 50% at 100% 0%, color-mix(in srgb, var(--squad) 13%, transparent), transparent 70%), var(--bg-elevated); }
-.squad::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--squad); }
+/* only the artwork is clipped, so a pulled badge can swing past the panel edge */
+.squad-art { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.squad-art::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--squad); }
+.squad:has(.is-pulled) { z-index: 10; }
 .squad .lead-art { position: absolute; z-index: 0; top: -12px; right: -12px; width: 260px; height: auto; color: var(--squad); opacity: 0.2; pointer-events: none;
   -webkit-mask-image: linear-gradient(225deg, #000 30%, transparent 75%); mask-image: linear-gradient(225deg, #000 30%, transparent 75%); }
-.squad > :not(.lead-art) { position: relative; z-index: 1; }
+.squad > :not(.squad-art) { position: relative; z-index: 1; }
 
 .squad-head { display: grid; gap: 14px; margin-bottom: 24px; }
 .team-label { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.25rem; letter-spacing: -0.01em; color: var(--ink); }
@@ -194,7 +200,10 @@ export const FACE_WALL_CSS = `
 .squad-avatar + .squad-avatar { margin-left: -10px; }
 
 .badge-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 10px; }
-.badge { position: relative; padding: 14px 7px 8px; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(180deg, #161b20, #0f1316); box-shadow: 0 12px 26px -16px rgba(0, 0, 0, 0.85); transform-origin: 50% -14px; }
+.badge-slot { position: relative; }
+.badge-slot.is-pulled { z-index: 5; }
+.badge-strap { position: absolute; z-index: 0; left: 50%; top: -4px; width: 12px; height: 0; transform-origin: top center; border-radius: 2px; background: linear-gradient(90deg, color-mix(in srgb, var(--squad) 70%, #000), var(--squad) 30%, var(--squad) 70%, color-mix(in srgb, var(--squad) 70%, #000)); box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none; }
+.badge { position: relative; z-index: 1; cursor: grab; user-select: none; touch-action: pan-y; padding: 14px 7px 8px; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(180deg, #161b20, #0f1316); box-shadow: 0 12px 26px -16px rgba(0, 0, 0, 0.85); transform-origin: 50% -14px; }
 .badge::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; border-radius: 14px 14px 0 0; background: var(--squad); }
 .badge-clip { position: absolute; z-index: 2; top: -7px; left: 50%; width: 30px; height: 12px; transform: translateX(-50%); border-radius: 4px; background: #3a4249; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35); }
 .badge-clip::after { content: ""; position: absolute; left: 50%; top: 4px; width: 14px; height: 3px; transform: translateX(-50%); border-radius: 2px; background: #0a0b0d; }
@@ -204,8 +213,8 @@ export const FACE_WALL_CSS = `
 .badge-links { display: flex; justify-content: center; margin-top: 4px; }
 .badge-links a { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; color: var(--ink-muted); transition: color 0.2s ease, background-color 0.2s ease; }
 .badge-links a:hover { color: var(--squad); background: rgba(255, 255, 255, 0.05); }
-@media (hover: hover) { .badge:hover { animation: badge-swing 1.1s ease-in-out; } }
-@keyframes badge-swing { 20% { transform: rotate(3deg); } 45% { transform: rotate(-2deg); } 70% { transform: rotate(1deg); } 100% { transform: rotate(0); } }
+.badge:active { cursor: grabbing; }
+.badge-slot.is-pulled .badge { box-shadow: 0 24px 40px -16px rgba(0, 0, 0, 0.9); }
 
 @media (min-width: 640px) { .badge-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 14px; } }
 @media (min-width: 768px) {
@@ -216,5 +225,4 @@ export const FACE_WALL_CSS = `
   .badge-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 26px 16px; }
   .badge-name { font-size: 14px; }
 }
-@media (prefers-reduced-motion: reduce) { .badge:hover { animation: none; } }
 `;
