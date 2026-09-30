@@ -1,7 +1,4 @@
-"use client";
-
-import React, { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
+import Image from "next/image";
 
 interface Member {
     id: number;
@@ -49,9 +46,9 @@ const teamData: Record<string, Member[]> = {
 };
 
 const teamLabels: Record<string, string> = {
-    tech: "Tech Team",
-    management: "Management Team",
-    creative: "Creative Team",
+    tech: "Tech",
+    management: "Management",
+    creative: "Creative",
 };
 
 function InstagramIcon() {
@@ -84,219 +81,85 @@ function GithubIcon() {
     );
 }
 
-const ACCENT_TONES = ["#3066be", "#60afff", "#28c2ff", "#2af5ff"];
-const isValidUrl = (val: string) => val.startsWith("http");
-// Fixed nav's total footprint (pt-5 wrapper padding + dock height + its own
-// bottom padding) — the pinned gallery reserves this much space at the top
-// instead of centering across the full viewport, so on short browser
-// windows (address bar + bookmarks bar eating into height) the centered
-// content can never collide with the nav sitting on top of it.
-const NAV_CLEARANCE = 96;
+// Placeholders ("insta_id") and bare site roots ("https://www.instagram.com/")
+// aren't real profiles, so they don't get an icon.
+const isProfileUrl = (val: string) =>
+    val.startsWith("http") && !/^https?:\/\/(www\.)?(instagram|linkedin|github)\.com\/?$/.test(val);
 
-function MemberCard({ member, index, cardWidth }: { member: Member; index: number; cardWidth: number }) {
+function Face({ member }: { member: Member }) {
+    const links = [
+        { href: member.insta, label: "Instagram", icon: <InstagramIcon /> },
+        { href: member.linkedin, label: "LinkedIn", icon: <LinkedInIcon /> },
+        { href: member.github, label: "GitHub", icon: <GithubIcon /> },
+    ].filter((l) => isProfileUrl(l.href));
+
     return (
-        <div
-            className="tbc-card shrink-0 relative overflow-hidden"
-            style={{ width: cardWidth, height: cardWidth * 1.3, scrollSnapAlign: "start" }}
-        >
-            <span className="tbc-card-corner tbc-card-corner--tl" />
-            <span className="tbc-card-corner tbc-card-corner--br" />
-
-            <img
-                src={member.image}
-                alt={member.name}
-                loading="lazy"
-                style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                    // Baseline zoom so object-fit: cover crops past any
-                    // edge artifacts baked into a couple of source photos.
-                    transform: "scale(1.06)",
-                    filter: "grayscale(0.5) brightness(0.9)",
-                }}
-            />
-
-            <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                    background: `linear-gradient(180deg, transparent 45%, ${ACCENT_TONES[index % ACCENT_TONES.length]}22 78%, rgba(10,11,13,0.94) 100%)`,
-                }}
-            />
-
-            <span className="tbc-index absolute top-3 right-3.5" style={{ fontSize: "1.6rem" }}>
-                {String(index + 1).padStart(2, "0")}
-            </span>
-
-            <div className="absolute left-0 right-0 bottom-0 p-4">
-                <p
-                    style={{
-                        fontFamily: "var(--font-display)",
-                        fontWeight: 700,
-                        fontSize: "1.05rem",
-                        color: "var(--ink)",
-                        margin: 0,
-                    }}
-                >
-                    {member.name}
-                </p>
-
-                <div className="flex gap-3.5 mt-2.5" style={{ color: "var(--ink-muted)" }}>
-                    {isValidUrl(member.insta) && (
+        <li className="face">
+            <div className="face-photo">
+                <Image
+                    src={member.image}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1024px) 150px, (min-width: 640px) 22vw, 30vw"
+                    className="object-cover"
+                />
+            </div>
+            <p className="face-name">{member.name}</p>
+            <p className="face-role">{member.role}</p>
+            {links.length > 0 && (
+                <div className="face-links">
+                    {links.map((l) => (
                         <a
-                            href={member.insta}
+                            key={l.label}
+                            href={l.href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            aria-label={`${member.name} on Instagram`}
-                            style={{ color: "inherit" }}
-                            className="hover:text-[var(--accent)] transition-colors"
+                            aria-label={`${member.name} on ${l.label}`}
                         >
-                            <InstagramIcon />
+                            {l.icon}
                         </a>
-                    )}
-                    {isValidUrl(member.linkedin) && (
-                        <a
-                            href={member.linkedin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`${member.name} on LinkedIn`}
-                            style={{ color: "inherit" }}
-                            className="hover:text-[var(--accent)] transition-colors"
-                        >
-                            <LinkedInIcon />
-                        </a>
-                    )}
-                    {isValidUrl(member.github) && (
-                        <a
-                            href={member.github}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label={`${member.name} on GitHub`}
-                            style={{ color: "inherit" }}
-                            className="hover:text-[var(--accent)] transition-colors"
-                        >
-                            <GithubIcon />
-                        </a>
-                    )}
+                    ))}
                 </div>
-            </div>
-        </div>
-    );
-}
-
-/**
- * Phones (the large majority of this site's traffic) get a plain, native
- * horizontally-scrollable row: swipe to browse, no pinning, no vertical-
- * centering math, no scroll-jacking. That whole class of bug (overflow,
- * mis-centering, sticky-timing edge cases) simply can't happen here,
- * which matters more on mobile than the fancier desktop effect below.
- */
-function MobileMemberRow({ members, label }: { members: Member[]; label: string }) {
-    if (members.length === 0) return null;
-    return (
-        <section className="px-4">
-            <div className="text-center mb-6">
-                <span className="tbc-eyebrow" style={{ marginBottom: 8 }}>Meet the team</span>
-                <h3 className="tbc-heading" style={{ fontSize: "clamp(1.6rem, 7vw, 2.2rem)", fontWeight: 700 }}>
-                    {label}
-                </h3>
-            </div>
-            <div
-                className="flex overflow-x-auto pb-3 -mx-4 px-4"
-                style={{ gap: 14, scrollSnapType: "x mandatory", scrollbarWidth: "none" }}
-            >
-                {members.map((member, index) => (
-                    <MemberCard key={member.id} member={member} index={index} cardWidth={168} />
-                ))}
-            </div>
-        </section>
-    );
-}
-
-/**
- * Scroll-jacked horizontal gallery (matching motion.dev's react/scroll-
- * horizontal example): the container is tall, its inner track pins via
- * `sticky` for the duration, and page-scroll progress across that tall
- * container drives a horizontal `x` transform on the card row instead of
- * the usual vertical reveal. The card row's window clips with `overflow:
- * hidden` at its own bounds (not the previous `overflow: visible` bleed
- * past a narrow window) — that bleed had no ancestor clipping it, which
- * both caused real page-level horizontal scroll on mobile and, once
- * clipped via `overflow-x: hidden` on `html`/`body`, silently broke
- * `position: sticky` everywhere on the page (an ancestor's overflow other
- * than `visible` disables sticky descendants; see globals.css history).
- * Desktop only (see MobileMemberRow above for phones).
- */
-function ScrollGallery({ members, label }: { members: Member[]; label: string }) {
-    const containerRef = useRef<HTMLDivElement | null>(null);
-    // Desktop-only (mobile renders MobileMemberRow instead), so the card
-    // width never needs to respond to viewport size here.
-    const cardWidth = 260;
-    const gap = 24;
-
-    const { scrollYProgress } = useScroll({
-        target: containerRef,
-        offset: ["start start", "end end"],
-    });
-
-    const totalDistance = Math.max(0, (members.length - 1) * (cardWidth + gap));
-    const x = useTransform(scrollYProgress, [0, 1], [0, -totalDistance]);
-
-    // Scroll distance is tied to how far the cards actually have to travel
-    // (totalDistance), not a flat per-member multiplier — the previous
-    // formula gave a 10-person team a 610vh-tall pin, which read as a huge
-    // dead scroll gap between team sections since most of that height was
-    // scrolled through before the cards finished sliding.
-    const containerHeightVh = Math.min(260, Math.max(140, 100 + totalDistance / 14));
-
-    if (members.length === 0) return null;
-
-    return (
-        <section className="px-4 sm:px-10">
-            <div ref={containerRef} className="relative" style={{ height: `${containerHeightVh}vh` }}>
-                <div
-                    className="sticky w-full flex flex-col items-center justify-center"
-                    style={{ top: NAV_CLEARANCE, height: `calc(100vh - ${NAV_CLEARANCE}px)` }}
-                >
-                    <div className="text-center mb-6 sm:mb-8">
-                        <span className="tbc-eyebrow" style={{ marginBottom: 8 }}>Meet the team</span>
-                        <h3 className="tbc-heading" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", fontWeight: 700 }}>
-                            {label}
-                        </h3>
-                    </div>
-
-                    <div className="mx-auto w-full max-w-5xl" style={{ overflow: "hidden" }}>
-                    <motion.div className="flex" style={{ x, gap }}>
-                        {members.map((member, index) => (
-                            <MemberCard key={member.id} member={member} index={index} cardWidth={cardWidth} />
-                        ))}
-                        </motion.div>
-                    </div>
-                </div>
-            </div>
-        </section>
+            )}
+        </li>
     );
 }
 
 export default function TeamMembers({ teamId }: { teamId: string }) {
     const members = teamData[teamId] ?? [];
-    const label = teamLabels[teamId] ?? "Team";
+    if (members.length === 0) return null;
 
-    // Mobile gets the plain swipeable row (no sticky/scroll-jacking — see
-    // MobileMemberRow above); desktop keeps the pinned scroll gallery.
-    const [isMobile, setIsMobile] = useState<boolean | null>(null);
-    useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
-
-    if (isMobile === null) return null;
-    return isMobile ? (
-        <MobileMemberRow members={members} label={label} />
-    ) : (
-        <ScrollGallery members={members} label={label} />
+    return (
+        <div className="team-block">
+            <h3 className="team-label">
+                {teamLabels[teamId] ?? "Team"}
+                <span>{members.length}</span>
+            </h3>
+            <ul className="face-grid">
+                {members.map((member) => (
+                    <Face key={member.id} member={member} />
+                ))}
+            </ul>
+        </div>
     );
 }
+
+export const FACE_WALL_CSS = `
+.team-block { display: grid; gap: 20px; padding-top: 28px; border-top: 1px solid var(--line); }
+.team-label { display: flex; align-items: baseline; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; letter-spacing: -0.01em; color: var(--ink); }
+.team-label span { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--ink-muted); }
+.face-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 12px; }
+.face-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 8px; background: var(--bg-elevated); }
+.face-photo img { filter: grayscale(0.4) brightness(0.92); transform: scale(1.06); transition: filter 0.35s ease; }
+.face:hover .face-photo img, .face:focus-within .face-photo img { filter: none; }
+.face-name { margin-top: 10px; font-family: var(--font-body); font-weight: 600; font-size: 14px; line-height: 1.3; color: var(--ink); }
+.face-role { margin-top: 2px; font-family: var(--font-body); font-size: 12.5px; color: var(--ink-muted); }
+.face-links { display: flex; gap: 2px; margin-top: 6px; margin-left: -6px; }
+.face-links a { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; color: var(--ink-muted); transition: color 0.2s ease, background-color 0.2s ease; }
+.face-links a:hover { color: var(--accent); background: rgba(255, 255, 255, 0.04); }
+@media (min-width: 640px) { .face-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 16px; } }
+@media (min-width: 1024px) {
+  .team-block { grid-template-columns: 12rem minmax(0, 1fr); gap: 32px; }
+  .face-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+`;

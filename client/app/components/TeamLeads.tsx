@@ -259,7 +259,7 @@ export default function TeamLeads() {
       <div className="w-full flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5 px-2">
         <button
           onClick={handleJumpToCover}
-          className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
+          className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
             activeLeadIndex === -1
               ? "bg-[rgba(40,194,255,0.14)] text-[#2af5ff] border-[rgba(40,194,255,0.55)] shadow-[0_0_15px_rgba(40,194,255,0.3)] scale-105"
               : "bg-white/[0.06] text-white border-white/15 hover:bg-white/10 hover:border-white/30"
@@ -279,7 +279,7 @@ export default function TeamLeads() {
             <button
               key={lead.id}
               onClick={() => handleJumpToLead(idx)}
-              className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
+              className={`px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 flex items-center gap-1.5 border cursor-pointer ${
                 isActive
                   ? "bg-[rgba(40,194,255,0.14)] text-[#2af5ff] border-[rgba(40,194,255,0.55)] shadow-[0_0_15px_rgba(40,194,255,0.3)] scale-105"
                   : "bg-white/[0.06] text-white border-white/15 hover:bg-white/10 hover:border-white/30"
@@ -291,7 +291,7 @@ export default function TeamLeads() {
                 }`}
               />
               <span>{lead.name}</span>
-              <span className="text-[10px] opacity-80 font-mono hidden md:inline">
+              <span className="text-xs opacity-80 font-mono hidden md:inline">
                 [{lead.role}]
               </span>
             </button>

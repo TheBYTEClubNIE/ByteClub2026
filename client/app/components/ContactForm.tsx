@@ -11,50 +11,36 @@ interface FormState {
 
 type Status = null | "sending" | "success" | "error";
 
-interface FieldProps {
-  label: string;
-  children: React.ReactNode;
-}
-
-function Field({ label, children }: FieldProps) {
+function Field({ label, htmlFor, hint, children }: { label: string; htmlFor: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div style={{ width: "100%" }}>
-      <label
-        style={{
-          display: "block",
-          fontFamily: "var(--font-mono)",
-          fontSize: "10px",
-          color: "var(--ink-faint)",
-          letterSpacing: "0.14em",
-          marginBottom: "8px",
-        }}
-      >
-        {label}
-      </label>
+    <div className="w-full">
+      <div className="mb-2 flex items-baseline justify-between">
+        <label htmlFor={htmlFor} className="text-sm font-medium" style={{ color: "var(--ink)" }}>
+          {label}
+        </label>
+        {hint && (
+          <span className="text-xs tabular-nums" style={{ color: "var(--ink-faint)" }}>
+            {hint}
+          </span>
+        )}
+      </div>
       {children}
     </div>
   );
 }
 
 export default function ContactForm() {
-  const [form, setForm] = useState<FormState>({
-    name: "",
-    email: "",
-    message: "",
-  });
-
+  const [form, setForm] = useState<FormState>({ name: "", email: "", message: "" });
   const [status, setStatus] = useState<Status>(null);
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (status === "success" || status === "error") setStatus(null);
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus("sending");
-
     try {
       await axios.post("/api/send", form);
       setStatus("success");
@@ -67,179 +53,76 @@ export default function ContactForm() {
   return (
     <>
       <style>{`
-        @keyframes fadeUp { from{opacity:0;transform:translateY(24px);} to{opacity:1;transform:translateY(0);} }
-        .contact-card {
-          position: relative;
-          background: var(--bg-elevated);
-          border: 1px solid var(--line);
-          border-radius: 24px;
-          padding: 2.25rem;
-          width: 100%;
-          max-width: 640px;
-          animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
-        }
-        .contact-line { height: 1px; width: 100%; background: var(--line); }
+        .contact-card { background: var(--bg-elevated); border: 1px solid var(--line); border-radius: 12px; padding: clamp(1.5rem, 4vw, 2.25rem); }
         .contact-input {
           width: 100%;
           background: rgba(255,255,255,0.03);
-          border: 1px solid var(--line);
-          border-radius: 12px;
-          padding: 13px 16px;
+          border: 1px solid var(--line-strong);
+          border-radius: 10px;
+          padding: 12px 14px;
           color: var(--ink);
           font-family: var(--font-body);
-          font-size: 14px;
+          font-size: 16px;
           outline: none;
-          transition: border-color 0.2s ease;
-          box-sizing: border-box;
+          transition: border-color 0.2s ease, background-color 0.2s ease;
         }
-        .contact-input:focus { border-color: var(--accent-border); }
+        .contact-input:hover { border-color: var(--ink-faint); }
+        .contact-input:focus { border-color: var(--accent); background: rgba(40,194,255,0.04); }
         .contact-input::placeholder { color: var(--ink-faint); }
-        .contact-btn {
-          height: 50px;
-          border: none;
-          border-radius: 12px;
-          background: var(--ink);
-          color: var(--bg);
-          font-family: var(--font-body);
-          font-size: 13.5px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: transform 0.2s ease, opacity 0.2s ease;
-        }
-        .contact-btn:hover { transform: translateY(-2px); }
-        .toast { padding: 13px 16px; border-radius: 12px; font-family: var(--font-body); font-size: 13.5px; }
+        .toast { padding: 12px 14px; border-radius: 10px; font-family: var(--font-body); font-size: 14px; }
       `}</style>
 
-      <div className="w-full flex items-center justify-center py-4">
-        <div className="contact-card">
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "10px",
-              color: "var(--accent)",
-              letterSpacing: "0.18em",
-              margin: "0 0 8px",
-            }}
-          >
-            SAY HELLO
-          </p>
+      <div className="contact-card">
+        <h3 className="text-2xl font-semibold" style={{ fontFamily: "var(--font-display)", color: "var(--ink)", letterSpacing: "-0.015em" }}>
+          Questions?
+        </h3>
+        <p className="mt-2 text-[15px] leading-relaxed" style={{ color: "var(--ink-muted)", maxWidth: "46ch" }}>
+          Ask about an event, pitch a collab, or anything else. We&apos;ll get
+          back to you by email.
+        </p>
 
-          <h2
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 700,
-              fontSize: "clamp(1.7rem,4.4vw,2.4rem)",
-              color: "var(--ink)",
-              margin: 0,
-              lineHeight: 1.1,
-            }}
-          >
-            Got a question, idea, or want to join?
-          </h2>
-
-          <p
-            style={{
-              marginTop: "0.9rem",
-              color: "var(--ink-muted)",
-              fontFamily: "var(--font-body)",
-              fontSize: "14px",
-              lineHeight: 1.75,
-              maxWidth: "520px",
-            }}
-          >
-            Whether you want to join the club, collaborate on something, or
-            just have a question about an upcoming event, drop us a line and
-            we&apos;ll get back to you.
-          </p>
-
-          <div className="contact-line" style={{ margin: "1.5rem 0" }} />
-
-          <form
-            onSubmit={handleSubmit}
-            style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}
-          >
-            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-              <div style={{ flex: 1, minWidth: "220px" }}>
-                <Field label="YOUR NAME">
-                  <input
-                    name="name"
-                    value={form.name}
-                    onChange={handleChange}
-                    placeholder="Rahul Kumar"
-                    required
-                    className="contact-input"
-                  />
-                </Field>
-              </div>
-
-              <div style={{ flex: 1, minWidth: "220px" }}>
-                <Field label="EMAIL ADDRESS">
-                  <input
-                    name="email"
-                    type="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    placeholder="you@example.com"
-                    required
-                    className="contact-input"
-                  />
-                </Field>
-              </div>
-            </div>
-
-            <Field label={`MESSAGE (${form.message.length}/1000)`}>
-              <textarea
-                name="message"
-                value={form.message}
-                onChange={handleChange}
-                rows={5}
-                required
-                maxLength={1000}
-                placeholder="Write your message here..."
-                className="contact-input"
-                style={{ resize: "none", lineHeight: 1.7 }}
-              />
+        <form onSubmit={handleSubmit} className="mt-7 flex flex-col gap-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Field label="Name" htmlFor="contact-name">
+              <input id="contact-name" name="name" autoComplete="name" value={form.name} onChange={handleChange} placeholder="Rahul Kumar" required className="contact-input" />
             </Field>
+            <Field label="Email" htmlFor="contact-email">
+              <input id="contact-email" name="email" type="email" autoComplete="email" value={form.email} onChange={handleChange} placeholder="you@example.com" required className="contact-input" />
+            </Field>
+          </div>
 
-            <button
-              type="submit"
-              disabled={status === "sending"}
-              className="contact-btn"
-              style={{
-                opacity: status === "sending" ? 0.7 : 1,
-                cursor: status === "sending" ? "not-allowed" : "pointer",
-              }}
-            >
-              {status === "sending" ? "Sending..." : "Send message"}
-            </button>
+          <Field label="Message" htmlFor="contact-message" hint={`${form.message.length}/1000`}>
+            <textarea
+              id="contact-message"
+              name="message"
+              value={form.message}
+              onChange={handleChange}
+              rows={5}
+              required
+              maxLength={1000}
+              placeholder="What would you like to know?"
+              className="contact-input"
+              style={{ resize: "vertical", lineHeight: 1.6, minHeight: 132 }}
+            />
+          </Field>
 
+          <button type="submit" disabled={status === "sending"} className="btn btn-primary w-full">
+            {status === "sending" ? "Sending…" : "Send question"}
+          </button>
+
+          <div aria-live="polite">
             {status === "success" && (
-              <div
-                className="toast"
-                style={{
-                  background: "rgba(40,194,255,0.1)",
-                  color: "var(--accent-strong)",
-                  border: "1px solid var(--accent-border)",
-                }}
-              >
-                Message sent. We&apos;ll get back to you soon.
-              </div>
+              <p className="toast" style={{ background: "var(--accent-soft)", color: "var(--accent-strong)", border: "1px solid var(--accent-border)" }}>
+                Sent. We&apos;ll reply to your email soon.
+              </p>
             )}
-
             {status === "error" && (
-              <div
-                className="toast"
-                style={{
-                  background: "rgba(255,90,90,0.1)",
-                  color: "#ff8a8a",
-                  border: "1px solid rgba(255,90,90,0.25)",
-                }}
-              >
-                Something went wrong. Please try again.
-              </div>
+              <p className="toast" style={{ background: "rgba(255,90,90,0.1)", color: "#ff9b9b", border: "1px solid rgba(255,90,90,0.3)" }}>
+                That didn&apos;t send. Check your connection and try again.
+              </p>
             )}
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </>
   );

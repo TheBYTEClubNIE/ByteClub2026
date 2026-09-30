@@ -1,7 +1,8 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Unbounded, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { SITE_URL } from "@/content/site";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 // Unbounded: a geometric, slightly retro-futurist display face with real
@@ -24,13 +25,36 @@ const mono = IBM_Plex_Mono({
   variable: "--font-mono",
 });
 
+const DESCRIPTION =
+  "A student-run technical club at NIE. Fun-first events that teach real coding, hands-on building, and the skills that get first-years placement-ready.";
+
 export const metadata: Metadata = {
-  title: "The Byte Club | NIE's Technical Club",
-  description:
-    "A student-run technical club at NIE. Fun-first events that teach real coding, hands-on building, and the skills that get first-years placement-ready.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "The Byte Club | NIE's Technical Club",
+    template: "%s · The Byte Club",
+  },
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: "The Byte Club",
+    title: "The Byte Club | NIE's Technical Club",
+    description: DESCRIPTION,
+    locale: "en_IN",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Byte Club | NIE's Technical Club",
+    description: DESCRIPTION,
+  },
   icons: {
     icon: "/favicon.ico",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0b0d",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

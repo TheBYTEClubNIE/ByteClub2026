@@ -571,15 +571,12 @@ export const ThreeDImagePageflip = forwardRef<ThreeDImagePageflipHandle, ThreeDI
         return () => clearInterval(timer);
     }, [autoplay, autoplayInterval, pauseOnHover, isHovered, totalLeaves]);
 
-    // Keyboard Navigation
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "ArrowRight") flipNext();
-            if (e.key === "ArrowLeft") flipPrev();
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [flipNext, flipPrev]);
+    // Keyboard navigation only while the book has focus, so arrow keys
+    // elsewhere on the page (text fields, other widgets) don't flip it.
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "ArrowRight") flipNext();
+        if (e.key === "ArrowLeft") flipPrev();
+    };
 
     const handleLeafClick = (index: number) => {
         if (!interactive) return;
@@ -596,6 +593,11 @@ export const ThreeDImagePageflip = forwardRef<ThreeDImagePageflipHandle, ThreeDI
         <div
             className={cn("w-full flex flex-col items-center justify-center select-none py-4", className)}
             style={style}
+            tabIndex={0}
+            role="group"
+            aria-roledescription="book"
+            aria-label="Book, use the left and right arrow keys to turn pages"
+            onKeyDown={handleKeyDown}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => {
                 setIsHovered(false);

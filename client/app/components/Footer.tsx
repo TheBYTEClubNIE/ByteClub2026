@@ -1,6 +1,5 @@
-"use client";
-
 import Link from "next/link";
+import { INSTAGRAM_URL } from "@/content/site";
 
 function InstagramIcon() {
   return (
@@ -41,15 +40,16 @@ function FacebookIcon() {
 }
 
 const QUICK_LINKS = [
-  { href: "/#home", label: "Home" },
-  { href: "/#info", label: "Events" },
-  { href: "/#cores", label: "Team" },
-  { href: "/#write", label: "Contact" },
-  { href: "/#pastevents", label: "Past Events" },
+  { href: "/#events", label: "Events" },
+  { href: "/#team", label: "Team" },
+  { href: "/#past", label: "Past events" },
+  { href: "/blog", label: "Blog" },
+  { href: "/#join", label: "Join" },
+  { href: "/#contact", label: "Questions" },
 ];
 
 const SOCIALS = [
-  { href: "https://www.instagram.com/thebyteclubnie?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==", label: "Instagram", icon: <InstagramIcon /> },
+  { href: INSTAGRAM_URL, label: "Instagram", icon: <InstagramIcon /> },
   { href: "https://www.linkedin.com/company/thebyteclubnie", label: "LinkedIn", icon: <LinkedInIcon /> },
   { href: "https://github.com/The-Byte-Club", label: "GitHub", icon: <GithubIcon /> },
   { href: "https://www.facebook.com/thebyteclubnie", label: "Facebook", icon: <FacebookIcon /> },
@@ -57,30 +57,27 @@ const SOCIALS = [
 
 export default function Footer() {
   return (
-    <footer
-      className="mt-20 border-t"
-      style={{ borderColor: "var(--line)", background: "var(--bg)" }}
-    >
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          <div>
-            <h2 className="tbc-heading" style={{ fontSize: "1.3rem", fontWeight: 700 }}>
+    <footer className="mt-8 border-t" style={{ borderColor: "var(--line)", background: "var(--bg)" }}>
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:px-8 lg:px-12">
+        <div className="grid grid-cols-2 gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
+          <div className="col-span-2 md:col-span-1">
+            <p className="tbc-heading" style={{ fontSize: "1.3rem", fontWeight: 600 }}>
               The Byte Club
-            </h2>
-            <p style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="text-sm mt-3 leading-relaxed max-w-xs">
+            </p>
+            <p style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="mt-3 max-w-xs text-sm leading-relaxed">
               NIE&apos;s student-run technical club. Fun-first tech events,
               real skills, since 2023.
             </p>
           </div>
 
           <div>
-            <span className="tbc-eyebrow tbc-eyebrow--muted" style={{ marginBottom: 14, display: "inline-flex" }}>
-              Quick links
-            </span>
-            <ul style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="space-y-2.5 text-sm">
+            <h2 className="mb-4 text-sm font-semibold" style={{ color: "var(--ink)" }}>
+              Site
+            </h2>
+            <ul style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="grid grid-cols-1 gap-2.5 text-sm sm:grid-cols-2 sm:gap-x-8">
               {QUICK_LINKS.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="transition-colors hover:text-[var(--accent)]">
+                  <Link href={link.href} className="transition-colors hover:text-[var(--ink)]">
                     {link.label}
                   </Link>
                 </li>
@@ -89,34 +86,31 @@ export default function Footer() {
           </div>
 
           <div>
-            <span className="tbc-eyebrow tbc-eyebrow--muted" style={{ marginBottom: 14, display: "inline-flex" }}>
-              Connect
-            </span>
-            <div className="flex gap-2.5">
+            <h2 className="mb-4 text-sm font-semibold" style={{ color: "var(--ink)" }}>
+              Follow
+            </h2>
+            <ul className="flex gap-2">
               {SOCIALS.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.label}
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
-                  style={{ background: "var(--bg-elevated)", border: "1px solid var(--line)", color: "var(--ink-muted)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; e.currentTarget.style.borderColor = "var(--accent-border)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ink-muted)"; e.currentTarget.style.borderColor = "var(--line)"; }}
-                >
-                  {social.icon}
-                </a>
+                <li key={social.label}>
+                  <a
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border transition-colors hover:border-[var(--accent-border)] hover:text-[var(--accent)]"
+                    style={{ background: "var(--bg-elevated)", borderColor: "var(--line)", color: "var(--ink-muted)" }}
+                  >
+                    {social.icon}
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </div>
 
-        <div className="my-8 h-px" style={{ background: "var(--line)" }} />
-
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm" style={{ color: "var(--ink-faint)", fontFamily: "var(--font-mono)" }}>
-          <p className="text-xs tracking-wide">{"©"} {new Date().getFullYear()} The Byte Club. All rights reserved.</p>
-        </div>
+        <p className="mt-10 border-t pt-6 text-sm" style={{ borderColor: "var(--line)", color: "var(--ink-faint)" }}>
+          © {new Date().getFullYear()} The Byte Club, NIE.
+        </p>
       </div>
     </footer>
   );

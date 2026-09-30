@@ -2,20 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import "github-markdown-css/github-markdown.css";
-import { marked } from "marked";
 import { BooksShowcase, BookCfg } from "@/components/ui/books-showcase";
+import type { Post as FullPost } from "@/lib/posts";
 
-marked.setOptions({ gfm: true, breaks: true });
-
-export interface Post {
-  slug: string;
-  title: string;
-  category: string;
-  date: string;
-  image?: string;
-  content: string;
-}
+type Post = Omit<FullPost, "content">;
 
 const CATEGORY_META: Record<
   string,
@@ -130,7 +120,6 @@ function paintCover(label: string, bg: string, ink: string, titles: string[]) {
 
 export default function BlogShelf({ posts }: { posts: Post[] }) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [openPost, setOpenPost] = useState<Post | null>(null);
 
   const postsByCategory = useMemo(() => {
     const map: Record<string, Post[]> = {};
@@ -178,7 +167,7 @@ export default function BlogShelf({ posts }: { posts: Post[] }) {
           </span>
         </Link>
         <Link
-          href="/#blogs"
+          href="/#blog"
           className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold border"
           style={{ borderColor: "var(--line-strong)", color: "var(--ink)", fontFamily: "var(--font-body)" }}
         >
@@ -186,10 +175,8 @@ export default function BlogShelf({ posts }: { posts: Post[] }) {
         </Link>
       </header>
 
-      {openPost ? (
-        <PostReader post={openPost} onBack={() => setOpenPost(null)} />
-      ) : (
-        <div className="relative h-screen w-full">
+      <h1 className="sr-only">Byte Blog</h1>
+      <div className="relative h-screen w-full">
           <BooksShowcase
             books={books}
             heroTitle="Byte Blog"
@@ -214,70 +201,32 @@ export default function BlogShelf({ posts }: { posts: Post[] }) {
               className="fixed right-4 sm:right-10 bottom-6 sm:bottom-10 z-30 w-[min(90vw,380px)] rounded-2xl p-6"
               style={{ background: "var(--bg-elevated)", border: "1px solid var(--line)", backdropFilter: "blur(12px)" }}
             >
-              <p style={{ fontFamily: "var(--font-mono)", color: "var(--accent)" }} className="text-[10px] tracking-[0.18em] uppercase mb-2">
+              <h2 style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }} className="text-base font-semibold mb-1.5">
                 {activeMeta.label}
-              </p>
-              <p style={{ fontFamily: "var(--font-body)", color: "var(--ink-muted)" }} className="text-xs leading-relaxed mb-4">
+              </h2>
+              <p style={{ fontFamily: "var(--font-body)", color: "var(--ink-muted)" }} className="text-sm leading-relaxed mb-4">
                 {activeMeta.desc}
               </p>
               <div className="flex flex-col gap-1.5 max-h-[40vh] overflow-y-auto">
                 {activePosts.length === 0 ? (
-                  <span style={{ color: "var(--ink-faint)", fontFamily: "var(--font-mono)" }} className="text-[11px]">
+                  <span style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="text-sm">
                     Nothing posted here yet.
                   </span>
                 ) : (
                   activePosts.map((post) => (
-                    <button
+                    <Link
                       key={post.slug}
-                      onClick={() => setOpenPost(post)}
-                      className="text-left rounded-lg px-3 py-2 text-xs transition-colors"
+                      href={`/blog/${post.slug}`}
+                      className="rounded-lg px-3 py-2.5 text-sm transition-colors hover:bg-white/[0.06]"
                       style={{ color: "var(--ink)", fontFamily: "var(--font-body)", background: "rgba(255,255,255,0.03)" }}
                     >
                       {post.title} →
-                    </button>
+                    </Link>
                   ))
                 )}
               </div>
             </div>
           )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PostReader({ post, onBack }: { post: Post; onBack: () => void }) {
-  return (
-    <div className="max-w-4xl mx-auto px-5 sm:px-8 pt-28 pb-20">
-      <button
-        onClick={onBack}
-        className="mb-8 flex items-center gap-2 text-xs"
-        style={{ fontFamily: "var(--font-mono)", color: "var(--accent)" }}
-      >
-        ← Back to the shelf
-      </button>
-
-      <div className="rounded-[24px] p-8 md:p-12" style={{ background: "var(--bg-elevated)", border: "1px solid var(--line)" }}>
-        <p style={{ fontFamily: "var(--font-mono)", color: "var(--ink-faint)" }} className="text-[11px] tracking-widest uppercase mb-3">
-          {(CATEGORY_META[post.category] ?? CATEGORY_META.webdev).label}
-          {post.date && ` · ${new Date(post.date + "T00:00:00").toDateString()}`}
-        </p>
-        <h1
-          style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }}
-          className="text-3xl md:text-5xl font-bold leading-tight mb-8"
-        >
-          {post.title}
-        </h1>
-        {post.image && (
-          <img
-            src={post.image}
-            alt={post.title}
-            className="w-full rounded-2xl mb-8 object-cover"
-            style={{ maxHeight: 420 }}
-          />
-        )}
-        <div className="h-px mb-8" style={{ background: "var(--line)" }} />
-        <article className="markdown-body" style={{ background: "transparent" }} dangerouslySetInnerHTML={{ __html: marked(post.content) as string }} />
       </div>
     </div>
   );

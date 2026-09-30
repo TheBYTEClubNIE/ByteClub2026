@@ -19,3 +19,6 @@ Thumbs.db
 **/.agents/
 **/skills-lock.json
 scratch/
+.vercel
+.env*
+**/.impeccable/live/

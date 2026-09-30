@@ -145,14 +145,18 @@ const SplitFlapText = ({
 
   // Only cycle while on screen: the flip animation sets state nearly every
   // frame, and with several of these on a page running offscreen forever
-  // they kept the main thread busy for nothing.
+  // they kept the main thread busy for nothing. Non-looping instances latch
+  // once seen, so they flip in once and then hold instead of re-flipping
+  // every time they scroll back into view.
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
+    const io = new IntersectionObserver(([entry]) =>
+      setInView(seen => (loop ? entry.isIntersecting : seen || entry.isIntersecting))
+    );
     io.observe(el);
     return () => io.disconnect();
-  }, []);
+  }, [loop]);
   const cycleTimerRef = useRef<ReturnType<typeof setTimeout> | number | NodeJS.Timeout | null>(null);
   const currentTextRef = useRef('');
 

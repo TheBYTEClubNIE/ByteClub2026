@@ -1,510 +1,170 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion';
-import ThreeDImageCarousel from './ThreeDImageCarousel';
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { EVENTS, type ClubEvent, longDate, newestFirst, slugOf } from "@/content/events";
 
-export interface PastEventImage {
-  id: string | number;
-  url: string;
-  eventName: string;
-  date: string;
-}
+const GALLERY = EVENTS.filter((e) => e.photos?.length).sort(newestFirst);
 
-interface PastEventsProps {
-  images?: PastEventImage[];
-}
+const when = (e: ClubEvent) => `${longDate(e.start!)}${e.venue ? ` · ${e.venue}` : ""}`;
 
-const PLACEHOLDER_IMAGES: PastEventImage[] = [
-  { id: 1, url: '/Events/1.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Team Presentations' },
-  { id: 2, url: '/Events/2.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Audience Engagement' },
-  { id: 3, url: '/Events/3.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Team Briefing' },
-  { id: 4, url: '/Events/4.jpg', eventName: 'Beyond BYTE Ideathon', date: 'Q&A Session' },
-  { id: 5, url: '/Events/5.png', eventName: 'Beyond BYTE Ideathon', date: 'Event Logo' },
-
-  { id: 6, url: '/Events/bits-1.jpg', eventName: 'Bits to Bytes', date: 'Student Audience' },
-  { id: 7, url: '/Events/bits-2.jpg', eventName: 'Bits to Bytes', date: 'Event Engagement' },
-  { id: 8, url: '/Events/bits-3.png', eventName: 'Bits to Bytes', date: 'Official Poster' },
-  { id: 9, url: '/Events/bits-4.jpg', eventName: 'Bits to Bytes', date: 'The Byte Club Organizers' },
-
-  { id: 10, url: '/Events/group-1.jpg', eventName: 'Annual Assembly', date: 'Mass Gathering' },
-  { id: 11, url: '/Events/group-2.png', eventName: 'Annual Assembly', date: 'Community Photo' },
-
-  // Beyond Labs
-  { id: 14, url: '/Events/beyondlabs3.jpg', eventName: 'Beyond Labs', date: 'Student Participation' },
-  { id: 15, url: '/Events/beyondlabs4.jpg', eventName: 'Beyond Labs', date: 'Hands-on Activity' },
-  { id: 16, url: '/Events/beyondlabs5.jpg', eventName: 'Beyond Labs', date: 'Interactive Learning' },
-  { id: 17, url: '/Events/beyondlabs6.jpg', eventName: 'Beyond Labs', date: 'Technical Discussion' },
-  { id: 18, url: '/Events/beyondlabs7.jpg', eventName: 'Beyond Labs', date: 'Team Collaboration' },
-  { id: 19, url: '/Events/beyondlabs8.jpg', eventName: 'Beyond Labs', date: 'Closing Moments' },
-];
-
-const EVENT_DESCRIPTIONS: Record<string, string> = {
-  'Beyond BYTE Ideathon':
-    'Our flagship ideathon where student teams pitched bold ideas beyond the classroom. From high-energy team presentations and a buzzing audience to intense Q&A rounds, the event celebrated creativity, collaboration, and out-of-the-box problem solving.',
-  'Bits to Bytes':
-    'A welcoming community event that walked newcomers from the basics of tech to building real things. Packed with curious faces, live engagement, and the organizers who started it all: the perfect first step into the Byte Club journey.',
-  'Annual Assembly':
-    'The biggest gathering of our community, members old and new under one roof. A day of reflection, celebration, and group photos that capture the true scale and spirit of the Byte Club family.',
-  'Beyond Labs':
-    'A hands-on learning series that took members beyond theory into real building. Through interactive sessions, technical discussions, and team collaboration, participants experimented, broke things, and learned together.',
-};
-
-function groupByEvent(images: PastEventImage[]) {
-  return images.reduce<Record<string, PastEventImage[]>>((acc, img) => {
-    if (!acc[img.eventName]) acc[img.eventName] = [];
-    acc[img.eventName].push(img);
-    return acc;
-  }, {});
-}
-
-/* ───────────────── Timeline Node ───────────────── */
-
-function TimelineEntry({
-  eventName,
-  photos,
-  seq,
-  side,
-  onOpen,
-}: {
-  eventName: string;
-  photos: PastEventImage[];
-  seq: number;
-  side: 'left' | 'right';
-  onOpen: (img: PastEventImage) => void;
-}) {
-  const isLeft = side === 'left';
+export default function PastEvents() {
+  const [open, setOpen] = useState<ClubEvent | null>(null);
+  const close = useCallback(() => setOpen(null), []);
 
   return (
-    <div className="relative">
-      {/* node dot — mobile: left rail · desktop: centre spine */}
-      <div className="absolute left-[19px] md:left-1/2 top-2 md:-translate-x-1/2 z-10">
-        <span className="relative flex h-9 w-9 items-center justify-center">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#28c2ff]/20" />
-          <span
-            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#2af5ff]/50 bg-[#020812] text-[11px] font-bold text-[#2af5ff]"
-            style={{
-              fontFamily: "var(--font-mono)",
-              boxShadow: '0 0 20px rgba(40,194,255,0.45)',
-            }}
-          >
-            {String(seq).padStart(2, '0')}
-          </span>
-        </span>
-      </div>
+    <section id="past" className="section">
+      <style>{PAST_CSS}</style>
 
-      {/* alternating header column on desktop */}
-      <div className="ml-14 md:ml-0 md:grid md:grid-cols-2 md:gap-14">
-        {isLeft ? (
-          <>
-            <TimelineHeader
-              eventName={eventName}
-              photos={photos}
-              seq={seq}
-              align="right"
-              description={
-                EVENT_DESCRIPTIONS[eventName] ??
-                'Moments from this event: browse the gallery to relive them.'
-              }
-            />
-            <div className="hidden md:block" />
-          </>
-        ) : (
-          <>
-            <div className="hidden md:block" />
-            <TimelineHeader
-              eventName={eventName}
-              photos={photos}
-              seq={seq}
-              align="left"
-              description={
-                EVENT_DESCRIPTIONS[eventName] ??
-                'Moments from this event: browse the gallery to relive them.'
-              }
-            />
-          </>
-        )}
-      </div>
+      <header className="section-head">
+        <h2 className="section-title">Past events</h2>
+        <p className="section-lede">
+          Ideathons, first-timer workshops and build sessions. Open any of
+          them for the photos.
+        </p>
+      </header>
 
-      {/* full-width album — room for a much bigger book */}
-      <div className="ml-14 md:ml-0 mt-8">
-        <EventCarousel eventName={eventName} photos={photos} onOpen={onOpen} />
-      </div>
-    </div>
-  );
-}
-
-function TimelineHeader({
-  eventName,
-  photos,
-  seq,
-  align,
-  description,
-}: {
-  eventName: string;
-  photos: PastEventImage[];
-  seq: number;
-  align: 'left' | 'right';
-  description: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: align === 'right' ? -60 : 60, y: 30 }}
-      whileInView={{ opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      className="relative"
-    >
-      <p
-        className="text-[10px] uppercase text-[#28c2ff]/70"
-        style={{ fontFamily: "var(--font-mono)", letterSpacing: '0.22em' }}
-      >
-        {String(seq).padStart(2, '0')} // MILESTONE
-      </p>
-
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mt-1">
-        <h3
-          className="text-2xl sm:text-3xl font-black text-white leading-tight"
-          style={{
-            fontFamily: "var(--font-display)",
-            textShadow: '0 0 18px rgba(40,194,255,0.2)',
-          }}
-        >
-          {eventName}
-        </h3>
-        <span
-          className="text-[11px] text-[#60afff]/60"
-          style={{ fontFamily: "var(--font-mono)", letterSpacing: '0.14em' }}
-        >
-          {photos.length} PHOTOS
-        </span>
-      </div>
-      <p className="text-[13px] sm:text-sm text-slate-300/80 leading-relaxed mt-3 max-w-xl">
-        {description}
-      </p>
-    </motion.div>
-  );
-}
-
-function EventCarousel({
-  eventName,
-  photos,
-  onOpen,
-}: {
-  eventName: string;
-  photos: PastEventImage[];
-  onOpen: (img: PastEventImage) => void;
-}) {
-  const [focused, setFocused] = useState(0);
-
-  // start from the first photo when the album changes
-  useEffect(() => {
-    setFocused(0);
-  }, [eventName]);
-
-  const slides = photos.map((p) => ({ id: p.id, src: p.url, title: p.date }));
-  const current = photos[Math.min(focused, photos.length - 1)];
-
-  if (photos.length === 0) return null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-      className="mx-auto w-full max-w-3xl"
-    >
-
-      {/* ── 3D carousel ── */}
-      <div className="relative">
-        {/* ambient glow behind the carousel */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              'radial-gradient(55% 45% at 50% 40%, rgba(40,194,255,0.12), transparent 70%)',
-          }}
-        />
-        <div className="relative w-full">
-          <ThreeDImageCarousel
-            slides={slides}
-            itemCount={5}
-            autoplay={false}
-            onSlideChange={setFocused}
-            onSlideClick={(_slide, index) => {
-              const photo = photos[index];
-              if (photo) onOpen(photo);
-            }}
-          />
-        </div>
-      </div>
-
-      {/* current caption */}
-      <div className="flex items-center justify-center mt-1 select-none">
-        <div
-          className="flex items-center gap-3 max-w-full rounded-full border border-[#28c2ff]/20 bg-[#020812]/80 backdrop-blur px-4 py-2"
-          style={{ boxShadow: '0 0 24px rgba(40,194,255,0.08)' }}
-        >
-          <span
-            className="min-w-0 truncate text-[11px] text-slate-300"
-            style={{ fontFamily: "var(--font-mono)", letterSpacing: '0.08em' }}
-          >
-            {current ? current.date : ''}
-          </span>
-          <span className="h-3 w-px shrink-0 bg-[#28c2ff]/25" />
-          <span
-            className="shrink-0 text-[11px] text-[#2af5ff]"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            {Math.min(focused + 1, photos.length)} / {photos.length}
-          </span>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ───────────────── Lightbox ───────────────── */
-
-function Lightbox({
-  image,
-  onClose,
-  onPrev,
-  onNext,
-  current,
-  total,
-}: {
-  image: PastEventImage;
-  onClose: () => void;
-  onPrev: () => void;
-  onNext: () => void;
-  current: number;
-  total: number;
-}) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft') onPrev();
-      if (e.key === 'ArrowRight') onNext();
-    };
-    window.addEventListener('keydown', handler);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', handler);
-      document.body.style.overflow = '';
-    };
-  }, [onClose, onPrev, onNext]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
-      onClick={onClose}
-    >
-      <div
-        className="relative flex flex-col items-center w-full max-w-5xl gap-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="w-full flex items-center justify-between">
-          <span
-            style={{ fontFamily: "var(--font-mono)" }}
-            className="text-[#28c2ff] text-xs"
-          >
-            {current + 1} / {total}
-          </span>
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 rounded-full border border-[#28c2ff]/20 text-[#2af5ff] text-xs hover:bg-[#28c2ff]/10 transition-all duration-300"
-          >
-            ✕ close
-          </button>
-        </div>
-
-        <div className="flex items-center gap-4 w-full">
-          <button
-            onClick={onPrev}
-            className="w-10 h-10 shrink-0 rounded-full border border-[#28c2ff]/20 text-[#2af5ff] hover:bg-[#28c2ff]/10 transition-all duration-300"
-          >
-            ←
-          </button>
-          <motion.img
-            key={String(image.id)}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-            src={image.url}
-            alt={image.eventName}
-            className="flex-1 min-w-0 max-h-[75vh] object-contain rounded-2xl border border-[#28c2ff]/10"
-          />
-          <button
-            onClick={onNext}
-            className="w-10 h-10 shrink-0 rounded-full border border-[#28c2ff]/20 text-[#2af5ff] hover:bg-[#28c2ff]/10 transition-all duration-300"
-          >
-            →
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3 text-sm">
-          <span className="text-white">{image.eventName}</span>
-          <span className="text-[#3066be]">•</span>
-          <span className="text-[#2af5ff]">{image.date}</span>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-/* ───────────────── Main Component : Scroll Timeline ───────────────── */
-
-export default function PastEvents({ images = PLACEHOLDER_IMAGES }: PastEventsProps) {
-  const grouped = groupByEvent(images);
-  const eventNames = Object.keys(grouped);
-
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-
-  const timelineRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: timelineRef,
-    offset: ['start center', 'end center'],
-  });
-  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.4 });
-
-  // Every milestone shows on the timeline
-  const visibleEvents = eventNames.map((name) => ({ name, photos: grouped[name] }));
-
-  const flatList = visibleEvents.flatMap((e) => e.photos);
-
-  // Map flat index offsets so the lightbox can page across the whole filtered set
-  const offsets: number[] = [];
-  {
-    let acc = 0;
-    for (const e of visibleEvents) {
-      offsets.push(acc);
-      acc += e.photos.length;
-    }
-  }
-
-  const openAtFlatIndex = (idx: number) => setLightboxIndex(idx);
-  const closeLightbox = () => setLightboxIndex(null);
-  const prevImage = () =>
-    setLightboxIndex((prev) =>
-      prev !== null ? (prev - 1 + flatList.length) % flatList.length : null
-    );
-  const nextImage = () =>
-    setLightboxIndex((prev) => (prev !== null ? (prev + 1) % flatList.length : null));
-
-  return (
-    <div className="min-h-screen bg-transparent text-white px-5 py-16 md:px-12">
-      {/* ── Title ── */}
-      <div className="max-w-7xl mx-auto mb-14">
-        <div
-          className="relative overflow-hidden rounded-[28px] border border-[#28c2ff]/20 bg-[#020812]/90 backdrop-blur-xl p-8 md:p-10"
-          style={{
-            boxShadow:
-              '0 0 40px rgba(40,194,255,0.08), inset 0 0 20px rgba(40,194,255,0.04)',
-          }}
-        >
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'linear-gradient(135deg, rgba(40,194,255,0.05) 0%, transparent 50%, rgba(42,245,255,0.03) 100%)',
-            }}
-          />
-          <div
-            className="absolute top-0 left-10 right-10 h-[1px]"
-            style={{
-              background:
-                'linear-gradient(90deg, transparent, rgba(40,194,255,0.4), rgba(42,245,255,0.4), transparent)',
-            }}
-          />
-          <p
-            className="mb-3"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: '11px',
-              color: 'rgba(40,194,255,0.65)',
-              letterSpacing: '0.18em',
-            }}
-          >
-            THE ARCHIVE
-          </p>
-          <h2
-            className="relative inline-block text-5xl md:text-7xl font-black leading-none mb-6"
-            style={{
-              fontFamily: "var(--font-display)",
-              color: "var(--ink)",
-            }}
-          >
-            Past Events
-          </h2>
-          <p className="max-w-xl leading-relaxed" style={{ color: 'var(--ink-muted)', fontSize: '14px' }}>
-            Everything from ideathons to first-timer workshops, scroll
-            through what we&apos;ve run so far, milestone by milestone.
-          </p>
-        </div>
-      </div>
-
-      {/* ── Scroll Timeline ── */}
-      <div className="max-w-7xl mx-auto">
-        <div ref={timelineRef} className="relative overflow-x-hidden">
-          {/* rail */}
-          <div className="absolute left-[32px] md:left-1/2 top-0 bottom-0 md:-translate-x-1/2 w-[2px] bg-white/10 rounded-full overflow-hidden">
-            <motion.div
-              className="absolute inset-0 origin-top"
-              style={{
-                scaleY: progress,
-                background:
-                  'linear-gradient(180deg, #28c2ff, #2af5ff, #28c2ff)',
-                boxShadow: '0 0 16px rgba(40,194,255,0.6)',
-              }}
-            />
-          </div>
-
-          <div className="space-y-10 md:space-y-16">
-            {visibleEvents.map((entry, i) => (
-              <TimelineEntry
-                key={entry.name}
-                eventName={entry.name}
-                photos={entry.photos}
-                seq={i + 1}
-                side={i % 2 === 0 ? 'left' : 'right'}
-                onOpen={(img) => {
-                  const local = entry.photos.findIndex((p) => p.id === img.id);
-                  openAtFlatIndex((offsets[i] ?? 0) + Math.max(local, 0));
-                }}
-              />
-            ))}
-          </div>
-
-          {/* end cap */}
-          <div className="relative flex justify-start md:justify-center mt-12 pl-[14px] md:pl-0">
-            <span
-              className="inline-flex items-center gap-2 rounded-full border border-[#28c2ff]/25 bg-[#020812] px-5 py-2 text-[11px] text-[#2af5ff]"
-              style={{ fontFamily: "var(--font-mono)", letterSpacing: '0.15em' }}
+      <div className="past-grid">
+        {GALLERY.map((e, idx) => {
+          const photos = e.photos!;
+          return (
+            <article
+              key={e.code}
+              id={`past-${slugOf(e)}`}
+              className={idx === 0 ? "past-card past-card--lead" : "past-card"}
             >
-              ◉ END OF TIMELINE
-            </span>
-          </div>
-        </div>
+              <button
+                type="button"
+                className="past-cover"
+                onClick={() => setOpen(e)}
+                aria-label={`View ${photos.length} photos from ${e.name}`}
+              >
+                <Image
+                  src={photos[0].src}
+                  alt=""
+                  fill
+                  sizes={idx === 0 ? "(min-width: 768px) 60vw, 100vw" : "(min-width: 768px) 45vw, 100vw"}
+                  className="object-cover"
+                />
+                <span className="past-count">{photos.length} photos</span>
+              </button>
+              <div className="past-meta">
+                <h3 className="past-name">{e.name}</h3>
+                {e.start && <p className="past-when">{when(e)}</p>}
+                <p className="past-sum">{e.summary}</p>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
-      {/* ── Lightbox ── */}
-      <AnimatePresence>
-        {lightboxIndex !== null && flatList[lightboxIndex] && (
-          <Lightbox
-            image={flatList[lightboxIndex]}
-            onClose={closeLightbox}
-            onPrev={prevImage}
-            onNext={nextImage}
-            current={lightboxIndex}
-            total={flatList.length}
-          />
-        )}
-      </AnimatePresence>
+      {open && <Lightbox event={open} onClose={close} />}
+    </section>
+  );
+}
+
+function Lightbox({ event, onClose }: { event: ClubEvent; onClose: () => void }) {
+  const photos = event.photos!;
+  const [i, setI] = useState(0);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const touchX = useRef<number | null>(null);
+
+  const prev = useCallback(() => setI((v) => (v - 1 + photos.length) % photos.length), [photos.length]);
+  const next = useCallback(() => setI((v) => (v + 1) % photos.length), [photos.length]);
+
+  // Focus goes into the dialog on open and back to the cover button on close.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+    return () => {
+      document.body.style.overflow = overflow;
+      opener?.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") onClose();
+      if (ev.key === "ArrowLeft") prev();
+      if (ev.key === "ArrowRight") next();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose, prev, next]);
+
+  const photo = photos[i];
+
+  return (
+    <div className="lb" role="dialog" aria-modal="true" aria-label={`${event.name} photos`} onClick={onClose}>
+      <div
+        className="lb-inner"
+        onClick={(ev) => ev.stopPropagation()}
+        onTouchStart={(ev) => (touchX.current = ev.touches[0].clientX)}
+        onTouchEnd={(ev) => {
+          if (touchX.current === null) return;
+          const dx = ev.changedTouches[0].clientX - touchX.current;
+          touchX.current = null;
+          if (Math.abs(dx) > 50) (dx > 0 ? prev : next)();
+        }}
+      >
+        <div className="lb-top">
+          <p className="lb-title">
+            {event.name}
+            <span>
+              {i + 1} / {photos.length}
+            </span>
+          </p>
+          <button ref={closeRef} type="button" className="lb-btn" onClick={onClose} aria-label="Close">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img key={photo.src} src={photo.src} alt={photo.caption} className="lb-img" />
+
+        <div className="lb-bottom">
+          <button type="button" className="lb-btn" onClick={prev} aria-label="Previous photo">
+            <ChevronLeft size={22} />
+          </button>
+          <p className="lb-caption">{photo.caption}</p>
+          <button type="button" className="lb-btn" onClick={next} aria-label="Next photo">
+            <ChevronRight size={22} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
+
+const PAST_CSS = `
+.past-grid { display: grid; gap: 40px 24px; }
+.past-cover { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 12px; background: var(--bg-elevated); cursor: zoom-in; }
+.past-cover img { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+.past-cover:hover img { transform: scale(1.03); }
+.past-count { position: absolute; left: 12px; bottom: 12px; padding: 6px 12px; border-radius: 999px; background: rgba(7, 9, 11, 0.82); color: var(--ink); font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+.past-meta { margin-top: 16px; }
+.past-name { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.25rem, 2.4vw, 1.6rem); line-height: 1.15; letter-spacing: -0.015em; color: var(--ink); }
+.past-when { margin-top: 6px; font-family: var(--font-body); font-size: 14px; color: var(--accent); }
+.past-sum { margin-top: 8px; max-width: 52ch; font-family: var(--font-body); font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
+.past-card { scroll-margin-top: 96px; }
+@media (min-width: 768px) {
+  .past-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .past-card--lead { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 32px; align-items: end; }
+  .past-card--lead .past-meta { margin-top: 0; padding-bottom: 8px; }
+  .past-card--lead .past-name { font-size: clamp(1.6rem, 3vw, 2.25rem); }
+}
+
+.lb { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5, 6, 8, 0.94); }
+.lb-inner { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 1100px; max-height: 100%; }
+.lb-top, .lb-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.lb-title { display: flex; align-items: baseline; gap: 12px; font-family: var(--font-display); font-weight: 600; font-size: 1rem; color: var(--ink); }
+.lb-title span { font-family: var(--font-mono); font-weight: 400; font-size: 13px; color: var(--ink-muted); }
+.lb-img { display: block; width: 100%; max-height: 72vh; object-fit: contain; border-radius: 8px; animation: lbIn 0.25s ease both; }
+@keyframes lbIn { from { opacity: 0; } to { opacity: 1; } }
+.lb-caption { font-family: var(--font-body); font-size: 14px; color: var(--ink-muted); text-align: center; }
+.lb-btn { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink); transition: background-color 0.2s ease; }
+.lb-btn:hover { background: rgba(255, 255, 255, 0.06); }
+`;
