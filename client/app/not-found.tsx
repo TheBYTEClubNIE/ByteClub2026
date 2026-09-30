@@ -27,7 +27,7 @@ export default function NotFound() {
         className="mt-10"
         style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "clamp(1.75rem, 5vw, 2.75rem)", letterSpacing: "-0.02em" }}
       >
-        This gate doesn&apos;t exist.
+        This route doesn&apos;t exist.
       </h1>
       <p className="mt-3 max-w-md text-base leading-relaxed" style={{ color: "var(--ink-muted)" }}>
         The page you were looking for isn&apos;t here, or it moved. The board

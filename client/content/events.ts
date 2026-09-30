@@ -1,7 +1,7 @@
 // Every event the club runs lives here, oldest first. Add new ones at the
 // bottom. The site sorts them by itself: anything that hasn't ended shows
-// on the "Departures" board, everything else moves to "Arrivals" and the
-// past events timeline. No code changes needed; add an entry, commit, done.
+// under "Up next" on the events board, everything else moves to "Shipped"
+// and the changelog. No code changes needed; add an entry, commit, done.
 //
 //   code      3-4 letter board code, e.g. "BTL"
 //   start/end ISO time with the IST offset: "2026-04-08T14:30:00+05:30".
@@ -91,14 +91,14 @@ export function splitEvents(now: number) {
   return { upcoming, past };
 }
 
-export type BoardStatus = "BOARDING" | "SCHEDULED" | "NOW" | "ARRIVED";
+export type BoardStatus = "REG OPEN" | "QUEUED" | "LIVE" | "SHIPPED";
 
 export function statusOf(e: ClubEvent, now: number): BoardStatus {
   const start = ms(e.start);
   const end = ms(e.end ?? e.start);
-  if (!(end > now)) return "ARRIVED";
-  if (start <= now) return "NOW";
-  return e.register ? "BOARDING" : "SCHEDULED";
+  if (!(end > now)) return "SHIPPED";
+  if (start <= now) return "LIVE";
+  return e.register ? "REG OPEN" : "QUEUED";
 }
 
 const IST = "Asia/Kolkata";

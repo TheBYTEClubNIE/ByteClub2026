@@ -52,7 +52,7 @@ export default function Home() {
           </section>
         </div>
 
-        {/* full-bleed: the flight log pins a full-screen stage */}
+        {/* full-bleed: the changelog pins a full-screen stage */}
         <PastEvents />
 
         <div className={CONTAINER}>

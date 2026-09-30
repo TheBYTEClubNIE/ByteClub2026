@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PlaneLanding, PlaneTakeoff } from "lucide-react";
+import { CalendarClock, PackageCheck } from "lucide-react";
 import SplitFlapText from "@/components/SplitFlapText";
 import {
   type BoardStatus,
@@ -18,7 +18,7 @@ import { JOIN_LINK } from "@/content/site";
 
 // Starts from the build-time timestamp so server and first client render
 // agree, then switches to the visitor's clock. That's what moves an event
-// from Departures to Arrivals without a redeploy.
+// from "Up next" to "Shipped" without a redeploy.
 export function useNow(builtAt: number) {
   const [now, setNow] = useState(builtAt);
   useEffect(() => {
@@ -30,11 +30,11 @@ export function useNow(builtAt: number) {
 }
 
 const STATUS_COLOR: Record<BoardStatus | "TBA", string> = {
-  BOARDING: "var(--accent)",
-  NOW: "var(--accent-strong)",
-  SCHEDULED: "var(--ink)",
+  "REG OPEN": "var(--accent)",
+  LIVE: "var(--accent-strong)",
+  QUEUED: "var(--ink)",
   TBA: "var(--ink)",
-  ARRIVED: "var(--ink-muted)",
+  SHIPPED: "var(--ink-muted)",
 };
 
 // Board cells flip in once from blank when the board scrolls into view,
@@ -96,15 +96,15 @@ function calendarLinks(e: ClubEvent) {
   return { google, ics: `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}` };
 }
 
-/* ───────── boarding pass ───────── */
+/* ───────── event pass ───────── */
 
-function BoardingPass({ e, status }: { e: ClubEvent; status: BoardStatus }) {
+function EventPass({ e, status }: { e: ClubEvent; status: BoardStatus }) {
   const cal = calendarLinks(e);
   return (
     <div className="pass">
       <div className="pass-strip" aria-hidden>
         <span>The Byte Club</span>
-        <span>Boarding pass</span>
+        <span>Event pass</span>
       </div>
 
       <div className="pass-main">
@@ -118,18 +118,18 @@ function BoardingPass({ e, status }: { e: ClubEvent; status: BoardStatus }) {
             </dd>
           </div>
           <div>
-            <dt>Boards</dt>
+            <dt>Starts</dt>
             <dd>{boardTime(e.start)}</dd>
           </div>
           {e.end && (
             <div>
-              <dt>Lands</dt>
+              <dt>Ends</dt>
               <dd>{boardTime(e.end)}</dd>
             </div>
           )}
           {e.venue && (
             <div>
-              <dt>Gate</dt>
+              <dt>Venue</dt>
               <dd>{e.venue}</dd>
             </div>
           )}
@@ -140,7 +140,7 @@ function BoardingPass({ e, status }: { e: ClubEvent; status: BoardStatus }) {
         <span className="pass-code" aria-hidden>
           {e.code}
         </span>
-        {status === "NOW" ? (
+        {status === "LIVE" ? (
           <p className="pass-now">Happening now{e.venue ? ` at ${e.venue}` : ""}.</p>
         ) : e.register ? (
           <a className="btn pass-btn" href={e.register} target="_blank" rel="noopener noreferrer">
@@ -151,7 +151,7 @@ function BoardingPass({ e, status }: { e: ClubEvent; status: BoardStatus }) {
             Get notified
           </a>
         )}
-        {status !== "NOW" && (
+        {status !== "LIVE" && (
           <>
             <a className="pass-link" href={cal.google} target="_blank" rel="noopener noreferrer">
               Add to Google Calendar
@@ -168,16 +168,16 @@ function BoardingPass({ e, status }: { e: ClubEvent; status: BoardStatus }) {
 
 /* ───────── rows ───────── */
 
-function DepartureRow({ e, i, now }: { e: ClubEvent; i: number; now: number }) {
+function UpNextRow({ e, i, now }: { e: ClubEvent; i: number; now: number }) {
   const status = statusOf(e, now);
   const d = rowDelay(i);
-  const sub = status === "NOW" ? "Happening now" : startsIn(e.start, now);
+  const sub = status === "LIVE" ? "Happening now" : startsIn(e.start, now);
   return (
     <li className="board-item">
       <div className="board-row dep">
         <span className="sr-only">
           {e.name}, {boardDate(e.start)} at {boardTime(e.start)}
-          {e.venue ? `, ${e.venue}` : ""}. {status === "BOARDING" ? "Registration open." : sub}
+          {e.venue ? `, ${e.venue}` : ""}. {status === "REG OPEN" ? "Registration open." : sub}
         </span>
         <div className="c-code">
           <Flap text={e.code} delay={d} color="var(--ink-muted)" />
@@ -204,13 +204,13 @@ function DepartureRow({ e, i, now }: { e: ClubEvent; i: number; now: number }) {
         </div>
       </div>
       <div className="pass-wrap">
-        <BoardingPass e={e} status={status} />
+        <EventPass e={e} status={status} />
       </div>
     </li>
   );
 }
 
-function EmptyDeparture() {
+function EmptyUpNext() {
   const d = rowDelay(0);
   return (
     <li className="board-item">
@@ -247,7 +247,7 @@ function EmptyDeparture() {
   );
 }
 
-function ArrivalRow({ e, i }: { e: ClubEvent; i: number }) {
+function ShippedRow({ e, i }: { e: ClubEvent; i: number }) {
   const d = rowDelay(i);
   const photos = e.photos?.length ?? 0;
   return (
@@ -269,7 +269,7 @@ function ArrivalRow({ e, i }: { e: ClubEvent; i: number }) {
           <Flap text={boardDate(e.start)} delay={d + 60} />
         </div>
         <div className="c-status">
-          <Flap text="ARRIVED" delay={d + 120} color={STATUS_COLOR.ARRIVED} />
+          <Flap text="SHIPPED" delay={d + 120} color={STATUS_COLOR.SHIPPED} />
         </div>
       </a>
     </li>
@@ -298,8 +298,8 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
         <div className="board">
           <div className="board-head">
             <h3 className="board-title">
-              <PlaneTakeoff aria-hidden size={18} />
-              Departures
+              <CalendarClock aria-hidden size={18} />
+              Up next
             </h3>
             <span className="board-meta">{boardTime(new Date(now).toISOString())} IST</span>
           </div>
@@ -313,9 +313,9 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
           </div>
           <ul>
             {upcoming.length === 0 ? (
-              <EmptyDeparture />
+              <EmptyUpNext />
             ) : (
-              upcoming.map((e, i) => <DepartureRow key={e.code + e.start} e={e} i={i} now={now} />)
+              upcoming.map((e, i) => <UpNextRow key={e.code + e.start} e={e} i={i} now={now} />)
             )}
           </ul>
         </div>
@@ -324,8 +324,8 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
           <div className="board">
             <div className="board-head">
               <h3 className="board-title">
-                <PlaneLanding aria-hidden size={18} />
-                Arrivals
+                <PackageCheck aria-hidden size={18} />
+                Shipped
               </h3>
               <span className="board-meta">{past.length} events</span>
             </div>
@@ -337,7 +337,7 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
             </div>
             <ul>
               {past.map((e, i) => (
-                <ArrivalRow key={e.code + (e.start ?? "")} e={e} i={i + 1} />
+                <ShippedRow key={e.code + (e.start ?? "")} e={e} i={i + 1} />
               ))}
             </ul>
           </div>
