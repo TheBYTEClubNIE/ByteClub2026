@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { ClipboardList, Code2, Handshake, PenTool, Sparkles, type LucideIcon } from "lucide-react";
-import { DOMAINS, LEADS, type Domain, type Lead, isProfileUrl, photoStyle } from "@/content/team";
+import { DOMAINS, LEADS, type Domain, type Lead, isProfileUrl, photoStyle, zoomedSizes } from "@/content/team";
 import Art from "./DomainArt";
 import { Holo } from "./effects";
 import { GithubIcon, InstagramIcon, LinkedInIcon } from "./DisplayCore";
@@ -105,7 +105,8 @@ export default function LeadsRoster() {
               src={head.image}
               alt={head.name}
               fill
-              sizes="(min-width: 1024px) 320px, (min-width: 768px) 272px, 7.5rem"
+              sizes={zoomedSizes("(min-width: 1024px) 320px, (min-width: 768px) 272px, 7.5rem", head.frame?.zoom)}
+              quality={90}
               className="object-cover"
               style={photoStyle(head.frame)}
             />
@@ -144,7 +145,8 @@ export default function LeadsRoster() {
                   src={lead.image}
                   alt={lead.name}
                   fill
-                  sizes="(min-width: 1024px) 200px, (min-width: 768px) 136px, 104px"
+                  sizes={zoomedSizes("(min-width: 1024px) 200px, (min-width: 768px) 136px, 104px", lead.frame?.zoom)}
+                  quality={90}
                   className="object-cover"
                   style={photoStyle(lead.frame)}
                 />

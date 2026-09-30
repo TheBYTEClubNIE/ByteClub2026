@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { DOMAINS, LEADS, type Domain, type PhotoFrame, isProfileUrl, photoStyle } from "@/content/team";
+import { DOMAINS, LEADS, type Domain, type PhotoFrame, isProfileUrl, photoStyle, zoomedSizes } from "@/content/team";
 import DomainArt from "./DomainArt";
 import PullBadge from "./PullBadge";
 
@@ -102,7 +102,8 @@ function Badge({ member }: { member: Member }) {
                     src={member.image}
                     alt=""
                     fill
-                    sizes="(min-width: 1024px) 170px, (min-width: 640px) 22vw, 30vw"
+                    sizes={zoomedSizes("(min-width: 1024px) 170px, (min-width: 640px) 22vw, 30vw", member.frame?.zoom)}
+                    quality={90}
                     className="object-cover"
                     style={photoStyle(member.frame)}
                 />
@@ -156,7 +157,7 @@ export default function TeamMembers({ teamId }: { teamId: string }) {
                         <span className="squad-avatars" aria-hidden>
                             {leads.map((l) => (
                                 <span key={l.id} className="squad-avatar">
-                                    <Image src={l.image} alt="" fill sizes="40px" className="object-cover" style={photoStyle(l.frame)} />
+                                    <Image src={l.image} alt="" fill sizes={zoomedSizes("40px", l.frame?.zoom)} className="object-cover" style={photoStyle(l.frame)} />
                                 </span>
                             ))}
                         </span>

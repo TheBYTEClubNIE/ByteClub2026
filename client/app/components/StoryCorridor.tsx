@@ -273,9 +273,19 @@ export default function StoryCorridor() {
     let smoothedProgress = 0;
     let lastProgress = 0;
     const clock = new THREE.Clock();
+    // Once the hero has scrolled away only the faint ambient field is left,
+    // so it's drawn at ~30fps instead of every frame: half the GPU work for
+    // the rest of the page, and nobody can see the difference in slow dust.
+    let ambientOnly = false;
+    let lastDraw = 0;
 
-    const render = () => {
+    const render = (now: number = performance.now()) => {
       if (contextLost || !isVisible || !tabVisible || loopBroken) return;
+      if (ambientOnly && now - lastDraw < 33) {
+        raf = requestAnimationFrame(render);
+        return;
+      }
+      lastDraw = now;
 
       try {
         const elapsed = clock.getElapsedTime();
@@ -398,6 +408,7 @@ export default function StoryCorridor() {
         // instead of rendering 1,400 invisible points every frame. (The
         // group's light stays on; toggling a light would recompile shaders.)
         const heroShowing = dockEased < 0.999;
+        ambientOnly = !heroShowing;
         cloud.visible = heroShowing;
         shards.visible = heroShowing;
         badge.visible = heroShowing;

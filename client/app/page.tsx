@@ -8,7 +8,7 @@ import BlogTeaser from "./components/BlogTeaser";
 import ByteId from "./components/ByteId";
 import Join from "./components/Join";
 import Footer from "./components/Footer";
-import StoryCorridor from "./components/StoryCorridor";
+import LazyCorridor from "./components/LazyCorridor";
 import SiteNav from "./components/SiteNav";
 import { KineticBand } from "./components/effects";
 import { excerpt, readPosts } from "@/lib/posts";
@@ -30,7 +30,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen" style={{ color: "var(--ink)" }}>
-      <StoryCorridor />
+      <LazyCorridor />
       <SiteNav />
 
       <main>

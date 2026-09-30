@@ -26,6 +26,20 @@ export const photoStyle = (f?: PhotoFrame) => ({
   transformOrigin: f?.origin,
 });
 
+// A zoomed photo is shown bigger than its box, so ask for a bigger file too
+// (otherwise the browser downloads a small one and it looks soft). Only the
+// size values are scaled, not the media conditions.
+export const zoomedSizes = (sizes: string, zoom = 1) =>
+  zoom <= 1
+    ? sizes
+    : sizes
+        .split(",")
+        .map((part) => {
+          const i = part.lastIndexOf(")") + 1;
+          return part.slice(0, i) + part.slice(i).replace(/(\d+(?:\.\d+)?)(px|vw|rem)/, (_, n, u) => `${Math.ceil(+n * zoom)}${u}`);
+        })
+        .join(",");
+
 export interface Lead {
   id: number;
   name: string;

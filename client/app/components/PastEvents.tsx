@@ -61,7 +61,7 @@ function Scene({
       inert={!active}
     >
       <div className="scene-bg">
-        <Image src={photos[0].src} alt="" fill sizes="100vw" className="object-cover" />
+        <Image src={photos[0].src} alt="" fill sizes="100vw" quality={90} className="object-cover" />
       </div>
       <div className="scene-scrim" />
       <div className="scene-scan" aria-hidden />
@@ -78,7 +78,7 @@ function Scene({
             aria-label={`Open photo: ${p.caption}`}
           >
             <span className="floater-img">
-              <Image src={p.src} alt="" fill sizes="230px" className="object-cover" />
+              <Image src={p.src} alt="" fill sizes="(min-width: 768px) 230px, 140px" quality={90} className="object-cover" />
             </span>
           </button>
         );
@@ -174,8 +174,17 @@ function Lightbox({ event, start, onClose }: { event: ClubEvent; start: number; 
           </button>
         </div>
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img key={photo.src} src={photo.src} alt={photo.caption} className="lb-img" />
+        <div className="lb-frame">
+          <Image
+            key={photo.src}
+            src={photo.src}
+            alt={photo.caption}
+            fill
+            sizes="(min-width: 1100px) 1100px, 100vw"
+            quality={90}
+            className="lb-img"
+          />
+        </div>
 
         <div className="lb-bottom">
           <button type="button" className="lb-btn" onClick={prev} aria-label="Previous photo">
@@ -423,7 +432,8 @@ const CHANGELOG_CSS = `
 .lb-top, .lb-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .lb-title { display: flex; align-items: baseline; gap: 12px; font-family: var(--font-display); font-weight: 600; font-size: 1rem; color: var(--ink); }
 .lb-title span { font-family: var(--font-mono); font-weight: 400; font-size: 13px; color: var(--ink-muted); }
-.lb-img { display: block; width: 100%; max-height: 72vh; object-fit: contain; border-radius: 8px; animation: lbIn 0.25s ease both; }
+.lb-frame { position: relative; width: 100%; height: 72vh; }
+.lb-img { object-fit: contain; animation: lbIn 0.25s ease both; }
 @keyframes lbIn { from { opacity: 0; } to { opacity: 1; } }
 .lb-caption { font-family: var(--font-body); font-size: 14px; color: var(--ink-muted); text-align: center; }
 .lb-btn { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink); transition: background-color 0.2s ease; }
