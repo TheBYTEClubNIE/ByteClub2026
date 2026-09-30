@@ -6,7 +6,6 @@ import CoreTeams from "./components/CoreTeams";
 import PastEvents from "./components/PastEvents";
 import BlogTeaser from "./components/BlogTeaser";
 import ByteId from "./components/ByteId";
-import Bytle from "./components/Bytle";
 import Join from "./components/Join";
 import Footer from "./components/Footer";
 import StoryCorridor from "./components/StoryCorridor";
@@ -63,7 +62,6 @@ export default function Home() {
 
         <div className={CONTAINER}>
           <BlogTeaser posts={posts} />
-          <Bytle />
         </div>
 
         <KineticBand items={["No experience needed", "All years welcome", "Just show up"]} reverse tilt={1.5} />

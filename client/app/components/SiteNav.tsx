@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookOpen, Calendar, Gamepad2, History, Home as HomeIcon, UserPlus, Users } from "lucide-react";
 import { FloatingDock } from "@/components/ui/floating-dock";
+import { dayNumber } from "@/lib/bytle";
 import ScrollRing from "./ScrollRing";
 
 const navItems = [
@@ -11,14 +13,21 @@ const navItems = [
   { title: "Team", href: "#team", icon: <Users className="h-full w-full" /> },
   { title: "Changelog", href: "#past", icon: <History className="h-full w-full" /> },
   { title: "Blog", href: "#blog", icon: <BookOpen className="h-full w-full" /> },
-  { title: "Bytle", href: "#bytle", icon: <Gamepad2 className="h-full w-full" /> },
   { title: "Join", href: "#join", icon: <UserPlus className="h-full w-full" /> },
 ];
 
 export default function SiteNav() {
   const [activeSection, setActiveSection] = useState("home");
+  // Dot on the Bytle button until today's word has been played in this browser.
+  const [freshWord, setFreshWord] = useState(false);
 
   useEffect(() => {
+    try {
+      setFreshWord(!localStorage.getItem(`bytle:${dayNumber(Date.now())}`));
+    } catch {
+      setFreshWord(false);
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries.find((e) => e.isIntersecting);
@@ -47,13 +56,36 @@ export default function SiteNav() {
         <div className="pointer-events-auto flex-1 min-w-0 flex justify-center">
           <FloatingDock items={activeNavItems} />
         </div>
-        <a
-          href="#join"
-          className="pointer-events-auto hidden sm:inline-flex items-center rounded-full px-5 py-2.5 text-xs font-semibold shrink-0"
-          style={{ background: "var(--ink)", color: "var(--bg)", fontFamily: "var(--font-body)" }}
-        >
-          Join
-        </a>
+        <div className="pointer-events-auto flex shrink-0 items-center gap-2">
+          <Link
+            href="/bytle"
+            aria-label={freshWord ? "Play Bytle, today's word is waiting" : "Play Bytle, the daily tech word game"}
+            className="relative inline-flex h-10 w-10 items-center justify-center gap-2 rounded-full border text-xs font-semibold transition-colors hover:bg-[rgba(40,194,255,0.2)] sm:w-auto sm:px-4"
+            style={{
+              borderColor: "var(--accent-border)",
+              background: "var(--accent-soft)",
+              color: "var(--accent-strong)",
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            <Gamepad2 size={17} aria-hidden />
+            <span className="hidden sm:inline">Bytle</span>
+            {freshWord && (
+              <span
+                aria-hidden
+                className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full"
+                style={{ background: "#ffbf7f", boxShadow: "0 0 0 2px var(--bg)" }}
+              />
+            )}
+          </Link>
+          <a
+            href="#join"
+            className="hidden sm:inline-flex items-center rounded-full px-5 py-2.5 text-xs font-semibold"
+            style={{ background: "var(--ink)", color: "var(--bg)", fontFamily: "var(--font-body)" }}
+          >
+            Join
+          </a>
+        </div>
       </div>
     </nav>
   );
