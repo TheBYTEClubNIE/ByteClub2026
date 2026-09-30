@@ -4,7 +4,8 @@ import { boardDate, boardTime, splitEvents } from "@/content/events";
 import { useNow } from "./EventsBoard";
 import { DecodeText, TypeLine } from "./effects";
 
-const TYPED = ["websites", "ML models", "AI agents", "open source", "hackathon projects"];
+// What the club actually runs (see content/events.ts), plus the beginner hook.
+const TYPED = ["hands-on workshops", "ideathons", "hackathons", "build sessions", "your first commit"];
 
 export default function Hero({ builtAt }: { builtAt: number }) {
   const now = useNow(builtAt);
@@ -49,7 +50,7 @@ export default function Hero({ builtAt }: { builtAt: number }) {
         </h1>
 
         <div className="hero-fade-2 mt-6">
-          <TypeLine prefix=">_ we build" words={TYPED} />
+          <TypeLine prefix=">_ join us for" words={TYPED} />
         </div>
 
         <p

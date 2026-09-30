@@ -132,9 +132,11 @@ body {
 /* ============ Effects (see app/components/effects.tsx) ============ */
 .type-line {
   font-family: var(--font-mono);
-  font-size: clamp(1rem, 2.2vw, 1.3rem);
+  /* sized so the longest phrase stays on one line on small phones */
+  font-size: clamp(0.875rem, 3.9vw, 1.3rem);
   color: var(--accent);
   min-height: 1.6em;
+  white-space: nowrap;
 }
 .type-caret {
   display: inline-block;
