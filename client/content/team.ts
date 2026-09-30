@@ -24,6 +24,9 @@ export interface Lead {
   github: string;
   image: string;
   arsenal: Domain[];
+  // How the photo sits in its 4:5 frame: pan (object-position), zoom, and the
+  // point to zoom into (roughly where the face is). Tune per photo.
+  frame?: { position?: string; zoom?: number; origin?: string };
   squad?: "tech" | "management" | "creative";
 }
 
@@ -31,6 +34,7 @@ export const LEADS: Lead[] = [
   {
     id: 1,
     name: "Ritesh Kumar",
+    frame: { zoom: 1.25, origin: "55% 20%" },
     role: "Club Lead",
     area: "Executive & Strategy",
     image: "/Leads/ritesh president.jpeg",
@@ -45,6 +49,7 @@ export const LEADS: Lead[] = [
   {
     id: 2,
     name: "Gulshan Kumar",
+    frame: { zoom: 1.1, origin: "42% 18%" },
     role: "Tech Lead",
     area: "Engineering & Architecture",
     image: "/Leads/gulshankumar-techlead.jpeg",
@@ -60,6 +65,7 @@ export const LEADS: Lead[] = [
   {
     id: 7,
     name: "Tanishq Dhawan",
+    frame: { position: "50% 0%", zoom: 1.45, origin: "47% 20%" },
     role: "Technical Co-Lead",
     area: "Full-Stack Development & Tooling",
     image: "/Leads/tanishq-technicalcolead.jpeg",
@@ -75,6 +81,7 @@ export const LEADS: Lead[] = [
   {
     id: 3,
     name: "Mayank Rai",
+    frame: { zoom: 1.3, origin: "45% 40%" },
     role: "Management Lead",
     area: "Operations & Logistics",
     image: "/Leads/Mayank-managmentlead.jpeg",
@@ -90,6 +97,7 @@ export const LEADS: Lead[] = [
   {
     id: 4,
     name: "Sashwat Sharma",
+    frame: { zoom: 2.1, origin: "52% 36%" },
     role: "Creativity Lead",
     area: "Media & Brand Identity",
     image: "/Leads/shashwat-creativitylead.jpeg",
@@ -105,6 +113,7 @@ export const LEADS: Lead[] = [
   {
     id: 5,
     name: "Sambhav Roy",
+    frame: { position: "50% 0%", zoom: 1.25, origin: "52% 30%" },
     role: "Design Lead",
     area: "UI/UX & Product Design",
     image: "/Leads/Sambhav.jpeg",
@@ -119,6 +128,7 @@ export const LEADS: Lead[] = [
   {
     id: 6,
     name: "Vishnu M",
+    frame: { zoom: 1.25, origin: "55% 42%" },
     role: "Sponsorship Lead",
     area: "Partnerships & Outreach",
     image: "/Leads/vishnum-sponshership lead.jpeg",

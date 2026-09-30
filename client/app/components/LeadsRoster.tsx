@@ -16,6 +16,13 @@ const ICON: Record<Domain, LucideIcon> = {
 };
 const TOTAL = DOMAINS.length;
 const colorOf = (id: Domain) => DOMAINS.find((d) => d.id === id)!.color;
+
+// Per-photo framing from content/team.ts, so every face sits well in the 4:5 frame.
+const frameStyle = (lead: Lead) => ({
+  objectPosition: lead.frame?.position ?? "50% 50%",
+  transform: lead.frame?.zoom ? `scale(${lead.frame.zoom})` : undefined,
+  transformOrigin: lead.frame?.origin,
+});
 const labelOf = (id: Domain) => DOMAINS.find((d) => d.id === id)!.label;
 
 /* ───────── background art, one per domain (drawn in the card's colour) ───────── */
@@ -169,7 +176,14 @@ export default function LeadsRoster() {
         <Art domain="all" />
         <Holo className="lead-hero-photo-wrap">
           <div className="lead-photo" data-holo-card>
-            <Image src={head.image} alt={head.name} fill sizes="(min-width: 1024px) 320px, 7.5rem" className="object-cover" />
+            <Image
+              src={head.image}
+              alt={head.name}
+              fill
+              sizes="(min-width: 1024px) 320px, (min-width: 768px) 272px, 7.5rem"
+              className="object-cover"
+              style={frameStyle(head)}
+            />
           </div>
         </Holo>
         <div className="lead-hero-top">
@@ -201,7 +215,14 @@ export default function LeadsRoster() {
             <Art domain={lead.arsenal[0]} />
             <Holo className="lead-card-photo-wrap">
               <div className="lead-photo" data-holo-card>
-                <Image src={lead.image} alt={lead.name} fill sizes="(min-width: 1024px) 380px, (min-width: 768px) 136px, 104px" className="object-cover" />
+                <Image
+                  src={lead.image}
+                  alt={lead.name}
+                  fill
+                  sizes="(min-width: 1024px) 200px, (min-width: 768px) 136px, 104px"
+                  className="object-cover"
+                  style={frameStyle(lead)}
+                />
               </div>
             </Holo>
             <div className="lead-card-info">
@@ -226,7 +247,6 @@ export default function LeadsRoster() {
 
 const LEADS_CSS = `
 .lead-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 12px; background: #07090b; }
-.lead-photo img { object-position: center top; }
 .lead-role { display: inline-block; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c, var(--accent)) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c, var(--accent)) 45%, transparent); font-family: var(--font-mono); font-size: 12px; color: var(--c, var(--accent-strong)); }
 .lead-name { margin-top: 8px; font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; line-height: 1.15; letter-spacing: -0.015em; color: var(--ink); }
 .lead-area { margin-top: 4px; font-size: 14px; color: var(--ink-muted); }
@@ -295,9 +315,9 @@ const LEADS_CSS = `
 }
 @media (min-width: 1024px) {
   .lead-hero { grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 0 48px; padding: 28px; }
-  .lead-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .lead-card { grid-template-columns: 1fr; grid-template-areas: "photo" "info" "body"; gap: 14px; }
-  .lead-card .lead-photo { aspect-ratio: 5 / 4; }
+  /* desktop: two per row, photo beside the text, same 4:5 frame as phones */
+  .lead-grid { gap: 20px; margin-top: 20px; }
+  .lead-card { grid-template-columns: 12.5rem minmax(0, 1fr); grid-template-areas: "photo info" "photo body"; grid-template-rows: auto 1fr; gap: 0 24px; padding: 20px; }
   .lead-card-info { align-self: start; }
 }
 @media (prefers-reduced-motion: reduce) {
