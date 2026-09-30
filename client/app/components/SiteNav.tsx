@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Calendar, History, Home as HomeIcon, Info, UserPlus, Users } from "lucide-react";
+import { BookOpen, Calendar, Gamepad2, History, Home as HomeIcon, UserPlus, Users } from "lucide-react";
 import { FloatingDock } from "@/components/ui/floating-dock";
 import ScrollRing from "./ScrollRing";
 
 const navItems = [
   { title: "Home", href: "#home", icon: <HomeIcon className="h-full w-full" /> },
-  { title: "Story", href: "#about", icon: <Info className="h-full w-full" /> },
   { title: "Events", href: "#events", icon: <Calendar className="h-full w-full" /> },
   { title: "Team", href: "#team", icon: <Users className="h-full w-full" /> },
-  { title: "Past Events", href: "#past", icon: <History className="h-full w-full" /> },
+  { title: "Changelog", href: "#past", icon: <History className="h-full w-full" /> },
   { title: "Blog", href: "#blog", icon: <BookOpen className="h-full w-full" /> },
+  { title: "Bytle", href: "#bytle", icon: <Gamepad2 className="h-full w-full" /> },
   { title: "Join", href: "#join", icon: <UserPlus className="h-full w-full" /> },
 ];
 

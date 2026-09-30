@@ -42,8 +42,9 @@ function FacebookIcon() {
 const QUICK_LINKS = [
   { href: "/#events", label: "Events" },
   { href: "/#team", label: "Team" },
-  { href: "/#past", label: "Past events" },
+  { href: "/#past", label: "Changelog" },
   { href: "/blog", label: "Blog" },
+  { href: "/bytle", label: "Bytle" },
   { href: "/#join", label: "Join" },
   { href: "/#contact", label: "Questions" },
 ];
