@@ -71,14 +71,7 @@ function FlipDigit({ value, label }: { value: number; label: string }) {
     );
 }
 
-function Colon() {
-    const [visible, setVisible] = useState(true);
-
-    useEffect(() => {
-        const id = setInterval(() => setVisible((v) => !v), 1000);
-        return () => clearInterval(id);
-    }, []);
-
+function Colon({ blinking }: { blinking: boolean }) {
     return (
         <div className="flex flex-col items-center" aria-hidden="true">
             <div className="flex items-center justify-center" style={{ height: CELL_SIZE }}>
@@ -88,8 +81,8 @@ function Colon() {
                         fontWeight: 700,
                         fontSize: "clamp(1.2rem, 4vw, 2rem)",
                         color: "var(--accent)",
-                        opacity: visible ? 0.85 : 0.2,
-                        transition: "opacity 0.3s ease",
+                        opacity: 0.85,
+                        animation: blinking ? "colon-blink 2s ease-in-out infinite" : undefined,
                         lineHeight: 1,
                     }}
                 >
@@ -109,10 +102,15 @@ export default function Countdown({ targetDate }: { targetDate: string }) {
     const [time, setTime] = useState<ReturnType<typeof getCountdown> | null>(null);
 
     useEffect(() => {
-        setTime(getCountdown(targetDate));
+        const first = getCountdown(targetDate);
+        setTime(first);
+        if (first.expired) return;
 
+        // Stops itself at zero instead of re-rendering 00:00:00:00 forever.
         const interval = setInterval(() => {
-            setTime(getCountdown(targetDate));
+            const next = getCountdown(targetDate);
+            setTime(next);
+            if (next.expired) clearInterval(interval);
         }, 1000);
 
         return () => clearInterval(interval);
@@ -120,14 +118,15 @@ export default function Countdown({ targetDate }: { targetDate: string }) {
 
     if (!time) return null;
 
+    const running = !time.expired;
     return (
         <div className="flex items-start justify-center gap-1.5 sm:gap-3 w-full">
             <FlipDigit value={time.d} label="Days" />
-            <Colon />
+            <Colon blinking={running} />
             <FlipDigit value={time.h} label="Hours" />
-            <Colon />
+            <Colon blinking={running} />
             <FlipDigit value={time.m} label="Min" />
-            <Colon />
+            <Colon blinking={running} />
             <FlipDigit value={time.s} label="Sec" />
         </div>
     );

@@ -14,6 +14,10 @@
     opacity: 0.88;
   }
 }
+@keyframes colon-blink {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.2; }
+}
 @keyframes fadeInUp {
   from {
     opacity: 0;

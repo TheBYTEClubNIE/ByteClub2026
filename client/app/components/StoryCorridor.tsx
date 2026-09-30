@@ -394,6 +394,14 @@ export default function StoryCorridor() {
         const fadeT = THREE.MathUtils.clamp((dockEased - fadeStart) / (1 - fadeStart), 0, 1);
         badgeMaterial.opacity = 1 - fadeT;
 
+        // Fully faded out once the hero is scrolled past: skip drawing it
+        // instead of rendering 1,400 invisible points every frame. (The
+        // group's light stays on; toggling a light would recompile shaders.)
+        const heroShowing = dockEased < 0.999;
+        cloud.visible = heroShowing;
+        shards.visible = heroShowing;
+        badge.visible = heroShowing;
+
         // Smooth handoff, not a hard cut: as the dense hero globe bursts
         // away, the persistent ambient field gently brightens to fill the
         // gap — a gradient between "hero spectacle" and "quiet site-wide

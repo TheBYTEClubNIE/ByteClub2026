@@ -139,7 +139,20 @@ const SplitFlapText = ({
   ...props
 }: SplitFlapTextProps) => {
   const prefersReducedMotion = usePrefersReducedMotion();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [inView, setInView] = useState(false);
   const rafRef = useRef<number | null>(null);
+
+  // Only cycle while on screen: the flip animation sets state nearly every
+  // frame, and with several of these on a page running offscreen forever
+  // they kept the main thread busy for nothing.
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const cycleTimerRef = useRef<ReturnType<typeof setTimeout> | number | NodeJS.Timeout | null>(null);
   const currentTextRef = useRef('');
 
@@ -175,7 +188,7 @@ const SplitFlapText = ({
     currentTextRef.current = firstPhrase;
     setTiles(createTiles(firstPhrase));
 
-    if (normalizedPhrases.length <= 1 || typeof window === 'undefined') {
+    if (normalizedPhrases.length <= 1 || typeof window === 'undefined' || !inView) {
       return clearAnimation;
     }
 
@@ -319,7 +332,7 @@ const SplitFlapText = ({
       cancelled = true;
       clearAnimation();
     };
-  }, [normalizedPhrases, width, loop, cycleDelay, flipDuration, stagger, flipsPerChar, charset, prefersReducedMotion]);
+  }, [normalizedPhrases, width, loop, cycleDelay, flipDuration, stagger, flipsPerChar, charset, prefersReducedMotion, inView]);
 
   const settledText = tiles
     .map(tile => tile.current)
@@ -339,6 +352,7 @@ const SplitFlapText = ({
     <>
       <style>{styles}</style>
       <div
+        ref={rootRef}
         className={`split-flap-text inline-flex items-center whitespace-pre select-none ${className}`.trim()}
         style={componentStyle}
         role="text"
