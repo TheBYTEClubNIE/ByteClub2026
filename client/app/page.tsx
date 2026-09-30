@@ -50,8 +50,12 @@ export default function Home() {
             <TeamLeads />
             <CoreTeams />
           </section>
+        </div>
 
-          <PastEvents />
+        {/* full-bleed: the flight log pins a full-screen stage */}
+        <PastEvents />
+
+        <div className={CONTAINER}>
           <BlogTeaser posts={latestPosts} />
         </div>
 

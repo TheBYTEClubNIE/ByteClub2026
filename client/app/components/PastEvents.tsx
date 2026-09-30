@@ -5,85 +5,105 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { EVENTS, type ClubEvent, boardDate, boardYear, longDate, oldestFirst, slugOf } from '@/content/events';
 
-// Every event in content/events.ts that has photos is a stop on the route,
-// oldest first.
+// Every event in content/events.ts that has photos is a stop, oldest first.
 const TIMELINE = EVENTS.filter((e) => e.photos?.length).sort(oldestFirst);
+const N = TIMELINE.length;
+const SEGMENTS = Math.max(1, N - 1);
 
 // Plane silhouette pointing along +x, centred on the origin.
 const PLANE =
   'M12 0 L-6 -3.2 L-9.5 -10 L-12.5 -10 L-9.5 -2.6 L-14.5 -2.2 L-16.5 -5.5 L-18.5 -5.5 L-17 0 L-18.5 5.5 L-16.5 5.5 L-14.5 2.2 L-9.5 2.6 L-12.5 10 L-9.5 10 L-6 3.2 Z';
 
-/* ───────────────── Postcard (one stop) ───────────────── */
+// Where the floating polaroids sit (desktop shows all three, phones two).
+const FLOATERS = [
+  { right: '6%', top: '20%', w: 'clamp(118px, 17vw, 230px)', rot: 6, speed: 1 },
+  { right: '27%', top: '14%', w: 'clamp(96px, 13vw, 180px)', rot: -7, speed: 1.7 },
+  { right: '15%', top: '52%', w: 'clamp(90px, 11vw, 160px)', rot: 3, speed: 2.3 },
+];
 
-function Postcard({ event, onOpen }: { event: ClubEvent; onOpen: (index: number) => void }) {
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+const smooth = (v: number) => {
+  const t = clamp01(v);
+  return t * t * (3 - 2 * t);
+};
+
+/* ───────────────── One full-screen stop ───────────────── */
+
+function Scene({
+  event,
+  index,
+  active,
+  onOpen,
+  sceneRef,
+}: {
+  event: ClubEvent;
+  index: number;
+  active: boolean;
+  onOpen: (photo: number) => void;
+  sceneRef: (el: HTMLDivElement | null) => void;
+}) {
   const photos = event.photos!;
-  const ref = useRef<HTMLElement>(null);
-  // null = server render (stamp simply shows), false = waiting offscreen, true = stamp it
-  const [landed, setLanded] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    setLanded(false);
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setLanded(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.45 }
-    );
-    io.observe(ref.current!);
-    return () => io.disconnect();
-  }, []);
-
-  const meta = [event.start && longDate(event.start), event.venue, `${photos.length} photos`].filter(Boolean).join(' · ');
-  const thumbs = photos.slice(1, 5);
+  const meta = [event.start && longDate(event.start), event.venue].filter(Boolean).join(' · ');
+  let letter = 0;
 
   return (
-    <article
-      ref={ref}
-      id={`past-${slugOf(event)}`}
-      className={`postcard ${landed === false ? 'is-waiting' : ''} ${landed ? 'is-landed' : ''}`}
+    <div
+      ref={sceneRef}
+      className={`scene ${index === 0 ? 'scene--first' : ''} ${active ? 'is-active' : ''}`}
+      inert={!active}
     >
-      <button
-        type="button"
-        className="postcard-photo"
-        onClick={() => onOpen(0)}
-        aria-label={`View ${photos.length} photos from ${event.name}`}
-      >
-        <Image src={photos[0].src} alt="" fill sizes="(min-width: 900px) 42vw, 88vw" className="object-cover" />
-      </button>
-
-      <div className="stamp" aria-hidden>
-        <span className="stamp-code">{event.code}</span>
-        <span className="stamp-date">{event.start ? `${boardDate(event.start)} ${boardYear(event.start).slice(2)}` : 'ARRIVED'}</span>
+      <div className="scene-bg">
+        <Image src={photos[0].src} alt="" fill sizes="100vw" className="object-cover" />
       </div>
+      <div className="scene-scrim" />
 
-      <div className="postcard-body">
-        <h3 className="postcard-name">{event.name}</h3>
-        <p className="postcard-meta">{meta}</p>
-        <p className="postcard-sum">{event.summary}</p>
-        {thumbs.length > 0 && (
-          <ul className="thumbs">
-            {thumbs.map((p, i) => (
-              <li key={p.src}>
-                <button type="button" onClick={() => onOpen(i + 1)} aria-label={`Open photo: ${p.caption}`}>
-                  <Image src={p.src} alt="" fill sizes="64px" className="object-cover" />
-                </button>
-              </li>
-            ))}
-            {photos.length > 5 && (
-              <li>
-                <button type="button" className="thumb-more" onClick={() => onOpen(5)} aria-label={`${photos.length - 5} more photos`}>
-                  +{photos.length - 5}
-                </button>
-              </li>
-            )}
-          </ul>
-        )}
+      {photos.slice(1, 4).map((p, k) => {
+        const f = FLOATERS[k];
+        return (
+          <button
+            key={p.src}
+            type="button"
+            className={`floater floater--${k}`}
+            style={{ right: f.right, top: f.top, width: f.w, ['--rot' as string]: `${f.rot}deg`, ['--speed' as string]: f.speed }}
+            onClick={() => onOpen(k + 1)}
+            aria-label={`Open photo: ${p.caption}`}
+          >
+            <span className="floater-img">
+              <Image src={p.src} alt="" fill sizes="230px" className="object-cover" />
+            </span>
+          </button>
+        );
+      })}
+
+      <div className="scene-content">
+        <p className="scene-count">
+          Stop {String(index + 1).padStart(2, '0')} / {String(N).padStart(2, '0')}
+        </p>
+        <h3 className="scene-name" aria-label={event.name}>
+          {event.name.split(' ').map((word, w) => (
+            <span key={w} className="word" aria-hidden>
+              {word.split('').map((ch) => (
+                <span key={letter} className="ltr" style={{ ['--i' as string]: letter++ }}>
+                  {ch}
+                </span>
+              ))}
+            </span>
+          ))}
+        </h3>
+        {meta && <p className="scene-meta">{meta}</p>}
+        <p className="scene-sum">{event.summary}</p>
+        <button type="button" className="btn btn-primary scene-cta" onClick={() => onOpen(0)}>
+          View {photos.length} photos
+        </button>
+
+        <div className="stamp" aria-hidden>
+          <span className="stamp-code">{event.code}</span>
+          <span className="stamp-date">
+            {event.start ? `${boardDate(event.start)} ${boardYear(event.start).slice(2)}` : 'ARRIVED'}
+          </span>
+        </div>
       </div>
-    </article>
+    </div>
   );
 }
 
@@ -164,72 +184,44 @@ function Lightbox({ event, start, onClose }: { event: ClubEvent; start: number; 
   );
 }
 
-/* ───────────────── Flight log ───────────────── */
+/* ───────────────── Flight log: a pinned, scroll-driven in-flight sequence ───────────────── */
 
 export default function PastEvents() {
+  const [active, setActive] = useState(0);
   const [open, setOpen] = useState<{ event: ClubEvent; index: number } | null>(null);
   const close = useCallback(() => setOpen(null), []);
 
-  const routeRef = useRef<HTMLDivElement>(null);
-  const flownRef = useRef<SVGPathElement>(null);
-  const planeRef = useRef<SVGGElement>(null);
-  const [d, setD] = useState('');
+  const trackRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const scenes = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Route: smooth vertical S-curves through every stop marker, rebuilt
-  // whenever the layout changes size.
+  // One scroll handler drives everything through CSS variables:
+  //   --p      0..1 across the whole flight (map, plane)
+  //   --enter  0..1 as a stop wipes in over the previous one
+  //   --life   0..1 across a stop's time on screen (zoom, polaroid drift)
   useEffect(() => {
-    const route = routeRef.current!;
-    const build = () => {
-      const box = route.getBoundingClientRect();
-      const pts = [...route.querySelectorAll<HTMLElement>('[data-marker]')].map((m) => {
-        const r = m.getBoundingClientRect();
-        return { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top };
-      });
-      let path = `M ${pts[0].x} ${pts[0].y}`;
-      for (let i = 1; i < pts.length; i++) {
-        const a = pts[i - 1];
-        const b = pts[i];
-        const half = (b.y - a.y) / 2;
-        path += ` C ${a.x} ${a.y + half}, ${b.x} ${b.y - half}, ${b.x} ${b.y}`;
-      }
-      setD(path);
-    };
-    build();
-    const ro = new ResizeObserver(build);
-    ro.observe(route);
-    return () => ro.disconnect();
-  }, []);
-
-  // The plane sits where the route crosses the reading line (55% down the
-  // screen); everything behind it is lit as contrail.
-  useEffect(() => {
-    if (!d) return;
-    const route = routeRef.current!;
-    const flown = flownRef.current!;
-    const plane = planeRef.current!;
-    const len = flown.getTotalLength();
-    flown.style.strokeDasharray = `${len}`;
-
+    const track = trackRef.current!;
+    const stage = stageRef.current!;
     let raf = 0;
     let listening = false;
+
     const update = () => {
       raf = 0;
-      const targetY = window.innerHeight * 0.55 - route.getBoundingClientRect().top;
-      // y only ever increases along the route, so binary-search the length.
-      let lo = 0;
-      let hi = len;
-      for (let k = 0; k < 14; k++) {
-        const mid = (lo + hi) / 2;
-        if (flown.getPointAtLength(mid).y < targetY) lo = mid;
-        else hi = mid;
-      }
-      const at = lo;
-      const p = flown.getPointAtLength(at);
-      const a = flown.getPointAtLength(Math.max(0, at - 2));
-      const b = flown.getPointAtLength(Math.min(len, at + 2));
-      const angle = (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
-      flown.style.strokeDashoffset = `${len - at}`;
-      plane.setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${angle})`);
+      const r = track.getBoundingClientRect();
+      const travel = Math.max(1, r.height - window.innerHeight);
+      const p = clamp01(-r.top / travel);
+      const s = p * SEGMENTS;
+      stage.style.setProperty('--p', p.toFixed(4));
+      let current = 0;
+      scenes.current.forEach((el, i) => {
+        if (!el) return;
+        const enter = i === 0 ? 1 : smooth((s - (i - 0.6)) / 0.6);
+        const life = clamp01((s - (i - 0.6)) / 1.6);
+        el.style.setProperty('--enter', enter.toFixed(4));
+        el.style.setProperty('--life', life.toFixed(4));
+        if (enter > 0.5) current = i;
+      });
+      setActive(current);
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -238,64 +230,97 @@ export default function PastEvents() {
       if (entry.isIntersecting && !listening) {
         listening = true;
         window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll);
       } else if (!entry.isIntersecting && listening) {
         listening = false;
         window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('resize', onScroll);
       }
       update();
     });
-    io.observe(route);
+    io.observe(track);
     update();
     return () => {
       io.disconnect();
       window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
       cancelAnimationFrame(raf);
     };
-  }, [d]);
+  }, []);
+
+  const jump = (i: number) => {
+    const track = trackRef.current!;
+    const travel = track.offsetHeight - window.innerHeight;
+    const top = track.getBoundingClientRect().top + window.scrollY + (i / SEGMENTS) * travel;
+    window.scrollTo({ top, behavior: 'smooth' });
+  };
 
   return (
-    <section id="past" className="section">
+    <section id="past" className="section" style={{ paddingBottom: 0 }}>
       <style>{FLIGHT_CSS}</style>
 
-      <header className="section-head">
+      <header className="section-head mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-8 lg:px-12">
         <h2 className="section-title">Flight log</h2>
         <p className="section-lede">
-          Every event we&apos;ve run, stop by stop. Scroll to fly the route,
-          tap a postcard for the photos.
+          Every event we&apos;ve run, stop by stop. Keep scrolling to fly the
+          route, or tap a stop on the map to jump.
         </p>
       </header>
 
-      <div ref={routeRef} className="route">
-        <svg className="route-svg" aria-hidden>
-          <path d={d} className="route-base" />
-          <path ref={flownRef} d={d} className="route-flown" />
-          <g ref={planeRef} className="route-plane">
-            <path d={PLANE} />
-          </g>
-        </svg>
+      <div ref={trackRef} className="fl-track" style={{ height: `calc(${SEGMENTS * 110 + 100} * 1svh)` }}>
+        {/* anchor per stop, so the board's "N photos →" links land on it */}
+        {TIMELINE.map((e, i) => (
+          <span
+            key={e.code}
+            id={`past-${slugOf(e)}`}
+            className="fl-anchor"
+            style={{ top: `calc(${i / SEGMENTS} * (100% - 100svh))` }}
+          />
+        ))}
 
-        <ol className="stops">
-          <li className="stop stop--edge stop--start">
-            <span className="marker" data-marker />
-            <span className="edge-pill">Takeoff · 2023</span>
-            <p className="edge-text">A handful of first-years who wanted tech events that didn&apos;t feel like lectures.</p>
-          </li>
-
+        <div ref={stageRef} className="fl-stage">
           {TIMELINE.map((event, i) => (
-            <li key={event.code} className={`stop ${i % 2 === 0 ? 'stop--left' : 'stop--right'}`}>
-              <span className="marker" data-marker />
-              <Postcard event={event} onOpen={(index) => setOpen({ event, index })} />
-            </li>
+            <Scene
+              key={event.code}
+              event={event}
+              index={i}
+              active={i === active}
+              onOpen={(photo) => setOpen({ event, index: photo })}
+              sceneRef={(el) => {
+                scenes.current[i] = el;
+              }}
+            />
           ))}
 
-          <li className="stop stop--edge">
-            <span className="marker marker--next" data-marker />
-            <span className="edge-pill edge-pill--next">Next stop</span>
-            <a href="#events" className="edge-link">
-              See what&apos;s boarding →
+          {/* seat-back in-flight map */}
+          <nav className="fl-map" aria-label="Flight log stops">
+            <span className="fl-origin">2023</span>
+            <div className="fl-route">
+              <span className="fl-line" />
+              <span className="fl-line fl-line--lit" />
+              {TIMELINE.map((e, i) => (
+                <button
+                  key={e.code}
+                  type="button"
+                  className={`fl-stop ${i <= active ? 'is-past' : ''} ${i === active ? 'is-here' : ''}`}
+                  style={{ left: `${(i / SEGMENTS) * 100}%` }}
+                  onClick={() => jump(i)}
+                  aria-label={`Jump to ${e.name}`}
+                  aria-current={i === active ? 'step' : undefined}
+                >
+                  <span className="fl-dot" />
+                  <span className="fl-code">{e.code}</span>
+                </button>
+              ))}
+              <svg className="fl-plane" viewBox="-20 -12 34 24" aria-hidden>
+                <path d={PLANE} />
+              </svg>
+            </div>
+            <a href="#events" className="fl-next">
+              Next <span aria-hidden>?</span>
             </a>
-          </li>
-        </ol>
+          </nav>
+        </div>
       </div>
 
       {open && <Lightbox event={open.event} start={open.index} onClose={close} />}
@@ -304,69 +329,76 @@ export default function PastEvents() {
 }
 
 const FLIGHT_CSS = `
-.route { position: relative; }
-.route-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.route-base { fill: none; stroke: rgba(255, 255, 255, 0.22); stroke-width: 2; stroke-dasharray: 1 9; stroke-linecap: round; }
-.route-flown { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(40, 194, 255, 0.65)); }
-.route-plane { fill: var(--accent-strong); filter: drop-shadow(0 0 8px rgba(42, 245, 255, 0.85)); }
+.fl-track { position: relative; }
+.fl-anchor { position: absolute; left: 0; width: 1px; height: 1px; scroll-margin-top: -84px; }
+.fl-stage { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #07090b; }
 
-.stops { position: relative; display: flex; flex-direction: column; gap: clamp(4.5rem, 10vw, 7rem); }
-.stop { position: relative; padding-left: 56px; }
-.marker { position: absolute; left: 14px; top: 34px; z-index: 2; width: 16px; height: 16px; border-radius: 50%; transform: translate(-50%, -50%); background: #07090b; border: 2px solid var(--accent); box-shadow: 0 0 0 6px rgba(40, 194, 255, 0.12); }
-.marker--next { border-style: dashed; border-color: var(--ink-muted); box-shadow: none; }
-.stop--edge .marker { top: 14px; }
+/* each stop wipes in as a circle growing from the bottom edge */
+.scene { position: absolute; inset: 0; clip-path: circle(calc(var(--enter, 0) * 150%) at 50% 100%); }
+.scene--first { clip-path: none; }
+.scene-bg { position: absolute; inset: 0; transform: scale(calc(1.16 - var(--life, 0) * 0.16)) translate3d(0, calc(var(--life, 0) * -2%), 0); will-change: transform; }
+.scene-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,9,11,0.75) 0%, rgba(7,9,11,0.15) 28%, rgba(7,9,11,0.25) 50%, rgba(7,9,11,0.94) 82%, #07090b 100%); }
 
-.edge-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--accent-border); background: var(--accent-soft); color: var(--accent-strong); font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; }
-.edge-pill--next { border-style: dashed; border-color: var(--line-strong); background: transparent; color: var(--ink); }
-.edge-text { margin-top: 12px; max-width: 34ch; font-size: 15px; line-height: 1.6; color: var(--ink-muted); }
-.edge-link { display: inline-block; margin-top: 12px; font-size: 15px; font-weight: 600; color: var(--accent); }
-.edge-link:hover { color: var(--accent-strong); }
+.floater { position: absolute; z-index: 2; padding: 6px 6px 22px; background: #eef1f4; border-radius: 4px; box-shadow: 0 24px 50px -12px rgba(0,0,0,0.7); cursor: zoom-in; transform: translate3d(0, calc((0.5 - var(--life, 0)) * 55vh * var(--speed, 1)), 0) rotate(var(--rot, 0deg)); transition: box-shadow 0.3s ease; }
+.floater:hover { box-shadow: 0 30px 60px -10px rgba(40,194,255,0.5); }
+.floater-img { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: #d9dee3; }
+.floater--2 { display: none; }
 
-.postcard { position: relative; padding: 10px; border-radius: 16px; background: var(--bg-elevated); border: 1px solid var(--line); scroll-margin-top: 96px; transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s ease; }
-.postcard-photo { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 10px; background: #07090b; cursor: zoom-in; }
-.postcard-photo img { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-.postcard-photo:hover img { transform: scale(1.03); }
-.postcard-body { padding: 18px 10px 10px; }
-.postcard-name { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.3rem, 2.4vw, 1.7rem); line-height: 1.15; letter-spacing: -0.015em; color: var(--ink); }
-.postcard-meta { margin-top: 6px; font-size: 14px; color: var(--accent); }
-.postcard-sum { margin-top: 8px; font-size: 15px; line-height: 1.6; color: var(--ink-muted); }
-.thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
-.thumbs button { position: relative; display: block; width: 52px; height: 52px; overflow: hidden; border-radius: 8px; border: 1px solid var(--line); transition: border-color 0.2s ease, transform 0.2s ease; }
-.thumbs button:hover { border-color: var(--accent); transform: translateY(-2px); }
-.thumb-more { display: grid !important; place-items: center; background: rgba(255, 255, 255, 0.05); color: var(--ink); font-size: 14px; font-weight: 600; }
+.scene-content { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; padding: 0 16px calc(28px + env(safe-area-inset-bottom)); max-width: 80rem; margin-inline: auto; }
+.scene-count { font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.1em; color: var(--accent); }
+.scene-name { margin-top: 10px; max-width: 14ch; font-family: var(--font-display); font-weight: 700; font-size: clamp(2.3rem, 9vw, 6.5rem); line-height: 0.98; letter-spacing: -0.035em; color: var(--ink); }
+.word { display: inline-block; overflow: hidden; margin-right: 0.22em; vertical-align: top; padding-bottom: 0.06em; }
+.ltr { display: inline-block; transform: translate3d(0, 105%, 0); transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); transition-delay: calc(var(--i) * 22ms); }
+.is-active .ltr { transform: none; }
+.scene-meta { margin-top: 12px; font-size: 14px; color: var(--accent); }
+.scene-sum { margin-top: 8px; max-width: 46ch; font-size: 15px; line-height: 1.6; color: rgba(243,245,247,0.82); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.scene-cta { margin-top: 18px; }
+.scene-meta, .scene-sum, .scene-cta, .scene-count { opacity: 0; transform: translate3d(0, 14px, 0); transition: opacity 0.5s ease 0.25s, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s; }
+.is-active .scene-meta, .is-active .scene-sum, .is-active .scene-cta, .is-active .scene-count { opacity: 1; transform: none; }
 
-/* Passport stamp that slams onto the postcard when it scrolls in. */
-.stamp { position: absolute; top: -18px; right: -12px; z-index: 3; width: 104px; height: 104px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; border: 2.5px solid var(--accent); outline: 1px solid rgba(40, 194, 255, 0.7); outline-offset: -9px; background: rgba(7, 9, 11, 0.6); color: var(--accent); transform: rotate(-14deg); pointer-events: none; }
-.stamp-code { font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1; }
+/* passport stamp slams on each time a stop lands */
+.stamp { position: absolute; right: 16px; bottom: calc(100% - 40px); width: 96px; height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; border: 2.5px solid var(--accent); outline: 1px solid rgba(40,194,255,0.7); outline-offset: -9px; color: var(--accent); background: rgba(7,9,11,0.55); opacity: 0; transform: rotate(-14deg) scale(1.9); }
+.is-active .stamp { animation: stamp-in 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) 0.45s both; }
+.stamp-code { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1; }
 .stamp-date { margin-top: 5px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; }
-.is-waiting .stamp { opacity: 0; }
-.is-landed .stamp { animation: stamp-in 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) 0.1s both; }
 @keyframes stamp-in {
   from { opacity: 0; transform: rotate(-34deg) scale(1.9); }
   65% { opacity: 1; transform: rotate(-12deg) scale(0.93); }
   to { opacity: 1; transform: rotate(-14deg) scale(1); }
 }
 
-@media (max-width: 899px) {
-  /* the route wiggles down a slim left gutter */
-  .stop:nth-child(even) .marker { left: 34px; }
+/* in-flight map */
+.fl-map { position: absolute; z-index: 5; top: 84px; left: 16px; right: 16px; display: flex; align-items: center; gap: 14px; max-width: 64rem; margin-inline: auto; padding: 12px 16px 26px; border-radius: 14px; background: rgba(7,9,11,0.78); border: 1px solid var(--line-strong); }
+.fl-origin, .fl-next { flex-shrink: 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; color: var(--ink-muted); }
+.fl-next { padding: 4px 10px; border: 1px dashed var(--line-strong); border-radius: 999px; color: var(--ink); transition: border-color 0.2s ease, color 0.2s ease; }
+.fl-next:hover { border-color: var(--accent); color: var(--accent); }
+.fl-route { position: relative; flex: 1; height: 2px; margin-inline: 12px; }
+.fl-line { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.28) 0 2px, transparent 2px 8px); }
+.fl-line--lit { background: var(--accent); transform-origin: left; transform: scaleX(var(--p, 0)); box-shadow: 0 0 10px rgba(40,194,255,0.7); }
+.fl-stop { position: absolute; top: 50%; transform: translate(-50%, -50%); display: grid; place-items: center; width: 32px; height: 32px; }
+.fl-dot { width: 10px; height: 10px; border-radius: 50%; background: #07090b; border: 2px solid rgba(255,255,255,0.4); transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease; }
+.fl-stop.is-past .fl-dot { border-color: var(--accent); background: var(--accent); }
+.fl-stop.is-here .fl-dot { box-shadow: 0 0 0 5px rgba(40,194,255,0.25); }
+.fl-code { position: absolute; top: 26px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; color: var(--ink-muted); transition: color 0.3s ease; }
+.fl-stop.is-here .fl-code { color: var(--ink); }
+.fl-stop:hover .fl-code { color: var(--accent); }
+.fl-plane { position: absolute; top: 50%; left: calc(var(--p, 0) * 100%); width: 30px; height: 22px; transform: translate(-50%, -50%); fill: var(--accent-strong); filter: drop-shadow(0 0 6px rgba(42,245,255,0.9)); pointer-events: none; }
+
+@media (min-width: 768px) {
+  .floater--2 { display: block; }
+  .scene-content { padding: 0 32px 56px; }
+  .stamp { right: 32px; width: 116px; height: 116px; bottom: calc(100% - 60px); }
+  .stamp-code { font-size: 28px; }
+  .fl-map { top: 96px; padding: 14px 22px 28px; }
+  .scene-sum { -webkit-line-clamp: 4; font-size: 16px; }
 }
-@media (min-width: 900px) {
-  .stop { padding-left: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 7rem; }
-  .stop--left .postcard { grid-column: 1; transform: rotate(-1deg); }
-  .stop--right .postcard { grid-column: 2; transform: rotate(1deg); }
-  .stop--left .marker { left: 75%; top: 50%; }
-  .stop--right .marker { left: 25%; top: 50%; }
-  .postcard:hover { transform: rotate(0deg) translateY(-4px); box-shadow: 0 30px 70px -30px rgba(40, 194, 255, 0.4); }
-  .stop--edge { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 34px; }
-  .stop--edge .marker { left: 50%; top: 0; }
-  /* route leaves from under the takeoff label, not through it */
-  .stop--start { padding-top: 0; padding-bottom: 34px; }
-  .stop--start .marker { top: auto; bottom: 0; transform: translate(-50%, 50%); }
-  .stamp { width: 116px; height: 116px; top: -22px; right: -18px; }
-}
+@media (min-width: 1024px) { .scene-content { padding: 0 48px 64px; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .is-landed .stamp { animation: none; }
+  .scene { clip-path: none; opacity: var(--enter, 0); }
+  .scene-bg, .floater { transform: rotate(var(--rot, 0deg)); }
+  .ltr, .scene-meta, .scene-sum, .scene-cta, .scene-count { transition: none; }
+  .is-active .stamp { animation: none; opacity: 1; transform: rotate(-14deg); }
 }
 
 .lb { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5, 6, 8, 0.95); }
