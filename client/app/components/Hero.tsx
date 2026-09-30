@@ -2,6 +2,9 @@
 
 import { boardDate, boardTime, splitEvents } from "@/content/events";
 import { useNow } from "./EventsBoard";
+import { DecodeText, TypeLine } from "./effects";
+
+const TYPED = ["websites", "ML models", "AI agents", "open source", "hackathon projects"];
 
 export default function Hero({ builtAt }: { builtAt: number }) {
   const now = useNow(builtAt);
@@ -42,11 +45,15 @@ export default function Hero({ builtAt }: { builtAt: number }) {
             color: "var(--ink)",
           }}
         >
-          The Byte Club.
+          <DecodeText text="The Byte Club." delay={250} />
         </h1>
 
+        <div className="hero-fade-2 mt-6">
+          <TypeLine prefix=">_ we build" words={TYPED} />
+        </div>
+
         <p
-          className="hero-fade-2 mt-6 max-w-lg text-base sm:text-lg leading-relaxed"
+          className="hero-fade-2 mt-4 max-w-lg text-base sm:text-lg leading-relaxed"
           style={{ fontFamily: "var(--font-body)", color: "var(--ink-muted)" }}
         >
           NIE&apos;s student-run tech club. We run fun, hands-on events, no

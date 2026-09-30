@@ -95,7 +95,7 @@ function Face({ member }: { member: Member }) {
 
     return (
         <li className="face">
-            <div className="face-photo">
+            <div className="face-photo" data-holo-card>
                 <Image
                     src={member.image}
                     alt=""

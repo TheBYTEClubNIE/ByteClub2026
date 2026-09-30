@@ -129,6 +129,79 @@ body {
   line-height: 1.05;
 }
 
+/* ============ Effects (see app/components/effects.tsx) ============ */
+.type-line {
+  font-family: var(--font-mono);
+  font-size: clamp(1rem, 2.2vw, 1.3rem);
+  color: var(--accent);
+  min-height: 1.6em;
+}
+.type-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--accent);
+  animation: caret-blink 1.05s steps(1) infinite;
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
+
+/* Full-bleed band: clip is local, so nothing leaks into page scroll. */
+.band-clip { overflow: hidden; padding-block: clamp(2rem, 5vw, 3.5rem); }
+.band {
+  width: 110%;
+  margin-left: -5%;
+  background: var(--bg);
+  border-block: 1px solid var(--line-strong);
+  padding-block: clamp(0.9rem, 2.4vw, 1.6rem);
+}
+.band-track { display: flex; width: max-content; will-change: transform; }
+.band-group { display: flex; }
+.band-item { display: flex; align-items: center; }
+.band-word {
+  padding-inline: 0.35em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.6rem, 10vw, 8rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(243, 245, 247, 0.35);
+}
+.band-word--solid { color: var(--ink); -webkit-text-stroke: 0; }
+.band-star { font-size: clamp(1.4rem, 4vw, 3rem); color: var(--accent); }
+
+/* Holographic foil: a sheen that tracks the pointer plus a spectral band. */
+[data-holo-card] {
+  position: relative;
+  transform: perspective(800px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-holo-card][data-holo="on"] { transition-duration: 0.08s; }
+[data-holo-card]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.3), transparent 45%),
+    linear-gradient(115deg, transparent 25%, rgba(40, 194, 255, 0.35) 40%, rgba(198, 166, 255, 0.35) 50%, rgba(255, 191, 127, 0.3) 60%, transparent 75%);
+  background-size: 100% 100%, 260% 260%;
+  background-position: center, var(--mx, 50%) var(--my, 50%);
+  mix-blend-mode: color-dodge;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+[data-holo-card][data-holo="on"]::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  [data-holo-card] { transform: none; }
+  .type-caret { animation: none; }
+}
+
 /* Preserve your theme */
 .markdown-body {
   background: transparent !important;

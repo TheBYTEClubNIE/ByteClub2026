@@ -5,11 +5,15 @@ import TeamLeads from "./components/TeamLeads";
 import CoreTeams from "./components/CoreTeams";
 import PastEvents from "./components/PastEvents";
 import BlogTeaser from "./components/BlogTeaser";
+import ByteId from "./components/ByteId";
 import Join from "./components/Join";
 import Footer from "./components/Footer";
 import StoryCorridor from "./components/StoryCorridor";
 import SiteNav from "./components/SiteNav";
+import { KineticBand } from "./components/effects";
 import { readPosts } from "@/lib/posts";
+
+const CONTAINER = "mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-8 lg:px-12";
 
 export default function Home() {
   // Build time. Client components start from this so the first render
@@ -24,26 +28,39 @@ export default function Home() {
       <StoryCorridor />
       <SiteNav />
 
-      <main className="mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-8 lg:px-12">
-        <Hero builtAt={builtAt} />
-        <About />
-        <EventsBoard builtAt={builtAt} />
+      <main>
+        <div className={CONTAINER}>
+          <Hero builtAt={builtAt} />
+          <About />
+        </div>
 
-        <section id="team" className="section">
-          <header className="section-head">
-            <h2 className="section-title">The people behind it</h2>
-            <p className="section-lede">
-              The leads steer the club; the core team runs tech, management
-              and creative. Flip through the book, then meet everyone else.
-            </p>
-          </header>
-          <TeamLeads />
-          <CoreTeams />
-        </section>
+        <KineticBand items={["Write code", "Build things", "Ship it", "Show up"]} />
 
-        <PastEvents />
-        <BlogTeaser posts={latestPosts} />
-        <Join />
+        <div className={CONTAINER}>
+          <EventsBoard builtAt={builtAt} />
+
+          <section id="team" className="section">
+            <header className="section-head">
+              <h2 className="section-title">The people behind it</h2>
+              <p className="section-lede">
+                The leads steer the club; the core team runs tech, management
+                and creative. Flip through the book, then meet everyone else.
+              </p>
+            </header>
+            <TeamLeads />
+            <CoreTeams />
+          </section>
+
+          <PastEvents />
+          <BlogTeaser posts={latestPosts} />
+        </div>
+
+        <KineticBand items={["No experience needed", "All years welcome", "Just show up"]} reverse tilt={1.5} />
+
+        <div className={CONTAINER}>
+          <ByteId />
+          <Join />
+        </div>
       </main>
 
       <Footer />
