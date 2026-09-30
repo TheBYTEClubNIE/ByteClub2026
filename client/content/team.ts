@@ -12,6 +12,20 @@ export const DOMAINS: { id: Domain; label: string; color: string }[] = [
   { id: "outreach", label: "Outreach", color: "#ff9db0" },
 ];
 
+// How a photo sits in its frame: pan (object-position), zoom, and the point
+// to zoom into (roughly where the face is). Tune per photo.
+export interface PhotoFrame {
+  position?: string;
+  zoom?: number;
+  origin?: string;
+}
+
+export const photoStyle = (f?: PhotoFrame) => ({
+  objectPosition: f?.position ?? "50% 50%",
+  transform: f?.zoom ? `scale(${f.zoom})` : undefined,
+  transformOrigin: f?.origin,
+});
+
 export interface Lead {
   id: number;
   name: string;
@@ -24,9 +38,7 @@ export interface Lead {
   github: string;
   image: string;
   arsenal: Domain[];
-  // How the photo sits in its 4:5 frame: pan (object-position), zoom, and the
-  // point to zoom into (roughly where the face is). Tune per photo.
-  frame?: { position?: string; zoom?: number; origin?: string };
+  frame?: PhotoFrame;
   squad?: "tech" | "management" | "creative";
 }
 
