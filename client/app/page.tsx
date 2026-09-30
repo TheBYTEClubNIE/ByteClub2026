@@ -1,7 +1,7 @@
 import Hero from "./components/Hero";
 import About from "./components/About";
 import EventsBoard from "./components/EventsBoard";
-import TeamLeads from "./components/TeamLeads";
+import LeadsRoster from "./components/LeadsRoster";
 import CoreTeams from "./components/CoreTeams";
 import PastEvents from "./components/PastEvents";
 import BlogTeaser from "./components/BlogTeaser";
@@ -48,11 +48,12 @@ export default function Home() {
             <header className="section-head">
               <h2 className="section-title">The people behind it</h2>
               <p className="section-lede">
-                The leads steer the club; the core team runs tech, management
-                and creative. Flip through the book, then meet everyone else.
+                Every lead brings a skill set. The club lead covers every
+                domain, each lead owns theirs, and the squads below make it
+                all run.
               </p>
             </header>
-            <TeamLeads />
+            <LeadsRoster />
             <CoreTeams />
           </section>
         </div>

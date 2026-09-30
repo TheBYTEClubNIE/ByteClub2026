@@ -371,7 +371,7 @@ const CHANGELOG_CSS = `
 
 /* SHIPPED stamp slams on each time a release lands */
 .stamp { position: absolute; right: 16px; bottom: calc(100% - 40px); width: 96px; height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; border: 2.5px solid var(--accent); outline: 1px solid rgba(40,194,255,0.7); outline-offset: -9px; color: var(--accent); background: rgba(7,9,11,0.55); opacity: 0; transform: rotate(-14deg) scale(1.9); }
-.is-active .stamp { animation: stamp-in 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) 0.45s both; }
+.is-active .stamp { animation: stamp-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both; }
 .stamp-code { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1; }
 .stamp-date { margin-top: 5px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; }
 @keyframes stamp-in {

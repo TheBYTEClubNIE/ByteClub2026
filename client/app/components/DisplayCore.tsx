@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { DOMAINS, LEADS, isProfileUrl } from "@/content/team";
 
 interface Member {
     id: number;
@@ -46,12 +47,13 @@ const teamData: Record<string, Member[]> = {
 };
 
 const teamLabels: Record<string, string> = {
-    tech: "Tech",
-    management: "Management",
-    creative: "Creative",
+    tech: "Tech squad",
+    management: "Management squad",
+    creative: "Creative squad",
 };
+const domainColor = (id: string) => DOMAINS.find((d) => d.id === id)?.color ?? "var(--accent)";
 
-function InstagramIcon() {
+export function InstagramIcon() {
     return (
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="2" width="20" height="20" rx="5" />
@@ -61,7 +63,7 @@ function InstagramIcon() {
     );
 }
 
-function LinkedInIcon() {
+export function LinkedInIcon() {
     return (
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
@@ -69,7 +71,7 @@ function LinkedInIcon() {
     );
 }
 
-function GithubIcon() {
+export function GithubIcon() {
     return (
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <path
@@ -80,11 +82,6 @@ function GithubIcon() {
         </svg>
     );
 }
-
-// Placeholders ("insta_id") and bare site roots ("https://www.instagram.com/")
-// aren't real profiles, so they don't get an icon.
-const isProfileUrl = (val: string) =>
-    val.startsWith("http") && !/^https?:\/\/(www\.)?(instagram|linkedin|github)\.com\/?$/.test(val);
 
 function Face({ member }: { member: Member }) {
     const links = [
@@ -128,13 +125,18 @@ function Face({ member }: { member: Member }) {
 export default function TeamMembers({ teamId }: { teamId: string }) {
     const members = teamData[teamId] ?? [];
     if (members.length === 0) return null;
+    const ledBy = LEADS.filter((l) => l.squad === teamId).map((l) => l.name);
 
     return (
-        <div className="team-block">
-            <h3 className="team-label">
-                {teamLabels[teamId] ?? "Team"}
-                <span>{members.length}</span>
-            </h3>
+        <div className="team-block" style={{ ["--squad" as string]: domainColor(teamId) }}>
+            <div>
+                <h3 className="team-label">
+                    <span className="team-dot" aria-hidden />
+                    {teamLabels[teamId] ?? "Team"}
+                    <span className="team-count">{members.length}</span>
+                </h3>
+                {ledBy.length > 0 && <p className="team-led">Led by {ledBy.join(" & ")}</p>}
+            </div>
             <ul className="face-grid">
                 {members.map((member) => (
                     <Face key={member.id} member={member} />
@@ -146,8 +148,11 @@ export default function TeamMembers({ teamId }: { teamId: string }) {
 
 export const FACE_WALL_CSS = `
 .team-block { display: grid; gap: 20px; padding-top: 28px; border-top: 1px solid var(--line); }
-.team-label { display: flex; align-items: baseline; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; letter-spacing: -0.01em; color: var(--ink); }
-.team-label span { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--ink-muted); }
+.team-label { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; letter-spacing: -0.01em; color: var(--ink); }
+.team-dot { width: 10px; height: 10px; border-radius: 3px; background: var(--squad); box-shadow: 0 0 12px var(--squad); }
+.team-count { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--ink-muted); }
+.team-led { margin-top: 6px; font-size: 14px; color: var(--squad); }
+.face:hover .face-photo { box-shadow: 0 0 0 2px var(--squad); }
 .face-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 12px; }
 .face-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 8px; background: var(--bg-elevated); }
 .face-photo img { filter: grayscale(0.4) brightness(0.92); transform: scale(1.06); transition: filter 0.35s ease; }
