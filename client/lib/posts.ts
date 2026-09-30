@@ -1,5 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import { Marked } from "marked";
+import hljs from "highlight.js";
+import { CATEGORY_LABEL, postDate } from "./blog-meta";
 
 // To publish a post: drop a .md file into client/content/blog/.
 // Optional frontmatter at the top of the file:
@@ -17,14 +20,10 @@ export interface Post {
   date: string;
   image?: string;
   content: string;
+  minutes: number;
 }
 
-export const CATEGORY_LABEL: Record<string, string> = {
-  webdev: "Web Dev",
-  ml: "Machine Learning",
-  "agentic-ai": "Agentic AI",
-  opensource: "Open Source",
-};
+export { CATEGORY_LABEL, postDate };
 
 const POSTS_DIR = path.join(process.cwd(), "content", "blog");
 
@@ -56,13 +55,48 @@ export function readPosts(): Post[] {
         date: meta.date || "",
         image: meta.image || undefined,
         content: content.trim(),
+        minutes: Math.max(1, Math.round(content.split(/\s+/).length / 220)),
       };
     })
     .sort((a, b) => b.date.localeCompare(a.date));
 }
 
-export const postDate = (date: string) =>
-  date ? new Date(date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const plain = (s: string) => s.replace(/\]\([^)]*\)/g, "]").replace(/[`*_~[\]]/g, "").trim();
+
+export interface TocItem {
+  id: string;
+  text: string;
+  depth: number;
+}
+
+// Markdown -> HTML with linkable headings (collected into a table of
+// contents) and code highlighted here on the server, so readers download
+// no highlighter.
+export function renderPost(markdown: string) {
+  const toc: TocItem[] = [];
+  const used = new Map<string, number>();
+  const md = new Marked({
+    gfm: true,
+    breaks: true,
+    renderer: {
+      heading({ tokens, depth, text }) {
+        const base = plain(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "section";
+        const n = used.get(base) ?? 0;
+        used.set(base, n + 1);
+        const id = n ? `${base}-${n}` : base;
+        if (depth === 2 || depth === 3) toc.push({ id, text: plain(text), depth });
+        return `<h${depth} id="${id}"><a class="heading-anchor" href="#${id}" aria-hidden="true" tabindex="-1">#</a>${this.parser.parseInline(tokens)}</h${depth}>\n`;
+      },
+      code({ text, lang }) {
+        const language = lang && hljs.getLanguage(lang) ? lang : "";
+        const body = language ? hljs.highlight(text, { language }).value : escapeHtml(text);
+        return `<pre data-lang="${escapeHtml(language || lang || "")}"><code class="hljs${language ? ` language-${language}` : ""}">${body}</code></pre>\n`;
+      },
+    },
+  });
+  return { html: md.parse(markdown, { async: false }), toc };
+}
 
 // First paragraph of plain text, for previews and link cards.
 export function excerpt(markdown: string, max = 160) {

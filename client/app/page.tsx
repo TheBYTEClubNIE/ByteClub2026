@@ -12,7 +12,7 @@ import Footer from "./components/Footer";
 import StoryCorridor from "./components/StoryCorridor";
 import SiteNav from "./components/SiteNav";
 import { KineticBand } from "./components/effects";
-import { readPosts } from "@/lib/posts";
+import { excerpt, readPosts } from "@/lib/posts";
 
 const CONTAINER = "mx-auto w-full max-w-7xl px-4 sm:px-6 md:px-8 lg:px-12";
 
@@ -20,9 +20,14 @@ export default function Home() {
   // Build time. Client components start from this so the first render
   // matches the server HTML, then switch to the visitor's clock.
   const builtAt = Date.now();
-  const latestPosts = readPosts()
-    .slice(0, 3)
-    .map(({ slug, title, category, date }) => ({ slug, title, category, date }));
+  const posts = readPosts().map(({ slug, title, category, date, minutes, content }) => ({
+    slug,
+    title,
+    category,
+    date,
+    minutes,
+    excerpt: excerpt(content),
+  }));
 
   return (
     <div className="relative min-h-screen" style={{ color: "var(--ink)" }}>
@@ -57,7 +62,7 @@ export default function Home() {
         <PastEvents />
 
         <div className={CONTAINER}>
-          <BlogTeaser posts={latestPosts} />
+          <BlogTeaser posts={posts} />
           <Bytle />
         </div>
 
