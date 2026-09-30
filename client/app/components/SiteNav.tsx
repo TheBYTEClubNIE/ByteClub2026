@@ -1,124 +1,60 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Calendar, Home, UserPlus, Users } from "lucide-react";
+import { BookOpen, Calendar, History, Home as HomeIcon, Info, UserPlus, Users } from "lucide-react";
+import { FloatingDock } from "@/components/ui/floating-dock";
 import ScrollRing from "./ScrollRing";
 
-const SECTION_IDS = ["home", "about", "events", "team", "past", "blog", "join"];
-
-// Desktop top bar
-const TOP_LINKS = [
-  { href: "#events", label: "Events", sections: ["events"] },
-  { href: "#team", label: "Team", sections: ["team"] },
-  { href: "#past", label: "Past events", sections: ["past"] },
-  { href: "#blog", label: "Blog", sections: ["blog"] },
-];
-
-// Phone bottom bar: five labelled tabs, Join last and highlighted.
-const TABS = [
-  { href: "#home", label: "Home", icon: Home, sections: ["home", "about"] },
-  { href: "#events", label: "Events", icon: Calendar, sections: ["events", "past"] },
-  { href: "#team", label: "Team", icon: Users, sections: ["team"] },
-  { href: "#blog", label: "Blog", icon: BookOpen, sections: ["blog"] },
-  { href: "#join", label: "Join", icon: UserPlus, sections: ["join"] },
+const navItems = [
+  { title: "Home", href: "#home", icon: <HomeIcon className="h-full w-full" /> },
+  { title: "Story", href: "#about", icon: <Info className="h-full w-full" /> },
+  { title: "Events", href: "#events", icon: <Calendar className="h-full w-full" /> },
+  { title: "Team", href: "#team", icon: <Users className="h-full w-full" /> },
+  { title: "Past Events", href: "#past", icon: <History className="h-full w-full" /> },
+  { title: "Blog", href: "#blog", icon: <BookOpen className="h-full w-full" /> },
+  { title: "Join", href: "#join", icon: <UserPlus className="h-full w-full" /> },
 ];
 
 export default function SiteNav() {
-  const [active, setActive] = useState("home");
+  const [activeSection, setActiveSection] = useState("home");
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries.find((e) => e.isIntersecting);
-        if (visible) setActive(visible.target.id);
+        if (visible) setActiveSection(visible.target.id);
       },
-      { rootMargin: "-45% 0px -50% 0px" }
+      { rootMargin: "-40% 0px -40% 0px" }
     );
-    SECTION_IDS.forEach((id) => {
-      const el = document.getElementById(id);
+    navItems.forEach(({ href }) => {
+      const el = document.getElementById(href.slice(1));
       if (el) observer.observe(el);
     });
     return () => observer.disconnect();
   }, []);
 
+  const activeNavItems = navItems.map((item) => ({
+    ...item,
+    active: item.href.slice(1) === activeSection,
+  }));
+
   return (
-    <>
-      <nav aria-label="Main" className="pointer-events-none fixed inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div className="pointer-events-auto">
-            <ScrollRing />
-          </div>
-
-          <ul
-            className="pointer-events-auto hidden items-center gap-1 rounded-full p-1 md:flex"
-            style={{ background: "rgba(16,19,23,0.92)", border: "1px solid var(--line)" }}
-          >
-            {TOP_LINKS.map((link) => {
-              const isActive = link.sections.includes(active);
-              return (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    aria-current={isActive ? "true" : undefined}
-                    className="block rounded-full px-4 py-2 text-sm font-medium transition-colors hover:text-[var(--ink)]"
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      color: isActive ? "var(--ink)" : "var(--ink-muted)",
-                      background: isActive ? "rgba(255,255,255,0.07)" : "transparent",
-                    }}
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-
-          <a href="#join" className="btn btn-primary pointer-events-auto hidden md:inline-flex" style={{ minHeight: 40 }}>
-            Join the club
-          </a>
+    <nav aria-label="Main" className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none pt-5 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
+        <div className="pointer-events-auto shrink-0">
+          <ScrollRing />
         </div>
-      </nav>
-
-      <nav
-        aria-label="Sections"
-        className="fixed inset-x-0 bottom-0 z-50 border-t md:hidden"
-        style={{
-          background: "rgba(10,11,13,0.96)",
-          borderColor: "var(--line)",
-          paddingBottom: "env(safe-area-inset-bottom)",
-        }}
-      >
-        <ul className="grid grid-cols-5">
-          {TABS.map(({ href, label, icon: Icon, sections }) => {
-            const isActive = sections.includes(active);
-            const isJoin = href === "#join";
-            return (
-              <li key={href}>
-                <a
-                  href={href}
-                  aria-current={isActive ? "true" : undefined}
-                  className="relative flex h-16 flex-col items-center justify-center gap-1 text-xs font-medium"
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    color: isJoin ? "var(--accent)" : isActive ? "var(--ink)" : "var(--ink-muted)",
-                  }}
-                >
-                  {isActive && (
-                    <span
-                      aria-hidden
-                      className="absolute top-0 h-0.5 w-8 rounded-full"
-                      style={{ background: isJoin ? "var(--accent)" : "var(--ink)" }}
-                    />
-                  )}
-                  <Icon size={20} strokeWidth={isActive || isJoin ? 2.2 : 1.8} aria-hidden />
-                  {label}
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-    </>
+        <div className="pointer-events-auto flex-1 min-w-0 flex justify-center">
+          <FloatingDock items={activeNavItems} />
+        </div>
+        <a
+          href="#join"
+          className="pointer-events-auto hidden sm:inline-flex items-center rounded-full px-5 py-2.5 text-xs font-semibold shrink-0"
+          style={{ background: "var(--ink)", color: "var(--bg)", fontFamily: "var(--font-body)" }}
+        >
+          Join
+        </a>
+      </div>
+    </nav>
   );
 }

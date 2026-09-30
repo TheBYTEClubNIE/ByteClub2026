@@ -1,83 +1,171 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { EVENTS, type ClubEvent, longDate, newestFirst, slugOf } from "@/content/events";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion, useScroll, useSpring } from 'framer-motion';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import ThreeDImageCarousel from './ThreeDImageCarousel';
+import { EVENTS, type ClubEvent, longDate, oldestFirst, slugOf } from '@/content/events';
 
-const GALLERY = EVENTS.filter((e) => e.photos?.length).sort(newestFirst);
+// Every event in content/events.ts that has photos gets a milestone,
+// oldest first.
+const TIMELINE = EVENTS.filter((e) => e.photos?.length).sort(oldestFirst);
 
-const when = (e: ClubEvent) => `${longDate(e.start!)}${e.venue ? ` · ${e.venue}` : ""}`;
+/* ───────────────── Timeline Node ───────────────── */
 
-export default function PastEvents() {
-  const [open, setOpen] = useState<ClubEvent | null>(null);
-  const close = useCallback(() => setOpen(null), []);
+function TimelineEntry({
+  event,
+  seq,
+  side,
+  onOpen,
+}: {
+  event: ClubEvent;
+  seq: number;
+  side: 'left' | 'right';
+  onOpen: (index: number) => void;
+}) {
+  const isLeft = side === 'left';
+  const header = <TimelineHeader event={event} align={isLeft ? 'right' : 'left'} />;
 
   return (
-    <section id="past" className="section">
-      <style>{PAST_CSS}</style>
-
-      <header className="section-head">
-        <h2 className="section-title">Past events</h2>
-        <p className="section-lede">
-          Ideathons, first-timer workshops and build sessions. Open any of
-          them for the photos.
-        </p>
-      </header>
-
-      <div className="past-grid">
-        {GALLERY.map((e, idx) => {
-          const photos = e.photos!;
-          return (
-            <article
-              key={e.code}
-              id={`past-${slugOf(e)}`}
-              className={idx === 0 ? "past-card past-card--lead" : "past-card"}
-            >
-              <button
-                type="button"
-                className="past-cover"
-                onClick={() => setOpen(e)}
-                aria-label={`View ${photos.length} photos from ${e.name}`}
-              >
-                <Image
-                  src={photos[0].src}
-                  alt=""
-                  fill
-                  sizes={idx === 0 ? "(min-width: 768px) 60vw, 100vw" : "(min-width: 768px) 45vw, 100vw"}
-                  className="object-cover"
-                />
-                <span className="past-count">{photos.length} photos</span>
-              </button>
-              <div className="past-meta">
-                <h3 className="past-name">{e.name}</h3>
-                {e.start && <p className="past-when">{when(e)}</p>}
-                <p className="past-sum">{e.summary}</p>
-              </div>
-            </article>
-          );
-        })}
+    <div id={`past-${slugOf(event)}`} className="relative" style={{ scrollMarginTop: 96 }}>
+      {/* node dot: mobile on the left rail, desktop on the centre spine */}
+      <div className="absolute left-[15px] md:left-1/2 top-1 md:-translate-x-1/2 z-10">
+        <span
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-[#2af5ff]/50 bg-[#020812] text-xs font-semibold text-[#2af5ff]"
+          style={{ fontFamily: 'var(--font-mono)', boxShadow: '0 0 0 6px rgba(40,194,255,0.08), 0 0 20px rgba(40,194,255,0.35)' }}
+        >
+          {String(seq).padStart(2, '0')}
+        </span>
       </div>
 
-      {open && <Lightbox event={open} onClose={close} />}
-    </section>
+      {/* alternating header column on desktop */}
+      <div className="ml-14 md:ml-0 md:grid md:grid-cols-2 md:gap-14">
+        {isLeft ? (
+          <>
+            {header}
+            <div className="hidden md:block" />
+          </>
+        ) : (
+          <>
+            <div className="hidden md:block" />
+            {header}
+          </>
+        )}
+      </div>
+
+      {/* full-width album */}
+      <div className="ml-14 md:ml-0 mt-8">
+        <EventCarousel event={event} onOpen={onOpen} />
+      </div>
+    </div>
   );
 }
 
-function Lightbox({ event, onClose }: { event: ClubEvent; onClose: () => void }) {
+function TimelineHeader({ event, align }: { event: ClubEvent; align: 'left' | 'right' }) {
+  const reduce = useReducedMotion();
+  const meta = [event.start && longDate(event.start), event.venue, `${event.photos!.length} photos`]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, x: align === 'right' ? -60 : 60, y: 30 }}
+      whileInView={{ opacity: 1, x: 0, y: 0 }}
+      viewport={{ once: true, margin: '-80px' }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      className={align === 'right' ? 'md:text-right' : ''}
+    >
+      <h3
+        className="text-2xl sm:text-3xl font-semibold leading-tight"
+        style={{ fontFamily: 'var(--font-display)', color: 'var(--ink)', letterSpacing: '-0.015em' }}
+      >
+        {event.name}
+      </h3>
+      <p className="mt-2 text-sm" style={{ color: 'var(--accent)' }}>
+        {meta}
+      </p>
+      <p
+        className={`mt-3 max-w-xl text-[15px] leading-relaxed ${align === 'right' ? 'md:ml-auto' : ''}`}
+        style={{ color: 'var(--ink-muted)' }}
+      >
+        {event.summary}
+      </p>
+    </motion.div>
+  );
+}
+
+function EventCarousel({ event, onOpen }: { event: ClubEvent; onOpen: (index: number) => void }) {
+  const reduce = useReducedMotion();
   const photos = event.photos!;
-  const [i, setI] = useState(0);
+  const [focused, setFocused] = useState(0);
+  const slides = photos.map((p, i) => ({ id: `${slugOf(event)}-${i}`, src: p.src, title: p.caption }));
+  const current = photos[Math.min(focused, photos.length - 1)];
+
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+      className="mx-auto w-full max-w-3xl"
+    >
+      <div className="relative">
+        {/* ambient glow behind the carousel */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(55% 45% at 50% 40%, rgba(40,194,255,0.12), transparent 70%)' }}
+        />
+        <div className="relative w-full">
+          <ThreeDImageCarousel
+            slides={slides}
+            itemCount={5}
+            autoplay={false}
+            onSlideChange={setFocused}
+            onSlideClick={(_slide, index) => onOpen(index)}
+          />
+        </div>
+      </div>
+
+      {/* current caption */}
+      <div className="flex items-center justify-center mt-1 select-none">
+        <div className="flex items-center gap-3 max-w-full rounded-full border border-[#28c2ff]/20 bg-[#020812]/85 px-4 py-2">
+          <span className="min-w-0 truncate text-[13px]" style={{ color: 'var(--ink)' }}>
+            {current?.caption}
+          </span>
+          <span className="h-3 w-px shrink-0 bg-[#28c2ff]/25" />
+          <span className="shrink-0 text-[13px] tabular-nums" style={{ color: 'var(--accent-strong)', fontFamily: 'var(--font-mono)' }}>
+            {Math.min(focused + 1, photos.length)} / {photos.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => onOpen(focused)}
+            className="shrink-0 text-[13px] font-semibold underline underline-offset-4 decoration-[#28c2ff]/40 hover:decoration-[#28c2ff]"
+            style={{ color: 'var(--accent)' }}
+          >
+            View
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ───────────────── Lightbox ───────────────── */
+
+function Lightbox({ event, start, onClose }: { event: ClubEvent; start: number; onClose: () => void }) {
+  const photos = event.photos!;
+  const [i, setI] = useState(start);
   const closeRef = useRef<HTMLButtonElement>(null);
   const touchX = useRef<number | null>(null);
 
   const prev = useCallback(() => setI((v) => (v - 1 + photos.length) % photos.length), [photos.length]);
   const next = useCallback(() => setI((v) => (v + 1) % photos.length), [photos.length]);
 
-  // Focus goes into the dialog on open and back to the cover button on close.
+  // Focus moves into the dialog on open and back to where it was on close.
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = 'hidden';
     closeRef.current?.focus();
     return () => {
       document.body.style.overflow = overflow;
@@ -87,12 +175,12 @@ function Lightbox({ event, onClose }: { event: ClubEvent; onClose: () => void })
 
   useEffect(() => {
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") onClose();
-      if (ev.key === "ArrowLeft") prev();
-      if (ev.key === "ArrowRight") next();
+      if (ev.key === 'Escape') onClose();
+      if (ev.key === 'ArrowLeft') prev();
+      if (ev.key === 'ArrowRight') next();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [onClose, prev, next]);
 
   const photo = photos[i];
@@ -139,25 +227,71 @@ function Lightbox({ event, onClose }: { event: ClubEvent; onClose: () => void })
   );
 }
 
-const PAST_CSS = `
-.past-grid { display: grid; gap: 40px 24px; }
-.past-cover { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; border-radius: 12px; background: var(--bg-elevated); cursor: zoom-in; }
-.past-cover img { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-.past-cover:hover img { transform: scale(1.03); }
-.past-count { position: absolute; left: 12px; bottom: 12px; padding: 6px 12px; border-radius: 999px; background: rgba(7, 9, 11, 0.82); color: var(--ink); font-family: var(--font-body); font-size: 13px; font-weight: 600; }
-.past-meta { margin-top: 16px; }
-.past-name { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.25rem, 2.4vw, 1.6rem); line-height: 1.15; letter-spacing: -0.015em; color: var(--ink); }
-.past-when { margin-top: 6px; font-family: var(--font-body); font-size: 14px; color: var(--accent); }
-.past-sum { margin-top: 8px; max-width: 52ch; font-family: var(--font-body); font-size: 15px; line-height: 1.65; color: var(--ink-muted); }
-.past-card { scroll-margin-top: 96px; }
-@media (min-width: 768px) {
-  .past-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .past-card--lead { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 32px; align-items: end; }
-  .past-card--lead .past-meta { margin-top: 0; padding-bottom: 8px; }
-  .past-card--lead .past-name { font-size: clamp(1.6rem, 3vw, 2.25rem); }
+/* ───────────────── Main Component : Scroll Timeline ───────────────── */
+
+export default function PastEvents() {
+  const [open, setOpen] = useState<{ event: ClubEvent; index: number } | null>(null);
+  const close = useCallback(() => setOpen(null), []);
+
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: timelineRef, offset: ['start center', 'end center'] });
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.4 });
+
+  return (
+    <section id="past" className="section">
+      <style>{LIGHTBOX_CSS}</style>
+
+      <header className="section-head">
+        <h2 className="section-title">Past events</h2>
+        <p className="section-lede">
+          Everything from ideathons to first-timer workshops. Scroll through
+          what we&apos;ve run so far, milestone by milestone.
+        </p>
+      </header>
+
+      <div ref={timelineRef} className="relative overflow-x-hidden">
+        {/* rail */}
+        <div className="absolute left-[32px] md:left-1/2 top-0 bottom-0 md:-translate-x-1/2 w-[2px] bg-white/10 rounded-full overflow-hidden">
+          <motion.div
+            className="absolute inset-0 origin-top"
+            style={{
+              scaleY: progress,
+              background: 'linear-gradient(180deg, #28c2ff, #2af5ff, #28c2ff)',
+              boxShadow: '0 0 16px rgba(40,194,255,0.6)',
+            }}
+          />
+        </div>
+
+        <div className="space-y-16 md:space-y-24">
+          {TIMELINE.map((event, i) => (
+            <TimelineEntry
+              key={event.code}
+              event={event}
+              seq={i + 1}
+              side={i % 2 === 0 ? 'left' : 'right'}
+              onOpen={(index) => setOpen({ event, index })}
+            />
+          ))}
+        </div>
+
+        {/* end cap */}
+        <div className="relative flex justify-start md:justify-center mt-14 pl-[14px] md:pl-0">
+          <span
+            className="inline-flex items-center gap-2 rounded-full border border-[#28c2ff]/25 bg-[#020812] px-5 py-2 text-xs text-[#2af5ff]"
+            style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.15em' }}
+          >
+            ◉ END OF TIMELINE
+          </span>
+        </div>
+      </div>
+
+      {open && <Lightbox event={open.event} start={open.index} onClose={close} />}
+    </section>
+  );
 }
 
-.lb { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5, 6, 8, 0.94); }
+const LIGHTBOX_CSS = `
+.lb { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5, 6, 8, 0.95); }
 .lb-inner { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 1100px; max-height: 100%; }
 .lb-top, .lb-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .lb-title { display: flex; align-items: baseline; gap: 12px; font-family: var(--font-display); font-weight: 600; font-size: 1rem; color: var(--ink); }

@@ -68,9 +68,12 @@ body {
      instead of papering over it at the root. */
 }
 
+/* In the components layer so Tailwind utilities (hidden, md:inline-flex,
+   w-full...) can still override these on the same element. */
+@layer components {
 /* ============ Section system ============ */
 /* Every homepage section: one h2, one lede, same rhythm. */
-.section { padding-block: clamp(4.5rem, 11vw, 8rem); }
+.section { padding-block: clamp(4rem, 9vw, 6.5rem); }
 .section-head { max-width: 46rem; margin-bottom: clamp(2rem, 5vw, 3.5rem); }
 .section-title {
   font-family: var(--font-display);
@@ -115,6 +118,7 @@ body {
 .btn-accent:hover { background: var(--accent-strong); }
 .btn-ghost { border: 1px solid var(--line-strong); color: var(--ink); }
 .btn-ghost:hover { border-color: var(--ink-faint); background: rgba(255, 255, 255, 0.04); }
+}
 
 /* Display headings: tighter tracking at large sizes reads more considered
    than the browser default, without leaning on extra font weights. */

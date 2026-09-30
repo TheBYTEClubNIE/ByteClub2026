@@ -348,7 +348,7 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
 }
 
 const BOARD_CSS = `
-.board { --flap-size: 15px; background: #07090b; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.board { --flap-size: 16px; background: #07090b; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
 .board-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 14px 20px; background: #0c0f12; border-bottom: 1px solid var(--line); }
 .board-title { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; color: var(--ink); }
 .board-title svg { color: var(--accent); }

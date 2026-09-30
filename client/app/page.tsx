@@ -20,7 +20,7 @@ export default function Home() {
     .map(({ slug, title, category, date }) => ({ slug, title, category, date }));
 
   return (
-    <div className="relative min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0" style={{ color: "var(--ink)" }}>
+    <div className="relative min-h-screen" style={{ color: "var(--ink)" }}>
       <StoryCorridor />
       <SiteNav />
 
