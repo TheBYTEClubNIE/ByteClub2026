@@ -150,6 +150,7 @@ export const LEADS: Lead[] = [
     linkedin: "https://www.linkedin.com/",
     github: "https://github.com/",
     arsenal: ["design"],
+    squad: "creative",
   },
   {
     id: 6,
