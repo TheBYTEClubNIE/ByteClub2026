@@ -9,7 +9,7 @@ const techMembers: Member[] = [
     { id: 3, name: "Samarth R", role: "Backend Dev", insta: "https://www.instagram.com/samarth.r_gowda", linkedin: "https://www.linkedin.com/in/samarth-r-978162396", github: "https://github.com/samarth-r18", image: "/Core/Tech/SamarthR.jpg.jpeg", frame: { position: "50% 25%", origin: "50% 25%", zoom: 1.05 } },
     { id: 5, name: "Adwik R", role: "Backend Dev", insta: "https://www.instagram.com/x0advik", linkedin: "https://www.linkedin.com/in/advik-n", github: "https://github.com/Advik-n", image: "/Core/Tech/advikr.jpg.jpeg", frame: { position: "41% 22%", origin: "41% 22%", zoom: 1.8 } },
     { id: 6, name: "Ayush Anand", role: "Backend Dev", insta: "https://www.instagram.com/surya_anand_001", linkedin: "https://www.linkedin.com/in/ayush-anand10521", github: "https://github.com/ayushanand001", image: "/Core/Tech/Ayush.jpg.jpeg", frame: { position: "57% 40%", origin: "57% 40%", zoom: 2 } },
-    { id: 7, name: "Shaswat Singh", role: "Core Member", insta: "https://www.instagram.com/hereshashwat2807", linkedin: "https://www.linkedin.com/in/shaswat-singh-6b18b1375", github: "https://github.com/ShaswatNIE", image: "/Core/Tech/shaswat.jpg", frame: { position: "50% 3%", origin: "0% 40%", zoom: 1.5 } },
+    { id: 7, name: "Shaswat Singh", role: "Core Member", insta: "https://www.instagram.com/hereshashwat2807", linkedin: "https://www.linkedin.com/in/shaswat-singh-6b18b1375", github: "https://github.com/ShaswatNIE", image: "/Core/Tech/shaswat.jpg", frame: { position: "50% 3%", origin: "0% 35%", zoom: 1.2 } },
 ];
 
 const managementMembers: Member[] = [
