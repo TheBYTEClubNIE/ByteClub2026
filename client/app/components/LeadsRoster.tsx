@@ -77,23 +77,66 @@ function layoutBus(el: HTMLElement): Bus {
 
 /* ───────── pieces ───────── */
 
-function SkillSet({ lead }: { lead: Lead }) {
+// The club lead's photo in a ring of the five domains (drawn in a 360 box).
+const SEG = 360 / TOTAL;
+const BAND = 158; // middle of the coloured band
+const RIM = 175;
+const arc = (r: number, a0: number, a1: number, flip = false) => {
+  // rounded so server and browser maths print the same path (no hydration mismatch)
+  const pt = (deg: number) =>
+    `${(180 + r * Math.cos((deg * Math.PI) / 180)).toFixed(2)} ${(180 + r * Math.sin((deg * Math.PI) / 180)).toFixed(2)}`;
+  return flip ? `M${pt(a1)}A${r} ${r} 0 0 0 ${pt(a0)}` : `M${pt(a0)}A${r} ${r} 0 0 1 ${pt(a1)}`;
+};
+
+function Dial({ lead, hot, onHot }: { lead: Lead; hot: Domain | null; onHot: (d: Domain | null) => void }) {
+  const covered = DOMAINS.filter((d) => lead.arsenal.includes(d.id));
   return (
-    <ul className="skills" aria-label="Skill set">
-      {DOMAINS.map((d, i) => {
-        const Icon = ICON[d.id];
-        const on = lead.arsenal.includes(d.id);
-        return (
-          <li key={d.id} className={`skill ${on ? "is-on" : ""}`} style={{ ["--c" as string]: d.color, ["--i" as string]: i }}>
-            <Icon size={22} aria-hidden />
-            <span>
-              {d.label}
-              {!on && <span className="sr-only"> (not covered)</span>}
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="dial">
+      <span className="dial-pin" data-pin aria-hidden />
+      <Holo className="dial-holo">
+        <div className="dial-photo" data-holo-card>
+          <Image
+            src={lead.image}
+            alt={lead.name}
+            fill
+            sizes={zoomedSizes("(min-width: 1024px) 272px, (min-width: 768px) 200px, 15rem", lead.frame?.zoom)}
+            quality={90}
+            className="object-cover"
+            style={photoStyle(lead.frame)}
+          />
+        </div>
+      </Holo>
+      <svg className="dial-ring" viewBox="0 0 360 360" aria-hidden>
+        <circle className="dial-track" cx="180" cy="180" r="179" />
+        {DOMAINS.map((d, i) => {
+          const a0 = -90 - SEG / 2 + i * SEG + 4;
+          const a1 = a0 + SEG - 8;
+          const mid = (((a0 + a1) / 2 + 540) % 360) - 180;
+          const on = lead.arsenal.includes(d.id);
+          return (
+            <g
+              key={d.id}
+              className={`dial-seg ${on ? "" : "is-off"} ${hot && hot !== d.id ? "is-dim" : ""}`}
+              style={{ ["--c" as string]: d.color, ["--i" as string]: i }}
+              onPointerEnter={(e) => e.pointerType === "mouse" && on && onHot(d.id)}
+              onPointerLeave={() => onHot(null)}
+            >
+              <path className="dial-band" d={arc(BAND, a0, a1)} />
+              <path className="dial-rim" d={arc(RIM, a0, a1)} pathLength={1} />
+              {/* labels on the lower half run the other way so they read upright */}
+              <path id={`dial-${d.id}`} d={arc(BAND, a0, a1, mid > 0 && mid < 180)} fill="none" />
+              <text className="dial-label" textAnchor="middle" dominantBaseline="central">
+                <textPath href={`#dial-${d.id}`} startOffset="50%">
+                  {d.label.toUpperCase()}
+                </textPath>
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="dial-sweep" aria-hidden />
+      <p className="sr-only">Skill set: {covered.map((d) => d.label).join(", ")}</p>
+    </div>
   );
 }
 
@@ -115,9 +158,9 @@ function Socials({ lead }: { lead: Lead }) {
   );
 }
 
-function Shot({ lead, sizes, head = false }: { lead: Lead; sizes: string; head?: boolean }) {
+function Shot({ lead, sizes }: { lead: Lead; sizes: string }) {
   return (
-    <div className={`crew-shot ${head ? "crew-shot--head" : ""}`} data-pin>
+    <div className="crew-shot" data-pin>
       <Holo>
         <div className="crew-photo" data-holo-card>
           <Image
@@ -240,7 +283,7 @@ export default function LeadsRoster() {
       )}
 
       <article data-row className="crew-head" onPointerEnter={hover(null)}>
-        <Shot lead={HEAD} head sizes="(min-width: 1024px) 304px, (min-width: 768px) 240px, 8.5rem" />
+        <Dial lead={HEAD} hot={hot} onHot={setHot} />
         <div className="crew-id">
           <p className="crew-role crew-fade">{HEAD.role}</p>
           <h3 className="crew-name crew-name--head">
@@ -255,7 +298,6 @@ export default function LeadsRoster() {
               {HEAD.arsenal.length === TOTAL ? "Covers every domain" : `${HEAD.arsenal.length} of ${TOTAL} domains`}
             </span>
           </div>
-          <SkillSet lead={HEAD} />
           <ul className="crew-chips">
             {HEAD.skills.map((s) => (
               <li key={s} className="crew-chip">
@@ -331,11 +373,11 @@ const CREW_CSS = `
 
 /* a lead */
 .crew-head, .crew-row { position: relative; display: grid; gap: 6px 16px; grid-template-areas: "shot id" "body body"; }
-.crew-head { grid-template-columns: 8.5rem minmax(0, 1fr); }
+.crew-head { grid-template-columns: minmax(0, 1fr); grid-template-areas: "shot" "id" "body"; gap: 0; }
+.crew-head .crew-id { margin-top: 22px; }
 .crew-row { grid-template-columns: 6.75rem minmax(0, 1fr); }
 .crew-shot { grid-area: shot; position: relative; }
 .crew-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 14px; background: #07090b; outline: 1px solid color-mix(in srgb, var(--c) 40%, transparent); outline-offset: -1px; }
-.crew-head .crew-photo { outline-color: var(--line-strong); }
 .crew-id { grid-area: id; align-self: end; min-width: 0; }
 .crew-role { display: inline-block; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); font-family: var(--font-mono); font-size: 12px; color: var(--c); }
 .crew-head .crew-role { color: var(--accent-strong); }
@@ -345,8 +387,8 @@ const CREW_CSS = `
 .crew-area { margin-top: 6px; font-size: 14px; color: var(--ink-muted); }
 .crew-body { grid-area: body; min-width: 0; margin-top: 16px; }
 .crew-label { font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; color: var(--ink); }
-.crew-skillhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.crew-count { font-family: var(--font-mono); font-size: 13px; color: var(--accent-strong); }
+.crew-skillhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.crew-count { font-size: 14px; color: var(--accent-strong); }
 .crew-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .crew-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(7, 9, 11, 0.4); font-size: 13px; color: var(--ink); }
 .crew-chip.is-domain { padding-left: 8px; border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
@@ -357,47 +399,59 @@ const CREW_CSS = `
 .crew-links a:hover { color: var(--c); background: rgba(255, 255, 255, 0.05); }
 .crew-list { display: grid; gap: 56px; margin-top: 64px; }
 
-/* the club lead's five domains, lit in their colours */
-.skills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.skill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px 6px 8px; border-radius: 999px; border: 1px dashed var(--line-strong); font-size: 13px; color: var(--ink-faint); }
-.skill svg { width: 16px; height: 16px; }
-.skill.is-on { border: 1px solid var(--c); color: var(--ink); background: color-mix(in srgb, var(--c) 16%, transparent); }
-.skill.is-on svg { color: var(--c); }
-.crew-head .crew-chips { margin-top: 14px; }
+/* the club lead's dial: the five domains in a ring around the photo */
+.dial { grid-area: shot; position: relative; width: min(100%, 20rem); aspect-ratio: 1; }
+.dial-pin { position: absolute; inset: 1.2%; pointer-events: none; }
+.dial-holo { position: absolute; inset: 13.3%; }
+.dial-photo { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 50%; background: #07090b; clip-path: circle(50% at 50% 50%); transition: clip-path 1.1s cubic-bezier(0.16, 1, 0.3, 1); }
+.dial-ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.dial-track { fill: none; stroke: var(--line-strong); stroke-dasharray: 1 5; }
+.dial-seg { transition: opacity 0.3s ease; }
+.dial-seg.is-dim { opacity: 0.3; }
+.dial-band { fill: none; stroke: color-mix(in srgb, var(--c) 17%, transparent); stroke-width: 30; pointer-events: stroke; transition: opacity 0.6s ease calc(var(--i) * 120ms + 500ms), stroke 0.3s ease; }
+.dial-seg:hover .dial-band { stroke: color-mix(in srgb, var(--c) 32%, transparent); }
+.dial-rim { fill: none; stroke: var(--c); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 1 1; transition: stroke-dashoffset 0.8s cubic-bezier(0.65, 0, 0.35, 1) calc(var(--i) * 120ms + 350ms); }
+.dial-label { fill: var(--c); font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: 0.14em; transition: opacity 0.6s ease calc(var(--i) * 120ms + 600ms); }
+.dial-seg.is-off .dial-band { stroke: transparent; }
+.dial-seg.is-off .dial-rim { stroke: var(--line-strong); }
+.dial-seg.is-off .dial-label { fill: var(--ink-faint); }
+.dial-sweep { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: conic-gradient(from 0deg, transparent 0 80%, rgba(255, 255, 255, 0.4)); -webkit-mask: radial-gradient(closest-side, transparent 79%, #000 79.5% 97.5%, transparent 98%); mask: radial-gradient(closest-side, transparent 79%, #000 79.5% 97.5%, transparent 98%); mix-blend-mode: plus-lighter; animation: dial-sweep 7s linear infinite paused; }
+.crew.is-on .dial-sweep { animation-play-state: running; }
+@keyframes dial-sweep { to { transform: rotate(1turn); } }
+.crew-head .crew-chips { margin-top: 12px; }
 
 /* power-up: only once the script has armed the section, so it reads fine without */
 .crew-shot::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: 14px; background: var(--c); clip-path: inset(0 0 0 100%); pointer-events: none; }
-.crew-shot--head::after { background: linear-gradient(100deg, #ff9db0, #c6a6ff 30%, #ffbf7f 55%, #7ee0b5 78%, #28c2ff); }
 .crew-name > span { transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.3s; }
 .crew-fade { transition: opacity 0.6s ease 0.45s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.45s; }
 .crew.is-armed [data-row]:not(.is-live) .crew-photo { opacity: 0; }
 .crew.is-armed [data-row]:not(.is-live) .crew-name > span { transform: translateY(110%); }
 .crew.is-armed [data-row]:not(.is-live) .crew-fade { opacity: 0; transform: translateY(12px); }
-.crew.is-armed [data-row]:not(.is-live) .skill.is-on { opacity: 0.3; transform: scale(0.85); }
+.crew.is-armed [data-row]:not(.is-live) .dial-photo { clip-path: circle(0% at 50% 50%); }
+.crew.is-armed [data-row]:not(.is-live) .dial-rim { stroke-dashoffset: 1; }
+.crew.is-armed [data-row]:not(.is-live) :is(.dial-band, .dial-label) { opacity: 0; }
 .crew.is-armed .is-live .crew-shot::after { animation: crew-wipe 0.95s cubic-bezier(0.77, 0, 0.18, 1) both; }
 .crew.is-armed .is-live .crew-photo { animation: crew-shot 0.95s linear both; }
-.crew.is-armed .is-live .skill.is-on { animation: skill-on 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i) * 110ms + 700ms); }
 @keyframes crew-wipe { 0% { clip-path: inset(0 100% 0 0); } 45%, 55% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 0 0 100%); } }
 @keyframes crew-shot { 0%, 50% { opacity: 0; } 50.1%, 100% { opacity: 1; } }
-@keyframes skill-on { from { opacity: 0.3; transform: scale(0.85); } to { opacity: 1; transform: none; } }
 
 @media (min-width: 768px) {
   .crew { --gutter: 56px; --lane-gap: 7; --lane-x0: 6; }
   .crew-head, .crew-row { grid-template-areas: "shot id" "shot body"; grid-template-rows: auto 1fr; }
-  .crew-head { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 0 36px; }
+  .crew-head { grid-template-columns: minmax(0, 17rem) minmax(0, 1fr); grid-template-rows: 1fr 1fr; gap: 0 40px; }
+  .crew-head .crew-id { margin-top: 0; align-self: end; }
+  .crew-head .crew-body { align-self: start; }
+  .dial { width: 100%; }
   .crew-row { grid-template-columns: 9rem minmax(0, 1fr); gap: 0 28px; }
   .crew-id { align-self: start; }
   .crew-list { gap: 64px; margin-top: 88px; }
 }
 @media (min-width: 1024px) {
   .crew { --gutter: 72px; --lane-gap: 8; --lane-x0: 8; }
-  .crew-head { grid-template-columns: minmax(0, 19rem) minmax(0, 1fr); gap: 0 56px; }
+  .crew-head { grid-template-columns: minmax(0, 23rem) minmax(0, 1fr); gap: 0 64px; }
   .crew-row { grid-template-columns: 11rem minmax(0, 16rem) minmax(0, 1fr); grid-template-areas: "shot id body"; grid-template-rows: auto; gap: 0 40px; align-items: center; }
   .crew-row .crew-id { align-self: center; }
   .crew-row .crew-body { margin-top: 0; }
-  .skills { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-  .skill { flex-direction: column; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 14px; font-size: 12.5px; text-align: center; }
-  .skill svg { width: 22px; height: 22px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .bus-flow { display: none; }
