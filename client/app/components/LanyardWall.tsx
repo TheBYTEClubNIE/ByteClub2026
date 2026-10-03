@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { isProfileUrl, photoStyle, zoomedSizes, type PhotoFrame } from "@/content/team";
 import { GithubIcon, InstagramIcon, LinkedInIcon } from "./icons";
+import { initials } from "./lanyard-initials";
 
 export interface WallMember {
   id: number;
@@ -59,15 +60,21 @@ export default function LanyardWall({ members, color, label }: { members: WallMe
             <li key={m.id} className="slot">
               <div className="badge" data-card>
                 <div className="badge-photo">
-                  <Image
-                    src={m.image}
-                    alt=""
-                    fill
-                    sizes={zoomedSizes("(min-width: 1024px) 150px, (min-width: 640px) 20vw, 26vw", m.frame?.zoom)}
-                    quality={90}
-                    className="object-cover"
-                    style={photoStyle(m.frame)}
-                  />
+                  {m.image ? (
+                    <Image
+                      src={m.image}
+                      alt=""
+                      fill
+                      sizes={zoomedSizes("(min-width: 1024px) 150px, (min-width: 640px) 20vw, 26vw", m.frame?.zoom)}
+                      quality={90}
+                      className="object-cover"
+                      style={photoStyle(m.frame)}
+                    />
+                  ) : (
+                    <span className="badge-initials" aria-hidden>
+                      {initials(m.name)}
+                    </span>
+                  )}
                 </div>
                 <p className="badge-name">{m.name}</p>
                 <p className="badge-role">{m.role}</p>

@@ -9,6 +9,8 @@ const techMembers: Member[] = [
     { id: 3, name: "Samarth R", role: "Backend Dev", insta: "https://www.instagram.com/samarth.r_gowda", linkedin: "https://www.linkedin.com/in/samarth-r-978162396", github: "https://github.com/samarth-r18", image: "/Core/Tech/SamarthR.jpg.jpeg", frame: { position: "50% 25%", origin: "50% 25%", zoom: 1.05 } },
     { id: 5, name: "Adwik R", role: "Backend Dev", insta: "https://www.instagram.com/x0advik", linkedin: "https://www.linkedin.com/in/advik-n", github: "https://github.com/Advik-n", image: "/Core/Tech/advikr.jpg.jpeg", frame: { position: "41% 22%", origin: "41% 22%", zoom: 1.8 } },
     { id: 6, name: "Ayush Anand", role: "Backend Dev", insta: "https://www.instagram.com/surya_anand_001", linkedin: "https://www.linkedin.com/in/ayush-anand10521", github: "https://github.com/ayushanand001", image: "/Core/Tech/Ayush.jpg.jpeg", frame: { position: "57% 40%", origin: "57% 40%", zoom: 2 } },
+    // no photo yet (initials show); links to fill in. Photo goes in /public/Core/Tech/
+    { id: 7, name: "Shaswat Singh", role: "Core Member", insta: "insta_id", linkedin: "linkedin_id", github: "github_id", image: "" },
 ];
 
 const managementMembers: Member[] = [
@@ -27,6 +29,8 @@ const creativeMembers: Member[] = [
     { id: 1, name: "Shreshth bhagel", role: "UI Designer", insta: "https://www.instagram.com/baghel.harsh1", linkedin: "https://www.linkedin.com/in/shreshthbaghel", github: "https://github.com/Shreshthbaghel", image: "/Core/Creativity/shresth.jpg.jpeg", frame: { position: "45% 25%", origin: "45% 25%", zoom: 1.8 } },
     { id: 2, name: "Chythra Shyamanandan", role: "Content Creator", insta: "https://www.instagram.com/tidesofcharlie._", linkedin: "https://www.linkedin.com/in/chythra-shyamnandan-780059312", github: "https://github.com/Chythrasn0407", image: "/Core/Creativity/chythra.jpg.jpeg", frame: { position: "66% 25%", origin: "66% 25%", zoom: 1.3 } },
     { id: 3, name: "Nakul R", role: "Content Creator", insta: "insta_id", linkedin: "linkedin_id", github: "github_id", image: "/Core/Creativity/Nakul.jpeg", frame: { position: "51% 27%", origin: "51% 27%", zoom: 1.8 } },
+    // no photo yet (initials show). Photo goes in /public/Core/Creativity/
+    { id: 6, name: "Rahul Panchal", role: "Core Member", insta: "https://www.instagram.com/rahulpanchal.404", linkedin: "https://www.linkedin.com/in/rahul-panchal-6a543b319", github: "https://github.com/RahulPanchal-404", image: "" },
 ];
 
 const teamData: Record<string, Member[]> = {
@@ -123,6 +127,7 @@ export const FACE_WALL_CSS = `
 .badge { position: relative; aspect-ratio: 21 / 32; display: flex; flex-direction: column; align-items: center; padding: 11% 9.5% 0; overflow: hidden; border-radius: 8% / 5.3%; border: 1px solid var(--line); background: linear-gradient(180deg, #192028, #0d1114); }
 .badge::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 7.2%; background: var(--squad); }
 .badge-photo { position: relative; width: 100%; aspect-ratio: 340 / 320; overflow: hidden; border-radius: 7%; background: #07090b; }
+.badge-initials { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: clamp(1.4rem, 6vw, 2.2rem); color: var(--squad); }
 .badge-name { margin-top: 7%; font-size: 13px; font-weight: 600; line-height: 1.15; text-align: center; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .badge-role { margin-top: 3px; font-size: 11.5px; text-align: center; color: var(--squad); }
 .lanyard-wall.is-3d .badge, .lanyard-wall.is-3d .slot::before { opacity: 0; }

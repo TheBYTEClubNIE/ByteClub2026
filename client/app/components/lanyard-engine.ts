@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { initials } from "./lanyard-initials";
 
 // Hanging ID cards for one squad, drawn in a single WebGL canvas. Each card
 // hangs from a rail on a short lanyard (a verlet rope); drag or fling a card
@@ -139,6 +140,15 @@ function drawFront(m: LanyardMember, color: string, fonts: Fonts, scale: number,
   x.fillStyle = "#07090b";
   x.fillRect(px, py, pw, ph);
   if (img) drawPhoto(x, img, m, px, py, pw, ph);
+  else if (!m.image) {
+    // no photo yet: initials in the squad colour
+    x.fillStyle = color;
+    x.textAlign = "center";
+    x.textBaseline = "middle";
+    x.font = `700 120px ${fonts.display}`;
+    x.fillText(initials(m.name), FW / 2, py + ph / 2);
+    x.textBaseline = "alphabetic";
+  }
   x.restore();
 
   // text sized for the card's size on screen: ~14px names, ~11px roles
@@ -337,7 +347,7 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
     cards = rects.map((r, i) => {
       const m = opts.members[i];
       const tex = texture(drawFront(m, opts.color, fonts, scale, null), renderer);
-      loadImage(m.image, 384).then((img) => {
+      if (m.image) loadImage(m.image, 384).then((img) => {
         if (!img || disposed || !tex.image) return;
         tex.image = drawFront(m, opts.color, fonts, scale, img);
         tex.needsUpdate = true;
