@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CalendarClock, PackageCheck } from "lucide-react";
-import SplitFlapText from "@/components/SplitFlapText";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import {
-  type BoardStatus,
   type ClubEvent,
   boardDate,
   boardTime,
@@ -28,39 +26,6 @@ export function useNow(builtAt: number) {
   }, []);
   return now;
 }
-
-const STATUS_COLOR: Record<BoardStatus | "TBA", string> = {
-  "REG OPEN": "var(--accent)",
-  LIVE: "var(--accent-strong)",
-  QUEUED: "var(--ink)",
-  TBA: "var(--ink)",
-  SHIPPED: "var(--ink-muted)",
-};
-
-// Board cells flip in once from blank when the board scrolls into view,
-// row by row, then hold.
-function Flap({ text, delay, color = "var(--ink)" }: { text: string; delay: number; color?: string }) {
-  return (
-    <SplitFlapText
-      words={["", text]}
-      loop={false}
-      padTo={0}
-      cycleDelay={delay}
-      flipDuration={0.06}
-      stagger={0.035}
-      flipsPerChar={4}
-      tileColor="#151a1f"
-      textColor={color}
-      fontSize="var(--flap-size)"
-      tileRadius={3}
-      gap={2}
-      aria-hidden
-      style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}
-    />
-  );
-}
-
-const rowDelay = (i: number) => 450 + i * 160;
 
 /* ───────── calendar links ───────── */
 
@@ -96,322 +61,440 @@ function calendarLinks(e: ClubEvent) {
   return { google, ics: `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}` };
 }
 
-/* ───────── event pass ───────── */
+/* ───────── receipt pieces ───────── */
 
-function EventPass({ e, status }: { e: ClubEvent; status: BoardStatus }) {
-  const cal = calendarLinks(e);
+function Line({ k, v }: { k: string; v: string }) {
   return (
-    <div className="pass">
-      <div className="pass-strip" aria-hidden>
-        <span>The Byte Club</span>
-        <span>Event pass</span>
-      </div>
-
-      <div className="pass-main">
-        <h4 className="pass-name">{e.name}</h4>
-        <p className="pass-sum">{e.summary}</p>
-        <dl className="pass-fields">
-          <div>
-            <dt>Date</dt>
-            <dd>
-              {boardDate(e.start)} {boardYear(e.start)}
-            </dd>
-          </div>
-          <div>
-            <dt>Starts</dt>
-            <dd>{boardTime(e.start)}</dd>
-          </div>
-          {e.end && (
-            <div>
-              <dt>Ends</dt>
-              <dd>{boardTime(e.end)}</dd>
-            </div>
-          )}
-          {e.venue && (
-            <div>
-              <dt>Venue</dt>
-              <dd>{e.venue}</dd>
-            </div>
-          )}
-        </dl>
-      </div>
-
-      <div className="pass-stub">
-        <span className="pass-code" aria-hidden>
-          {e.code}
-        </span>
-        {status === "LIVE" ? (
-          <p className="pass-now">Happening now{e.venue ? ` at ${e.venue}` : ""}.</p>
-        ) : e.register ? (
-          <a className="btn pass-btn" href={e.register} target="_blank" rel="noopener noreferrer">
-            Register
-          </a>
-        ) : (
-          <a className="btn pass-btn" href={JOIN_LINK.href} target="_blank" rel="noopener noreferrer">
-            Get notified
-          </a>
-        )}
-        {status !== "LIVE" && (
-          <>
-            <a className="pass-link" href={cal.google} target="_blank" rel="noopener noreferrer">
-              Add to Google Calendar
-            </a>
-            <a className="pass-link" href={cal.ics} download={`${slugOf(e)}.ics`}>
-              Apple / Outlook (.ics)
-            </a>
-          </>
-        )}
-      </div>
+    <div className="r-line">
+      <span>{k}</span>
+      <i aria-hidden />
+      <span>{v}</span>
     </div>
   );
 }
 
-/* ───────── rows ───────── */
+function Barcode({ text }: { text: string }) {
+  // bar, gap, bar, gap… widths taken from the characters' bits
+  const widths = [...text].flatMap((ch) => {
+    const c = ch.charCodeAt(0);
+    return [1 + (c & 1), 1 + ((c >> 1) & 1), 1 + ((c >> 2) & 1) * 2, 1 + ((c >> 4) & 1)];
+  });
+  let x = 0;
+  const bars = widths.map((w, i) => {
+    const bar = i % 2 === 0 ? <rect key={i} x={x} width={w} height="40" /> : null;
+    x += w;
+    return bar;
+  });
+  return (
+    <svg className="r-barcode" viewBox={`0 0 ${x} 40`} preserveAspectRatio="none" aria-hidden>
+      {bars}
+    </svg>
+  );
+}
 
-function UpNextRow({ e, i, now }: { e: ClubEvent; i: number; now: number }) {
+function NextEvent({ e, now }: { e: ClubEvent; now: number }) {
   const status = statusOf(e, now);
-  const d = rowDelay(i);
-  const sub = status === "LIVE" ? "Happening now" : startsIn(e.start, now);
+  const cal = calendarLinks(e);
+  const sub = status === "LIVE" ? `Happening now${e.venue ? ` at ${e.venue}` : ""}` : startsIn(e.start, now);
   return (
-    <li className="board-item">
-      <div className="board-row dep">
-        <span className="sr-only">
-          {e.name}, {boardDate(e.start)} at {boardTime(e.start)}
-          {e.venue ? `, ${e.venue}` : ""}. {status === "REG OPEN" ? "Registration open." : sub}
-        </span>
-        <div className="c-code">
-          <Flap text={e.code} delay={d} color="var(--ink-muted)" />
-        </div>
-        <div className="c-event" aria-hidden>
-          <p className="ev-name">{e.name}</p>
-        </div>
-        <div className="c-date">
-          <Flap text={boardDate(e.start)} delay={d + 60} />
-        </div>
-        <div className="c-time">
-          <Flap text={boardTime(e.start)} delay={d + 120} />
-        </div>
-        <div className="c-venue" aria-hidden>
-          {e.venue}
-        </div>
-        <div className="c-status">
-          <Flap text={status} delay={d + 180} color={STATUS_COLOR[status]} />
-          {sub && (
-            <span className="c-sub" aria-hidden>
-              {sub}
-            </span>
-          )}
-        </div>
+    <div className="r-next">
+      <p className="r-big">
+        <span className="r-code">{e.code}</span> {e.name}
+      </p>
+      <p className="r-sum">{e.summary}</p>
+      <div className="r-lines">
+        <Line k="Date" v={`${boardDate(e.start)} ${boardYear(e.start)}`} />
+        <Line k="Time" v={`${boardTime(e.start)}${e.end ? `–${boardTime(e.end)}` : ""}`} />
+        {e.venue && <Line k="Venue" v={e.venue} />}
       </div>
-      <div className="pass-wrap">
-        <EventPass e={e} status={status} />
-      </div>
-    </li>
+      {sub && <p className="r-note">{sub}</p>}
+      {status !== "LIVE" && (
+        <>
+          <a className="r-btn" href={e.register ?? JOIN_LINK.href} target="_blank" rel="noopener noreferrer">
+            {e.register ? "Register" : "Get notified"} →
+          </a>
+          <p className="r-cal">
+            <a href={cal.google} target="_blank" rel="noopener noreferrer">
+              + Google Calendar
+            </a>
+            <a href={cal.ics} download={`${slugOf(e)}.ics`}>
+              + Apple / Outlook
+            </a>
+          </p>
+        </>
+      )}
+    </div>
   );
 }
 
-function EmptyUpNext() {
-  const d = rowDelay(0);
-  return (
-    <li className="board-item">
-      <div className="board-row dep">
-        <span className="sr-only">Next event: to be announced.</span>
-        <div className="c-code">
-          <Flap text="---" delay={d} color="var(--ink-muted)" />
-        </div>
-        <div className="c-event" aria-hidden>
-          <p className="ev-name">Next event</p>
-        </div>
-        <div className="c-date">
-          <Flap text="-- ---" delay={d + 60} />
-        </div>
-        <div className="c-time">
-          <Flap text="--:--" delay={d + 120} />
-        </div>
-        <div className="c-venue" aria-hidden>
-          To be announced
-        </div>
-        <div className="c-status">
-          <Flap text="TBA" delay={d + 180} color={STATUS_COLOR.TBA} />
-        </div>
-      </div>
-      <div className="board-note">
-        <p>
-          Nothing&apos;s on the board right now. New events are announced {JOIN_LINK.where} first.
-        </p>
-        <a className="btn btn-accent" href={JOIN_LINK.href} target="_blank" rel="noopener noreferrer">
-          Get notified
-        </a>
-      </div>
-    </li>
-  );
-}
+function Receipt({ now, serial }: { now: number; serial: number }) {
+  const { upcoming, past } = splitEvents(now);
+  const photos = past.reduce((n, e) => n + (e.photos?.length ?? 0), 0);
+  const printed = new Date(now).toISOString();
+  const tag = upcoming[0] ? statusOf(upcoming[0], now) : "TBA";
 
-function ShippedRow({ e, i }: { e: ClubEvent; i: number }) {
-  const d = rowDelay(i);
-  const photos = e.photos?.length ?? 0;
   return (
-    <li className="board-item">
-      <a className="board-row arr" href={`#past-${slugOf(e)}`}>
-        <span className="sr-only">
-          {e.name}
-          {e.start ? `, ${boardDate(e.start)} ${boardYear(e.start)}` : ""}.
-          {photos ? ` View ${photos} photos.` : ""}
-        </span>
-        <div className="c-code">
-          <Flap text={e.code} delay={d} color="var(--ink-muted)" />
+    <div className="receipt">
+      <header className="r-head">
+        <p className="r-brand">The Byte Club</p>
+        <p>NIE, Mysuru · Technical club</p>
+        <p className="r-doc">Event receipt</p>
+        <div className="r-meta">
+          <span>No. {String(serial).padStart(4, "0")}</span>
+          <span>
+            {boardDate(printed)} {boardYear(printed)} · {boardTime(printed)}
+          </span>
         </div>
-        <div className="c-event" aria-hidden>
-          <p className="ev-name">{e.name}</p>
-          {photos > 0 && <span className="ev-link">{photos} photos →</span>}
+      </header>
+
+      <hr />
+      <section aria-labelledby="r-up">
+        <div className="r-title">
+          <h3 id="r-up">Up next</h3>
+          <span className="r-tag">{tag}</span>
         </div>
-        <div className="c-date">
-          <Flap text={boardDate(e.start)} delay={d + 60} />
-        </div>
-        <div className="c-status">
-          <Flap text="SHIPPED" delay={d + 120} color={STATUS_COLOR.SHIPPED} />
-        </div>
-      </a>
-    </li>
+        {upcoming.length ? (
+          upcoming.map((e) => <NextEvent key={e.code + e.start} e={e} now={now} />)
+        ) : (
+          <div className="r-next">
+            <p className="r-big">Next event</p>
+            <div className="r-lines">
+              <Line k="Date" v="TBA" />
+              <Line k="Venue" v="TBA" />
+            </div>
+            <p className="r-note">New events are announced {JOIN_LINK.where} first.</p>
+            <a className="r-btn" href={JOIN_LINK.href} target="_blank" rel="noopener noreferrer">
+              Get notified →
+            </a>
+          </div>
+        )}
+      </section>
+
+      {past.length > 0 && (
+        <>
+          <hr />
+          <section aria-labelledby="r-shipped">
+            <div className="r-title">
+              <h3 id="r-shipped">Shipped</h3>
+              <span>
+                {past.length} {past.length === 1 ? "event" : "events"}
+              </span>
+            </div>
+            <ul className="r-list">
+              {past.map((e) => {
+                const n = e.photos?.length ?? 0;
+                return (
+                  <li key={e.code + (e.start ?? "")}>
+                    <a className="r-item" href={`#past-${slugOf(e)}`}>
+                      <span className="r-row">
+                        <span className="r-code">{e.code}</span>
+                        <span>{e.name}</span>
+                        <span>{e.start ? `${boardDate(e.start)} ${boardYear(e.start).slice(2)}` : ""}</span>
+                      </span>
+                      {e.photos?.[0] && (
+                        <span className="r-photo">
+                          <Image
+                            src={e.photos[0].src}
+                            alt={`${e.name}: ${e.photos[0].caption}`}
+                            fill
+                            sizes="(min-width: 960px) 380px, 92vw"
+                            quality={90}
+                            className="object-cover"
+                          />
+                        </span>
+                      )}
+                      {n > 0 && <span className="r-more">{n} photos →</span>}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </>
+      )}
+
+      <hr />
+      <div className="r-lines">
+        <Line k="Events shipped" v={String(past.length)} />
+        <Line k="Photos on file" v={String(photos)} />
+        <Line k="Open to" v="All years" />
+        <Line k="Next event" v={upcoming[0] ? boardDate(upcoming[0].start) : "TBA"} />
+      </div>
+
+      <hr />
+      <footer className="r-foot">
+        <Barcode text="THEBYTECLUB" />
+        <p>Thank you for building with us</p>
+        <p>See you at the next one</p>
+      </footer>
+    </div>
   );
 }
 
 /* ───────── section ───────── */
 
+const PRINTERS = [
+  { id: "thermal", label: "Thermal", ms: 2400 },
+  { id: "matrix", label: "Dot matrix", ms: 3200 },
+] as const;
+type Printer = (typeof PRINTERS)[number]["id"];
+
+// The club's events as a printout, printed when the section comes into view.
+// Pick a printer (thermal receipt or dot-matrix fanfold); switching or
+// "Reprint" tears the paper off and prints a fresh copy.
 export default function EventsBoard({ builtAt }: { builtAt: number }) {
   const now = useNow(builtAt);
-  const { upcoming, past } = splitEvents(now);
+  const live = splitEvents(now).upcoming.length > 0;
+  const stage = useRef<HTMLDivElement>(null);
+  const [serial, setSerial] = useState(1);
+  const [torn, setTorn] = useState(false);
+  const [printer, setPrinter] = useState<Printer>("thermal");
+  const [busy, setBusy] = useState(false);
+  const busyTimer = useRef(0);
+
+  const run = (p: Printer) => {
+    setBusy(true);
+    clearTimeout(busyTimer.current);
+    busyTimer.current = window.setTimeout(() => setBusy(false), PRINTERS.find((x) => x.id === p)!.ms);
+  };
+
+  useEffect(() => {
+    const el = stage.current!;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    el.classList.add("is-armed");
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        el.classList.add("is-printing");
+        run("thermal");
+        io.disconnect();
+      },
+      { rootMargin: "0px 0px -20% 0px" }
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      clearTimeout(busyTimer.current);
+    };
+  }, []);
+
+  const print = (next: Printer) => {
+    if (torn) return;
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setTorn(true);
+    setTimeout(
+      () => {
+        setTorn(false);
+        setPrinter(next);
+        setSerial((s) => s + 1);
+        if (!calm) run(next);
+      },
+      calm ? 0 : 650
+    );
+  };
+
+  // the paper leans a little toward the pointer
+  const tilt = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse") return;
+    const r = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.setProperty("--ry", `${((e.clientX - r.left) / r.width - 0.5) * 8}deg`);
+    e.currentTarget.style.setProperty("--rx", `${(0.5 - (e.clientY - r.top) / r.height) * 4}deg`);
+  };
+  const untilt = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.style.setProperty("--ry", "0deg");
+    e.currentTarget.style.setProperty("--rx", "0deg");
+  };
 
   return (
     <section id="events" className="section">
-      <style>{BOARD_CSS}</style>
-
-      <header className="section-head">
-        <h2 className="section-title">Events</h2>
-        <p className="section-lede">
-          Hands-on sessions, ideathons and build nights, open to all years.
-          Here&apos;s what&apos;s next, and what we&apos;ve already run.
-        </p>
-      </header>
-
-      <div className="flex flex-col gap-5 sm:gap-6">
-        <div className="board">
-          <div className="board-head">
-            <h3 className="board-title">
-              <CalendarClock aria-hidden size={18} />
-              Up next
-            </h3>
-            <span className="board-meta">{boardTime(new Date(now).toISOString())} IST</span>
+      <style>{RECEIPT_CSS}</style>
+      <div className="ev-grid">
+        <div className="ev-copy">
+          <header className="section-head" style={{ marginBottom: 0 }}>
+            <h2 className="section-title">Events</h2>
+            <p className="section-lede">
+              Hands-on sessions, ideathons and build nights, open to all years.
+              Here&apos;s what&apos;s next, and what we&apos;ve already run.
+            </p>
+          </header>
+          <div className="ev-actions">
+            <a className="btn btn-accent" href={JOIN_LINK.href} target="_blank" rel="noopener noreferrer">
+              {JOIN_LINK.label}
+            </a>
+            <a className="btn btn-ghost" href="#past">
+              See past events
+            </a>
           </div>
-          <div className="board-cols dep" aria-hidden>
-            <span>Code</span>
-            <span>Event</span>
-            <span>Date</span>
-            <span>Time</span>
-            <span>Venue</span>
-            <span>Status</span>
-          </div>
-          <ul>
-            {upcoming.length === 0 ? (
-              <EmptyUpNext />
-            ) : (
-              upcoming.map((e, i) => <UpNextRow key={e.code + e.start} e={e} i={i} now={now} />)
-            )}
-          </ul>
         </div>
 
-        {past.length > 0 && (
-          <div className="board">
-            <div className="board-head">
-              <h3 className="board-title">
-                <PackageCheck aria-hidden size={18} />
-                Shipped
-              </h3>
-              <span className="board-meta">{past.length} events</span>
-            </div>
-            <div className="board-cols arr" aria-hidden>
-              <span>Code</span>
-              <span>Event</span>
-              <span>Date</span>
-              <span>Status</span>
-            </div>
-            <ul>
-              {past.map((e, i) => (
-                <ShippedRow key={e.code + (e.start ?? "")} e={e} i={i + 1} />
+        <div ref={stage} className="stage" data-printer={printer}>
+          <div className="printer-bar">
+            <div className="printer-pick" role="group" aria-label="Printer">
+              {PRINTERS.map((p) => (
+                <button key={p.id} type="button" aria-pressed={printer === p.id} onClick={() => printer !== p.id && print(p.id)}>
+                  {p.label}
+                </button>
               ))}
-            </ul>
+            </div>
+            <button type="button" className="printer-btn" onClick={() => print(printer)}>
+              Reprint
+            </button>
           </div>
-        )}
+          <div className={`printer ${busy ? "is-busy" : ""}`} aria-hidden>
+            {printer === "thermal" ? (
+              <>
+                <span className={`printer-led ${live ? "is-live" : ""}`} />
+                <span className="printer-label">Byte Club · events</span>
+                <span className="printer-slot" />
+                <span className="printer-cutter" />
+              </>
+            ) : (
+              <>
+                <span className="matrix-panel">
+                  <i className={`printer-led ${live ? "is-live" : ""}`} />
+                  On line
+                </span>
+                <span className="matrix-window">
+                  <span className="matrix-head" />
+                </span>
+                <span className="matrix-panel">Form feed</span>
+                <span className="printer-slot" />
+              </>
+            )}
+          </div>
+          <div key={serial} className={`receipt-hang ${torn ? "is-torn" : ""}`}>
+            <div className="receipt-tilt" onPointerMove={tilt} onPointerLeave={untilt}>
+              <Receipt now={now} serial={serial} />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
 }
 
-const BOARD_CSS = `
-.board { --flap-size: 16px; background: #07090b; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-.board-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 14px 20px; background: #0c0f12; border-bottom: 1px solid var(--line); }
-.board-title { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; color: var(--ink); }
-.board-title svg { color: var(--accent); }
-.board-meta { font-family: var(--font-mono); font-size: 13px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
-.board-cols, .board-row { display: grid; column-gap: 16px; row-gap: 10px; align-items: center; padding: 16px 20px; }
-.board-cols { display: none; padding-block: 10px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
-.board-item + .board-item { border-top: 1px solid var(--line); }
-
-.dep { grid-template-columns: auto auto minmax(0, 1fr); grid-template-areas: "code code status" "event event event" "date time venue"; }
-.arr { grid-template-columns: auto auto minmax(0, 1fr); grid-template-areas: "code date status" "event event event"; color: inherit; text-decoration: none; transition: background-color 0.2s ease; }
-.arr:hover { background: rgba(255, 255, 255, 0.025); }
-.arr:hover .ev-link { color: var(--accent-strong); }
-
-.c-code { grid-area: code; }
-.c-event { grid-area: event; min-width: 0; }
-.c-date { grid-area: date; }
-.c-time { grid-area: time; }
-.c-venue { grid-area: venue; min-width: 0; font-family: var(--font-body); font-size: 14px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.c-status { grid-area: status; justify-self: end; text-align: right; }
-.c-sub { display: block; margin-top: 6px; font-family: var(--font-body); font-size: 12px; color: var(--ink-muted); }
-.ev-name { font-family: var(--font-display); font-weight: 500; font-size: 1.05rem; line-height: 1.25; letter-spacing: -0.01em; color: var(--ink); }
-.ev-link { display: inline-block; margin-top: 4px; font-family: var(--font-body); font-size: 13px; color: var(--accent); transition: color 0.2s ease; }
-
-@media (min-width: 900px) {
-  .board { --flap-size: 17px; }
-  .board-cols { display: grid; }
-  .dep { grid-template-columns: 5.5rem minmax(0, 1fr) 7.25rem 5.75rem minmax(0, 11rem) 9.5rem; grid-template-areas: "code event date time venue status"; }
-  .arr { grid-template-columns: 5.5rem minmax(0, 1fr) 7.25rem 9.5rem; grid-template-areas: "code event date status"; }
-  .c-status { justify-self: start; text-align: left; }
+const RECEIPT_CSS = `
+.ev-grid { display: grid; gap: 40px; }
+.ev-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+@media (min-width: 960px) {
+  .ev-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 27rem); gap: 72px; align-items: start; }
+  .ev-copy { position: sticky; top: 120px; }
 }
 
-.board-note { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; margin: 0 20px 20px; padding: 16px 18px; border: 1px dashed var(--line-strong); border-radius: 10px; }
-.board-note p { font-family: var(--font-body); font-size: 15px; line-height: 1.55; color: var(--ink-muted); max-width: 46ch; }
+/* the printer */
+.stage { --r-paper: #f5f2ea; --r-ink: #16181a; position: relative; width: min(100%, 27rem); margin-inline: auto; }
+/* controls: pick a printer, reprint */
+.printer-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.printer-pick { display: inline-flex; padding: 3px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03); }
+.printer-pick button { padding: 6px 13px; border-radius: 999px; font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--ink-muted); cursor: pointer; transition: background-color 0.2s ease, color 0.2s ease; }
+.printer-pick button:hover { color: var(--ink); }
+.printer-pick button[aria-pressed="true"] { background: var(--ink); color: #0a0b0d; }
+.printer-btn { padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.04); font-family: var(--font-body); font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; transition: background-color 0.2s ease, transform 0.1s ease; }
+.printer-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.printer-btn:active, .printer-pick button:active { transform: translateY(1px); }
 
-.pass-wrap { padding: 0 20px 20px; }
-.pass { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); background: #edf1f4; color: #0a0b0d; border-radius: 12px; overflow: hidden; }
-.pass :focus-visible { outline-color: #0a0b0d; }
-.pass-strip { grid-column: 1 / -1; display: flex; justify-content: space-between; padding: 9px 20px; background: var(--accent); color: #031018; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
-.pass-main { padding: 20px; }
-.pass-name { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.35rem, 3vw, 1.75rem); line-height: 1.1; letter-spacing: -0.02em; }
-.pass-sum { margin-top: 8px; max-width: 52ch; font-family: var(--font-body); font-size: 15px; line-height: 1.6; color: #3b444d; }
-.pass-fields { margin-top: 18px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; }
-.pass-fields dt { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #4b5560; }
-.pass-fields dd { margin-top: 2px; font-family: var(--font-display); font-weight: 500; font-size: 1rem; }
-.pass-stub { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 20px; border-top: 2px dashed #c3cbd2; }
-.pass-stub::before, .pass-stub::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: #07090b; }
-.pass-stub::before { left: -10px; }
-.pass-stub::after { right: -10px; }
-.pass-code { font-family: var(--font-display); font-weight: 700; font-size: 2rem; line-height: 1; letter-spacing: 0.02em; margin-bottom: 4px; }
-.pass-btn { align-self: stretch; background: #0a0b0d; color: #fff; }
-.pass-btn:hover { background: #1d2329; }
-.pass-now { font-family: var(--font-body); font-weight: 600; font-size: 15px; }
-.pass-link { font-family: var(--font-body); font-size: 14px; color: #0a0b0d; text-decoration: underline; text-decoration-color: #9aa3ab; text-underline-offset: 3px; }
-.pass-link:hover { text-decoration-color: #0a0b0d; }
+.printer { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; }
+.printer-led { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: #ffbf7f; box-shadow: 0 0 10px #ffbf7f; animation: led 2.4s ease-in-out infinite; }
+.printer-led.is-live { background: #7ee0b5; box-shadow: 0 0 10px #7ee0b5; }
+.printer.is-busy .printer-led { animation: led 0.24s steps(2) infinite; }
+@keyframes led { 50% { opacity: 0.3; } }
+.printer-slot { position: absolute; left: 16px; right: 16px; bottom: 7px; height: 6px; border-radius: 3px; background: #040506; box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.9); }
 
-@media (min-width: 720px) {
-  .pass { grid-template-columns: minmax(0, 1fr) 15rem; }
-  .pass-strip { grid-column: 1; }
-  .pass-stub { grid-column: 2; grid-row: 1 / span 2; }
-  .pass-fields { grid-template-columns: repeat(4, auto); justify-content: start; column-gap: 36px; }
-  .pass-stub { justify-content: center; border-top: 0; border-left: 2px dashed #c3cbd2; }
-  .pass-stub::before, .pass-stub::after { left: -11px; right: auto; }
-  .pass-stub::before { top: -10px; }
-  .pass-stub::after { top: auto; bottom: -10px; }
+/* thermal: a small black POS printer with a serrated tear bar */
+[data-printer="thermal"] .printer { height: 64px; padding: 0 16px 14px; border-radius: 18px 18px 10px 10px; border: 1px solid var(--line-strong);
+  background: radial-gradient(120% 90% at 50% 0%, #2d353d, transparent 60%), linear-gradient(180deg, #232a31, #12161a);
+  box-shadow: 0 18px 30px -18px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.09), inset 0 -10px 18px -12px rgba(0, 0, 0, 0.8); }
+[data-printer="thermal"] .printer::before { content: ""; position: absolute; left: 16px; right: 16px; top: 22px; height: 1px; background: rgba(255, 255, 255, 0.06); }
+.printer-label { flex: 1; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-muted); }
+.printer-cutter { position: absolute; left: 20px; right: 20px; bottom: 2px; height: 5px; background: linear-gradient(180deg, #d5dbe0, #7f8890);
+  -webkit-mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 6px 100%; mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) 50% / 6px 100%; }
+
+/* dot matrix: a beige desk printer whose head shuttles while it prints */
+[data-printer="matrix"] .printer { height: 78px; padding: 0 14px 16px; justify-content: space-between; border-radius: 12px 12px 6px 6px; border: 1px solid #a69f8e;
+  background: linear-gradient(180deg, #e3ddcf, #c9c2b1); box-shadow: 0 18px 30px -16px rgba(0, 0, 0, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -8px 14px -10px rgba(60, 50, 30, 0.5); }
+[data-printer="matrix"] .printer::before, [data-printer="matrix"] .printer::after { content: ""; position: absolute; top: 24px; width: 10px; height: 26px; border-radius: 3px; background: linear-gradient(90deg, #8d8676, #b8b09d, #8d8676); }
+[data-printer="matrix"] .printer::before { left: -9px; }
+[data-printer="matrix"] .printer::after { right: -9px; }
+.matrix-panel { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5d5646; }
+.matrix-window { position: relative; flex: 1; height: 26px; margin: 0 6px; overflow: hidden; border-radius: 5px; background: linear-gradient(180deg, rgba(20, 22, 26, 0.85), rgba(40, 44, 50, 0.7)); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6); }
+.matrix-window::before { content: ""; position: absolute; left: 4px; right: 4px; top: 12px; height: 2px; background: #6a7178; }
+.matrix-head { position: absolute; top: 5px; left: 4px; width: 18px; height: 16px; border-radius: 3px; background: linear-gradient(180deg, #a8adb3, #6c7278); }
+.printer.is-busy .matrix-head { animation: head 0.34s ease-in-out infinite alternate; }
+@keyframes head { to { left: calc(100% - 22px); } }
+[data-printer="matrix"] .printer-slot { left: 10px; right: 10px; background: #2a2620; }
+
+/* the paper: hangs from the slot and sways a little */
+.receipt-hang { position: relative; z-index: 1; margin: -9px 24px 0; transform-origin: 50% 0; animation: r-sway 7s ease-in-out infinite; }
+.receipt-hang::before { content: ""; position: absolute; inset: 14px 8px 4px; box-shadow: 0 34px 50px -24px rgba(0, 0, 0, 0.9); pointer-events: none; }
+@keyframes r-sway { 0%, 100% { transform: rotate(-0.5deg); } 50% { transform: rotate(0.5deg); } }
+.receipt-hang.is-torn { animation: r-tear 0.65s cubic-bezier(0.55, 0, 0.75, 0.2) forwards; }
+@keyframes r-tear { 15% { transform: translateY(8px) rotate(-1.5deg); } 100% { transform: translateY(160px) rotate(-9deg); opacity: 0; } }
+.receipt-tilt { transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transform-origin: 50% 0; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+
+.receipt { position: relative; padding: 26px 22px 36px; color: var(--r-ink); font-family: var(--font-mono); font-size: 13px; line-height: 1.5;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.035), transparent 10%, transparent 90%, rgba(0, 0, 0, 0.035)), var(--r-paper);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 14px 100%; }
+.receipt ::selection { background: var(--r-ink); color: var(--r-paper); }
+.receipt :focus-visible { outline: 2px solid var(--r-ink); outline-offset: 2px; }
+.receipt hr { margin: 18px 0; border: 0; border-top: 2px dashed rgba(22, 24, 26, 0.3); }
+
+.r-head { text-align: center; }
+.r-head p { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.r-brand { font-family: var(--font-display); font-weight: 700; font-size: 1.65rem !important; line-height: 1.1; letter-spacing: -0.02em !important; text-transform: none !important; }
+.r-doc { display: inline-block; margin-top: 12px; padding: 2px 10px; background: var(--r-ink); color: var(--r-paper); font-weight: 600; }
+.r-meta { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.r-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; text-transform: uppercase; }
+.r-title h3 { font-weight: 700; font-size: 13px; letter-spacing: 0.1em; }
+.r-tag { padding: 0 8px; background: var(--r-ink); color: var(--r-paper); font-weight: 600; font-size: 12px; }
+.r-next { margin-top: 10px; }
+.r-big { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; line-height: 1.15; letter-spacing: -0.01em; }
+.r-sum { margin-top: 6px; font-size: 12.5px; color: #3e444a; }
+.r-lines { display: grid; gap: 2px; margin-top: 10px; }
+.r-line { display: flex; align-items: baseline; gap: 8px; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.r-line i { flex: 1; min-width: 12px; transform: translateY(-4px); border-bottom: 2px dotted rgba(22, 24, 26, 0.35); }
+.r-note { margin-top: 10px; color: #3e444a; }
+.r-btn { display: flex; justify-content: center; margin-top: 12px; padding: 11px; background: var(--r-ink); color: var(--r-paper); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; transition: background-color 0.2s ease; }
+.r-btn:hover { background: #2c3238; }
+.r-cal { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 12px; }
+.r-cal a { text-decoration: underline; text-underline-offset: 3px; }
+
+.r-list { display: grid; gap: 10px; margin-top: 10px; }
+.r-item { display: block; color: inherit; }
+.r-row { display: grid; grid-template-columns: 3.2em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; margin: 0 -6px; padding: 2px 6px; transition: background-color 0.15s ease, color 0.15s ease; }
+.r-item:hover .r-row, .r-item:focus-visible .r-row { background: var(--r-ink); color: var(--r-paper); }
+.r-code { font-weight: 700; }
+.r-photo { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; margin-top: 8px; overflow: hidden; border-radius: 4px; background: #e4e0d6; box-shadow: 0 0 0 1px rgba(22, 24, 26, 0.12); }
+.r-more { display: inline-block; margin-top: 4px; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+
+.r-foot { text-align: center; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.r-barcode { display: block; width: 100%; height: 46px; margin-bottom: 12px; fill: var(--r-ink); }
+
+/* dot-matrix paper: fanfold greenbar, tractor holes and perforations down both edges */
+[data-printer="matrix"] .receipt-hang { margin-inline: 12px; }
+[data-printer="matrix"] .receipt { --r-paper: #fbfbf6; --r-ink: #262a52; padding: 24px 42px 30px; text-shadow: 0 0 0.6px currentColor;
+  background: repeating-linear-gradient(180deg, transparent 0 58px, rgba(126, 196, 150, 0.2) 58px 116px), var(--r-paper);
+  -webkit-mask: radial-gradient(circle at 12px 9px, #0000 4px, #000 4.6px) 0 0 / 24px 18px repeat-y, radial-gradient(circle at 12px 9px, #0000 4px, #000 4.6px) 100% 0 / 24px 18px repeat-y, linear-gradient(#000 0 0) 50% 0 / calc(100% - 48px) 100% no-repeat;
+  mask: radial-gradient(circle at 12px 9px, #0000 4px, #000 4.6px) 0 0 / 24px 18px repeat-y, radial-gradient(circle at 12px 9px, #0000 4px, #000 4.6px) 100% 0 / 24px 18px repeat-y, linear-gradient(#000 0 0) 50% 0 / calc(100% - 48px) 100% no-repeat; }
+[data-printer="matrix"] .receipt::before, [data-printer="matrix"] .receipt::after { content: ""; position: absolute; top: 0; bottom: 0; border-left: 1px dashed rgba(38, 42, 82, 0.28); }
+[data-printer="matrix"] .receipt::before { left: 24px; }
+[data-printer="matrix"] .receipt::after { right: 24px; }
+[data-printer="matrix"] .receipt hr { border-top-style: dotted; }
+[data-printer="matrix"] .r-brand { font-family: var(--font-mono); font-size: 1.3rem !important; letter-spacing: 0.14em !important; text-transform: uppercase !important; }
+[data-printer="matrix"] .r-big { font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 0.04em; text-transform: uppercase; }
+[data-printer="matrix"] :is(.r-doc, .r-tag) { background: none; color: var(--r-ink); box-shadow: inset 0 0 0 1.5px var(--r-ink); }
+[data-printer="matrix"] .r-btn { background: none; color: var(--r-ink); box-shadow: inset 0 0 0 2px var(--r-ink); }
+[data-printer="matrix"] .r-btn:hover { background: var(--r-ink); color: var(--r-paper); }
+.stage.is-printing[data-printer="matrix"] .receipt { animation-duration: 3.2s; animation-timing-function: steps(44, end); }
+
+/* printing: only once the script has armed it, so it reads fine without */
+.stage.is-armed:not(.is-printing) .receipt { clip-path: inset(0 0 100% 0); }
+.stage.is-printing .receipt { animation: r-print 2.4s steps(30, end) both; }
+@keyframes r-print { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .receipt-hang, .printer-led { animation: none; }
+  .receipt-tilt { transform: none; }
 }
 `;
