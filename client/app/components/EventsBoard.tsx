@@ -170,49 +170,6 @@ function Receipt({ now, serial }: { now: number; serial: number }) {
         )}
       </section>
 
-      {past.length > 0 && (
-        <>
-          <hr />
-          <section aria-labelledby="r-shipped">
-            <div className="r-title">
-              <h3 id="r-shipped">Shipped</h3>
-              <span>
-                {past.length} {past.length === 1 ? "event" : "events"}
-              </span>
-            </div>
-            <ul className="r-list">
-              {past.map((e) => {
-                const n = e.photos?.length ?? 0;
-                return (
-                  <li key={e.code + (e.start ?? "")}>
-                    <a className="r-item" href={`#past-${slugOf(e)}`}>
-                      <span className="r-row">
-                        <span className="r-code">{e.code}</span>
-                        <span>{e.name}</span>
-                        <span>{e.start ? `${boardDate(e.start)} ${boardYear(e.start).slice(2)}` : ""}</span>
-                      </span>
-                      {e.photos?.[0] && (
-                        <span className="r-photo">
-                          <Image
-                            src={e.photos[0].src}
-                            alt={`${e.name}: ${e.photos[0].caption}`}
-                            fill
-                            sizes="(min-width: 960px) 380px, 92vw"
-                            quality={90}
-                            className="object-cover"
-                          />
-                        </span>
-                      )}
-                      {n > 0 && <span className="r-more">{n} photos →</span>}
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        </>
-      )}
-
       <hr />
       <div className="r-lines">
         <Line k="Events shipped" v={String(past.length)} />
@@ -231,11 +188,46 @@ function Receipt({ now, serial }: { now: number; serial: number }) {
   );
 }
 
+// One past event on its own slip: what it was, a photo, and a way to see more.
+function EventSlip({ e }: { e: ClubEvent }) {
+  const n = e.photos?.length ?? 0;
+  return (
+    <li className="slip">
+      <article className="receipt receipt--slip">
+        <p className="r-row">
+          <span className="r-code">{e.code}</span>
+          <span>{e.start ? `${boardDate(e.start)} ${boardYear(e.start)}` : "Shipped"}</span>
+        </p>
+        <h4 className="r-ev-name">{e.name}</h4>
+        {e.photos?.[0] && (
+          <span className="r-photo">
+            <Image
+              src={e.photos[0].src}
+              alt={`${e.name}: ${e.photos[0].caption}`}
+              fill
+              sizes="(min-width: 1100px) 280px, (min-width: 680px) 46vw, 92vw"
+              quality={90}
+              className="object-cover"
+            />
+          </span>
+        )}
+        <p className="r-ev-sum">{e.summary}</p>
+        {n > 0 && (
+          <a className="r-more" href={`#past-${slugOf(e)}`}>
+            View {n} photos →
+          </a>
+        )}
+        <Barcode text={e.name.toUpperCase()} />
+      </article>
+    </li>
+  );
+}
+
 /* ───────── section ───────── */
 
 const PRINTERS = [
-  { id: "thermal", label: "Thermal", ms: 2400 },
-  { id: "matrix", label: "Dot matrix", ms: 3200 },
+  { id: "thermal", label: "Thermal", ms: 1100 },
+  { id: "matrix", label: "Dot matrix", ms: 1500 },
 ] as const;
 type Printer = (typeof PRINTERS)[number]["id"];
 
@@ -244,7 +236,9 @@ type Printer = (typeof PRINTERS)[number]["id"];
 // "Reprint" tears the paper off and prints a fresh copy.
 export default function EventsBoard({ builtAt }: { builtAt: number }) {
   const now = useNow(builtAt);
-  const live = splitEvents(now).upcoming.length > 0;
+  const { upcoming, past } = splitEvents(now);
+  const live = upcoming.length > 0;
+  const photos = past.reduce((n, e) => n + (e.photos?.length ?? 0), 0);
   const stage = useRef<HTMLDivElement>(null);
   const [serial, setSerial] = useState(1);
   const [torn, setTorn] = useState(false);
@@ -291,18 +285,6 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
       },
       calm ? 0 : 650
     );
-  };
-
-  // the paper leans a little toward the pointer
-  const tilt = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType !== "mouse") return;
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty("--ry", `${((e.clientX - r.left) / r.width - 0.5) * 8}deg`);
-    e.currentTarget.style.setProperty("--rx", `${(0.5 - (e.clientY - r.top) / r.height) * 4}deg`);
-  };
-  const untilt = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.currentTarget.style.setProperty("--ry", "0deg");
-    e.currentTarget.style.setProperty("--rx", "0deg");
   };
 
   return (
@@ -363,12 +345,26 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
             )}
           </div>
           <div key={serial} className={`receipt-hang ${torn ? "is-torn" : ""}`}>
-            <div className="receipt-tilt" onPointerMove={tilt} onPointerLeave={untilt}>
-              <Receipt now={now} serial={serial} />
-            </div>
+            <Receipt now={now} serial={serial} />
           </div>
         </div>
       </div>
+
+      {past.length > 0 && (
+        <div className="ev-shipped" data-printer={printer}>
+          <div className="ev-shipped-head">
+            <h3>Shipped</h3>
+            <span>
+              {past.length} events · {photos} photos
+            </span>
+          </div>
+          <ul className="ev-slips">
+            {past.map((e) => (
+              <EventSlip key={e.code + (e.start ?? "")} e={e} />
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }
@@ -377,12 +373,12 @@ const RECEIPT_CSS = `
 .ev-grid { display: grid; gap: 40px; }
 .ev-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
 @media (min-width: 960px) {
-  .ev-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 27rem); gap: 72px; align-items: start; }
+  .ev-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 31rem); gap: 72px; align-items: start; }
   .ev-copy { position: sticky; top: 120px; }
 }
 
 /* the printer */
-.stage { --r-paper: #f5f2ea; --r-ink: #16181a; position: relative; width: min(100%, 27rem); margin-inline: auto; }
+.stage { --r-paper: #f5f2ea; --r-ink: #16181a; position: relative; width: min(100%, 31rem); margin-inline: auto; }
 /* controls: pick a printer, reprint */
 .printer-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .printer-pick { display: inline-flex; padding: 3px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(255, 255, 255, 0.03); }
@@ -394,7 +390,7 @@ const RECEIPT_CSS = `
 .printer-btn:active, .printer-pick button:active { transform: translateY(1px); }
 
 .printer { position: relative; z-index: 2; display: flex; align-items: center; gap: 10px; }
-.printer-led { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: #ffbf7f; box-shadow: 0 0 10px #ffbf7f; animation: led 2.4s ease-in-out infinite; }
+.printer-led { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: #ffbf7f; box-shadow: 0 0 10px #ffbf7f; }
 .printer-led.is-live { background: #7ee0b5; box-shadow: 0 0 10px #7ee0b5; }
 .printer.is-busy .printer-led { animation: led 0.24s steps(2) infinite; }
 @keyframes led { 50% { opacity: 0.3; } }
@@ -424,12 +420,10 @@ const RECEIPT_CSS = `
 [data-printer="matrix"] .printer-slot { left: 10px; right: 10px; background: #2a2620; }
 
 /* the paper: hangs from the slot and sways a little */
-.receipt-hang { position: relative; z-index: 1; margin: -9px 24px 0; transform-origin: 50% 0; animation: r-sway 7s ease-in-out infinite; }
+.receipt-hang { position: relative; z-index: 1; margin: -9px 24px 0; transform-origin: 50% 0; }
 .receipt-hang::before { content: ""; position: absolute; inset: 14px 8px 4px; box-shadow: 0 34px 50px -24px rgba(0, 0, 0, 0.9); pointer-events: none; }
-@keyframes r-sway { 0%, 100% { transform: rotate(-0.5deg); } 50% { transform: rotate(0.5deg); } }
 .receipt-hang.is-torn { animation: r-tear 0.65s cubic-bezier(0.55, 0, 0.75, 0.2) forwards; }
 @keyframes r-tear { 15% { transform: translateY(8px) rotate(-1.5deg); } 100% { transform: translateY(160px) rotate(-9deg); opacity: 0; } }
-.receipt-tilt { transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transform-origin: 50% 0; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
 
 .receipt { position: relative; padding: 26px 22px 36px; color: var(--r-ink); font-family: var(--font-mono); font-size: 13px; line-height: 1.5;
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.035), transparent 10%, transparent 90%, rgba(0, 0, 0, 0.035)), var(--r-paper);
@@ -450,7 +444,7 @@ const RECEIPT_CSS = `
 .r-tag { padding: 0 8px; background: var(--r-ink); color: var(--r-paper); font-weight: 600; font-size: 12px; }
 .r-next { margin-top: 10px; }
 .r-big { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; line-height: 1.15; letter-spacing: -0.01em; }
-.r-sum { margin-top: 6px; font-size: 12.5px; color: #3e444a; }
+.r-sum { margin-top: 8px; font-family: var(--font-body); font-size: 14.5px; line-height: 1.6; color: #3a4046; }
 .r-lines { display: grid; gap: 2px; margin-top: 10px; }
 .r-line { display: flex; align-items: baseline; gap: 8px; text-transform: uppercase; font-variant-numeric: tabular-nums; }
 .r-line i { flex: 1; min-width: 12px; transform: translateY(-4px); border-bottom: 2px dotted rgba(22, 24, 26, 0.35); }
@@ -460,20 +454,32 @@ const RECEIPT_CSS = `
 .r-cal { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 12px; }
 .r-cal a { text-decoration: underline; text-underline-offset: 3px; }
 
-.r-list { display: grid; gap: 10px; margin-top: 10px; }
-.r-item { display: block; color: inherit; }
-.r-row { display: grid; grid-template-columns: 3.2em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; margin: 0 -6px; padding: 2px 6px; transition: background-color 0.15s ease, color 0.15s ease; }
-.r-item:hover .r-row, .r-item:focus-visible .r-row { background: var(--r-ink); color: var(--r-paper); }
+.r-ev-name { margin-top: 2px; font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; line-height: 1.2; letter-spacing: -0.01em; }
+.r-ev-sum { margin-top: 10px; font-family: var(--font-body); font-size: 14.5px; line-height: 1.6; color: #3a4046; }
+.r-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; font-variant-numeric: tabular-nums; color: #4a5056; }
 .r-code { font-weight: 700; }
-.r-photo { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; margin-top: 8px; overflow: hidden; border-radius: 4px; background: #e4e0d6; box-shadow: 0 0 0 1px rgba(22, 24, 26, 0.12); }
-.r-more { display: inline-block; margin-top: 4px; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+.r-photo { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; margin-top: 12px; overflow: hidden; border-radius: 4px; background: #e4e0d6; box-shadow: 0 0 0 1px rgba(22, 24, 26, 0.12); }
+.r-more { display: inline-block; margin-top: 10px; font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.r-more:hover { text-decoration-thickness: 2px; }
 
+/* shipped: every event on its own slip */
+.ev-shipped { margin-top: 72px; }
+.ev-shipped-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 22px; }
+.ev-shipped-head h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.4rem; letter-spacing: -0.01em; color: var(--ink); }
+.ev-shipped-head span { font-family: var(--font-mono); font-size: 13px; color: var(--ink-muted); }
+.ev-slips { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px 20px; align-items: start; }
+.slip { position: relative; --r-paper: #f5f2ea; --r-ink: #16181a; }
+.slip::before { content: ""; position: absolute; inset: 12px 8px 4px; box-shadow: 0 26px 40px -22px rgba(0, 0, 0, 0.9); pointer-events: none; }
+.receipt--slip { padding: 20px 20px 32px; }
+.receipt--slip .r-barcode { height: 30px; margin: 18px 0 0; }
+@media (min-width: 680px) { .ev-slips { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .ev-slips { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .r-foot { text-align: center; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
 .r-barcode { display: block; width: 100%; height: 46px; margin-bottom: 12px; fill: var(--r-ink); }
 
 /* dot-matrix paper: fanfold greenbar, tractor holes and perforations down both edges */
 [data-printer="matrix"] .receipt-hang { margin-inline: 12px; }
-[data-printer="matrix"] .receipt { --r-paper: #fbfbf6; --r-ink: #262a52; padding: 24px 42px 30px; text-shadow: 0 0 0.6px currentColor;
+[data-printer="matrix"] .receipt { --r-paper: #fbfbf6; --r-ink: #262a52; padding: 24px 42px 30px;
   background: repeating-linear-gradient(180deg, transparent 0 58px, rgba(126, 196, 150, 0.2) 58px 116px), var(--r-paper);
   -webkit-mask: radial-gradient(circle at 12px 9px, #0000 4px, #000 4.6px) 0 0 / 24px 18px repeat-y, radial-gradient(circle at 12px 9px, #0000 4px, #000 4.6px) 100% 0 / 24px 18px repeat-y, linear-gradient(#000 0 0) 50% 0 / calc(100% - 48px) 100% no-repeat;
   mask: radial-gradient(circle at 12px 9px, #0000 4px, #000 4.6px) 0 0 / 24px 18px repeat-y, radial-gradient(circle at 12px 9px, #0000 4px, #000 4.6px) 100% 0 / 24px 18px repeat-y, linear-gradient(#000 0 0) 50% 0 / calc(100% - 48px) 100% no-repeat; }
@@ -482,19 +488,18 @@ const RECEIPT_CSS = `
 [data-printer="matrix"] .receipt::after { right: 24px; }
 [data-printer="matrix"] .receipt hr { border-top-style: dotted; }
 [data-printer="matrix"] .r-brand { font-family: var(--font-mono); font-size: 1.3rem !important; letter-spacing: 0.14em !important; text-transform: uppercase !important; }
-[data-printer="matrix"] .r-big { font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 0.04em; text-transform: uppercase; }
+[data-printer="matrix"] :is(.r-big, .r-ev-name) { font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 0.04em; text-transform: uppercase; }
 [data-printer="matrix"] :is(.r-doc, .r-tag) { background: none; color: var(--r-ink); box-shadow: inset 0 0 0 1.5px var(--r-ink); }
 [data-printer="matrix"] .r-btn { background: none; color: var(--r-ink); box-shadow: inset 0 0 0 2px var(--r-ink); }
 [data-printer="matrix"] .r-btn:hover { background: var(--r-ink); color: var(--r-paper); }
-.stage.is-printing[data-printer="matrix"] .receipt { animation-duration: 3.2s; animation-timing-function: steps(44, end); }
+.stage.is-printing[data-printer="matrix"] .receipt { animation-duration: 1.5s; }
 
 /* printing: only once the script has armed it, so it reads fine without */
 .stage.is-armed:not(.is-printing) .receipt { clip-path: inset(0 0 100% 0); }
-.stage.is-printing .receipt { animation: r-print 2.4s steps(30, end) both; }
+.stage.is-printing .receipt { animation: r-print 1.1s cubic-bezier(0.22, 0.8, 0.3, 1) both; }
 @keyframes r-print { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .receipt-hang, .printer-led { animation: none; }
-  .receipt-tilt { transform: none; }
+  .printer.is-busy .printer-led { animation: none; }
 }
 `;
