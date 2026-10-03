@@ -271,6 +271,14 @@ export default function PastEvents() {
     window.scrollTo({ top, behavior: 'smooth' });
   };
 
+  // the release after the one on screen right now (read from the scroll
+  // position, so quick repeated taps keep moving forward)
+  const jumpNext = () => {
+    const r = trackRef.current!.getBoundingClientRect();
+    const s = clamp01(-r.top / Math.max(1, r.height - window.innerHeight)) * SEGMENTS;
+    jump(Math.min(N - 1, Math.round(s) + 1));
+  };
+
   return (
     <section id="past" className="section" style={{ paddingBottom: 0 }}>
       <style>{CHANGELOG_CSS}</style>
@@ -334,9 +342,16 @@ export default function PastEvents() {
                 HEAD
               </span>
             </div>
-            <a href="#events" className="cl-next">
-              next <span aria-hidden>→</span>
-            </a>
+            {/* steps to the next release; after the last one, on to what is coming up */}
+            {active < TIMELINE.length - 1 ? (
+              <button type="button" className="cl-next" onClick={jumpNext} aria-label={`Next release, ${version(active + 1)}`}>
+                next <span aria-hidden>→</span>
+              </button>
+            ) : (
+              <a href="#events" className="cl-next">
+                up next <span aria-hidden>↑</span>
+              </a>
+            )}
           </nav>
         </div>
       </div>
@@ -392,7 +407,7 @@ const CHANGELOG_CSS = `
 /* commit graph */
 .cl-map { position: absolute; z-index: 5; top: 84px; left: 16px; right: 16px; display: flex; align-items: center; gap: 14px; max-width: 64rem; margin-inline: auto; padding: 34px 16px 26px; border-radius: 14px; background: rgba(7,9,11,0.78); border: 1px solid var(--line-strong); }
 .cl-origin, .cl-next { flex-shrink: 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; color: var(--ink-muted); }
-.cl-next { padding: 4px 10px; border: 1px dashed var(--line-strong); border-radius: 999px; color: var(--ink); transition: border-color 0.2s ease, color 0.2s ease; }
+.cl-next { cursor: pointer; padding: 4px 10px; border: 1px dashed var(--line-strong); border-radius: 999px; color: var(--ink); transition: border-color 0.2s ease, color 0.2s ease; }
 .cl-next:hover { border-color: var(--accent); color: var(--accent); }
 .cl-route { position: relative; flex: 1; height: 2px; margin-inline: 12px; }
 .cl-line { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.28) 0 2px, transparent 2px 8px); }
