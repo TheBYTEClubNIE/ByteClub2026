@@ -37,6 +37,18 @@ const smooth = (v: number) => {
 
 /* ───────────────── One full-screen stop ───────────────── */
 
+// An event's aftermovie as the backdrop: muted, looping, playing only while
+// its release is on screen (and not at all with reduced motion).
+function SceneVideo({ src, poster, active }: { src: string; poster: string; active: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current!;
+    if (active && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) v.play().catch(() => {});
+    else v.pause();
+  }, [active]);
+  return <video ref={ref} src={src} poster={poster} muted loop playsInline preload="none" aria-hidden className="absolute inset-0 h-full w-full object-cover" />;
+}
+
 function Scene({
   event,
   index,
@@ -61,7 +73,11 @@ function Scene({
       inert={!active}
     >
       <div className="scene-bg">
-        <Image src={photos[0].src} alt="" fill sizes="100vw" quality={90} className="object-cover" />
+        {event.video ? (
+          <SceneVideo src={event.video} poster={photos[0].src} active={active} />
+        ) : (
+          <Image src={photos[0].src} alt="" fill sizes="100vw" quality={90} className="object-cover" />
+        )}
       </div>
       <div className="scene-scrim" />
       <div className="scene-scan" aria-hidden />
@@ -101,9 +117,16 @@ function Scene({
         </h3>
         {meta && <p className="scene-meta">{meta}</p>}
         <p className="scene-sum">{event.summary}</p>
-        <button type="button" className="btn btn-primary scene-cta" onClick={() => onOpen(0)}>
-          View {photos.length} photos
-        </button>
+        {/* an event with an aftermovie leads with the film, not the photos */}
+        {event.video ? (
+          <a className="btn btn-primary scene-cta" href={event.video} target="_blank" rel="noopener noreferrer">
+            Watch the aftermovie ↗
+          </a>
+        ) : (
+          <button type="button" className="btn btn-primary scene-cta" onClick={() => onOpen(0)}>
+            View {photos.length} photos
+          </button>
+        )}
 
         <div className="stamp" aria-hidden>
           <span className="stamp-code">{version(index)}</span>

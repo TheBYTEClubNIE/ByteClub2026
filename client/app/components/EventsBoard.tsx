@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Hammer, Lightbulb, Sprout, Users, type LucideIcon } from "lucide-react";
+import { Hammer, Lightbulb, Search, Sprout, Users, type LucideIcon } from "lucide-react";
 import {
   EVENTS,
   type ClubEvent,
@@ -197,6 +197,7 @@ const FORMATS: { name: string; blurb: string; icon: LucideIcon; example: string 
   { name: "Ideathons", blurb: "Pitch a bold idea as a team, then take the panel's questions.", icon: Lightbulb, example: "BBI" },
   { name: "Beginner sessions", blurb: "From the basics of tech to building something real. No experience needed.", icon: Sprout, example: "B2B" },
   { name: "Build sessions", blurb: "A time limit, one real problem, and the tools to solve it.", icon: Hammer, example: "BTL" },
+  { name: "Treasure hunts", blurb: "Themed clue hunts: crack every clue before time runs out.", icon: Search, example: "UPSD" },
   { name: "Meetups", blurb: "The whole community in one room, members old and new.", icon: Users, example: "ASM" },
 ];
 

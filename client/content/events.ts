@@ -8,6 +8,7 @@
 //             Leave both out if the date isn't known (old events).
 //   register  Registration form link. Hidden once the event starts.
 //   photos    Images in client/public/, shown in the past events timeline.
+//   video     Optional aftermovie (client/public/), plays behind its changelog release.
 
 export interface ClubEvent {
   code: string;
@@ -18,6 +19,7 @@ export interface ClubEvent {
   end?: string;
   register?: string;
   photos?: { src: string; caption: string }[];
+  video?: string;
 }
 
 export const EVENTS: ClubEvent[] = [
@@ -73,6 +75,20 @@ export const EVENTS: ClubEvent[] = [
       { src: "/Events/beyondlabs5.jpg", caption: "Interactive learning" },
       { src: "/Events/beyondlabs6.jpg", caption: "Technical discussion" },
       { src: "/Events/beyondlabs7.jpg", caption: "Team collaboration" },
+    ],
+  },
+  {
+    code: "UPSD",
+    name: "Searching for the Upside Down",
+    summary:
+      "A Stranger Things treasure hunt: power up like Eleven, have fun like Dustin and think like Mike to crack the clues before Vecna finds you. Prize pool of 2K.",
+    venue: "MV Hall, South Campus",
+    start: "2026-05-06T17:30:00+05:30",
+    video: "/Events/upside-down.mp4",
+    photos: [
+      { src: "/Events/upside-1.jpg", caption: "On the hunt" },
+      { src: "/Events/upside-poster.jpg", caption: "Official poster" },
+      { src: "/Events/upside-4.jpg", caption: "Following the clues" },
     ],
   },
 ];
