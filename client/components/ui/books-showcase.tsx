@@ -94,7 +94,6 @@ export function BooksShowcase({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const openBtnRef = useRef<HTMLButtonElement | null>(null);
-  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const dpRef = useRef<HTMLDivElement | null>(null);
   const shiftCarouselRef = useRef<(dir: 1 | -1) => void>(() => { });
 
@@ -1169,8 +1168,6 @@ export function BooksShowcase({
       }, 1600);
     }
 
-    const onCloseClick = () => close();
-    closeBtnRef.current?.addEventListener('click', onCloseClick);
 
     // Input: pointer as hand, drag to peel, keyboard
     const ptr = {
@@ -1268,6 +1265,8 @@ export function BooksShowcase({
         ptr.moved = 0;
         ptr.t0 = performance.now();
         canvas.setPointerCapture(e.pointerId);
+      } else if (state.mode === 'detail') {
+        close(); // tap off the open book puts it back (no close button)
       } else {
         state.pillLock = null;
         state.kbIndex = -1;
@@ -1631,7 +1630,6 @@ export function BooksShowcase({
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('lostpointercapture', cancelPointer as any);
-      closeBtnRef.current?.removeEventListener('click', onCloseClick);
 
       scene.traverse((obj: any) => {
         if (obj.geometry) obj.geometry.dispose();
@@ -1769,15 +1767,6 @@ export function BooksShowcase({
         }
       >
         Open
-      </button>
-
-      <button
-        ref={closeBtnRef}
-        aria-label="Close detail view"
-        className={`absolute left-1/2 top-[30px] z-40 -translate-x-1/2 inline-flex h-[52px] w-[52px] items-center justify-center rounded-full border-[1.5px] border-[var(--bs-cream)]/40 bg-transparent text-[17px] leading-none text-[var(--bs-cream)] transition-[opacity,border-color] duration-300 delay-150 hover:border-[var(--bs-cream)]/90 @max-[760px]:left-auto @max-[760px]:right-[18px] @max-[760px]:top-[18px] @max-[760px]:translate-x-0 [-webkit-tap-highlight-color:transparent] ${uiMode === 'detail' ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-          }`}
-      >
-        &#10005;
       </button>
 
       {showDetailPanel && (
