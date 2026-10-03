@@ -7,9 +7,11 @@ import { CATEGORY_LABEL, postDate, type PostSummary } from "@/lib/blog-meta";
 // Same colours as the 3D shelf on /blog, so the books match across pages.
 const BOOKS = [
   { id: "webdev", bg: "#0d3b34", ink: "#eafff8", band: "#28c2ff", h: 212, desc: "Frontend, backend, and everything in between." },
+  { id: "agentic-ai", bg: "#241a3a", ink: "#f1e9ff", band: "#c6a6ff", h: 200, desc: "Agents, tools, and autonomous systems." },
   { id: "ml", bg: "#122a45", ink: "#e8f1ff", band: "#7fb8ff", h: 188, desc: "Models, data, and the maths underneath." },
-  { id: "agentic-ai", bg: "#241a3a", ink: "#f1e9ff", band: "#c6a6ff", h: 202, desc: "Agents, tools, and autonomous systems." },
   { id: "opensource", bg: "#3a2712", ink: "#fff2e0", band: "#ffbf7f", h: 178, desc: "Contributions and lessons from building in the open." },
+  { id: "dsa", bg: "#16301b", ink: "#ecffe6", band: "#9be37a", h: 206, desc: "Data structures, algorithms, and contest-style problem solving." },
+  { id: "creative", bg: "#36172d", ink: "#ffe9f4", band: "#ff9db0", h: 194, desc: "Design, motion, and storytelling." },
 ];
 
 export default function BlogTeaser({ posts }: { posts: PostSummary[] }) {
@@ -132,8 +134,8 @@ const SHELF_CSS = `
 
 /* 3D books: spine faces you, the front cover is the right-hand side face,
    so turning a book on its axis swings the cover into view. */
-.bs-stage { --w: 38px; --d: 104px; padding-top: 30px; }
-.bs-shelf { display: flex; align-items: flex-end; justify-content: center; gap: 8px; min-height: 250px; perspective: 1100px; perspective-origin: 50% 20%; }
+.bs-stage { --w: 32px; --d: 96px; padding-top: 30px; }
+.bs-shelf { display: flex; align-items: flex-end; justify-content: center; gap: 6px; min-height: 250px; perspective: 1100px; perspective-origin: 50% 20%; }
 .book3d { position: relative; flex-shrink: 0; width: var(--w); height: var(--h); transform-style: preserve-3d; transform: translateZ(calc(var(--d) / -2)); transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), margin 0.75s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; }
 .book3d:hover { transform: translateZ(calc(var(--d) / -2)) translateY(-8px); }
 .book3d.is-open { margin-inline: calc(var(--d) * 0.36); transform: translateZ(calc(var(--d) / -2 + 26px)) translateY(-18px) rotateY(-64deg); }
@@ -151,7 +153,7 @@ const SHELF_CSS = `
 .book-top { left: 0; top: calc((var(--h) - var(--d)) / 2); width: var(--w); height: var(--d); transform: rotateX(90deg) translateZ(calc(var(--h) / 2)); background: repeating-linear-gradient(90deg, #efe9dc 0 2px, #d9d2c3 2px 3px); box-shadow: inset 0 0 0 2px var(--bg); }
 .bs-plank { height: 14px; margin-top: -2px; border-radius: 3px; background: linear-gradient(180deg, #2a3138, #161a1e); box-shadow: 0 18px 30px -12px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08); }
 
-@media (min-width: 640px) { .bs-stage { --w: 48px; --d: 140px; } .book-spine-text { font-size: 13px; } .book-cover-title { font-size: 20px; } .bs-shelf { gap: 12px; min-height: 290px; } }
+@media (min-width: 640px) { .bs-stage { --w: 44px; --d: 132px; } .book-spine-text { font-size: 13px; } .book-cover-title { font-size: 20px; } .bs-shelf { gap: 10px; min-height: 290px; } }
 @media (prefers-reduced-motion: reduce) {
   .book3d, .bs-panel { transition: none; animation: none; }
   .book3d.is-open { margin-inline: 0; transform: translateZ(calc(var(--d) / -2)) translateY(-18px); }

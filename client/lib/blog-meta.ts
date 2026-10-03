@@ -2,9 +2,11 @@
 
 export const CATEGORY_LABEL: Record<string, string> = {
   webdev: "Web Dev",
-  ml: "Machine Learning",
   "agentic-ai": "Agentic AI",
+  ml: "Machine Learning",
   opensource: "Open Source",
+  dsa: "DSA",
+  creative: "Creative",
 };
 
 export const postDate = (date: string) =>

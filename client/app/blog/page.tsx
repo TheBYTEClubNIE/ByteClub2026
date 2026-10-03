@@ -4,7 +4,7 @@ import { readPosts } from "@/lib/posts";
 
 export const metadata: Metadata = {
   title: "Byte Blog",
-  description: "Notes from The Byte Club on web dev, machine learning, agentic AI and open source.",
+  description: "Notes from The Byte Club on web dev, agentic AI, machine learning, open source, DSA and creative work.",
 };
 
 export default function BlogPage() {

@@ -47,9 +47,27 @@ const CATEGORY_META: Record<
     backInk: "255,235,210",
     edge: "#ead9c0",
   },
+  dsa: {
+    label: "DSA",
+    desc: "Data structures, algorithms, and the problem-solving behind every contest and interview.",
+    spineBg: "#16301b",
+    spineInk: "#ecffe6",
+    backBg: "#16301b",
+    backInk: "230,255,225",
+    edge: "#d2e8cb",
+  },
+  creative: {
+    label: "Creative",
+    desc: "Design, motion, and storytelling: the creative side of building things.",
+    spineBg: "#36172d",
+    spineInk: "#ffe9f4",
+    backBg: "#36172d",
+    backInk: "255,225,240",
+    edge: "#ead0de",
+  },
 };
 
-const CATEGORY_ORDER = ["webdev", "ml", "agentic-ai", "opensource"];
+const CATEGORY_ORDER = ["webdev", "agentic-ai", "ml", "opensource", "dsa", "creative"];
 
 function wrapLines(x: CanvasRenderingContext2D, text: string, maxW: number) {
   const lines: string[] = [];

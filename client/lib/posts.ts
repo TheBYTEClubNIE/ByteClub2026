@@ -7,7 +7,7 @@ import { CATEGORY_LABEL, postDate } from "./blog-meta";
 // To publish a post: drop a .md file into client/content/blog/.
 // Optional frontmatter at the top of the file:
 //   ---
-//   category: webdev        (webdev | ml | agentic-ai | opensource, default webdev)
+//   category: webdev        (webdev | agentic-ai | ml | opensource | dsa | creative, default webdev)
 //   date: 2026-09-24
 //   title: Overrides the first "# Heading"
 //   image: /blog/cover.jpg  (optional cover, file goes in client/public/)
