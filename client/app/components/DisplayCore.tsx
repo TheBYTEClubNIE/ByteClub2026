@@ -130,6 +130,8 @@ export const FACE_WALL_CSS = `
 .badge-name { margin-top: 7%; font-size: 13px; font-weight: 600; line-height: 1.15; text-align: center; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .badge-role { margin-top: 3px; font-size: 11.5px; text-align: center; color: var(--squad); }
 .lanyard-wall.is-3d .badge, .lanyard-wall.is-3d .slot::before { opacity: 0; }
+.lanyard-wall.is-3d .badge { pointer-events: none; }
+.lanyard-wall img { -webkit-user-drag: none; }
 .badge-links { display: flex; justify-content: center; margin-top: 6px; }
 .badge-links a { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; color: var(--ink-muted); transition: color 0.2s ease, background-color 0.2s ease; }
 .badge-links a:hover { color: var(--squad); background: rgba(255, 255, 255, 0.05); }

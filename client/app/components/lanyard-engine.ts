@@ -438,12 +438,13 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
         p.x += vx;
         p.y += vy + GRAVITY * STEP * STEP;
       }
-      if (drag && cards[drag.i] === c) {
-        const p = c.pts[4];
+      const held = drag && cards[drag.i] === c ? drag.k : -1;
+      if (held > 0) {
+        const p = c.pts[held];
         p.px = p.x;
         p.py = p.y;
-        p.x += (drag.tx - p.x) * 0.35;
-        p.y += (drag.ty - p.y) * 0.35;
+        p.x += (drag!.tx - p.x) * 0.35;
+        p.y += (drag!.ty - p.y) * 0.35;
       }
       for (let it = 0; it < 10; it++) {
         for (let k = 0; k < 4; k++) {
@@ -454,8 +455,8 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
           const dy = b.y - a.y;
           const d = Math.hypot(dx, dy) || 0.0001;
           if (k < 3 && d <= len) continue; // the lanyard can go slack; the card itself is rigid
-          const wa = a.w;
-          const wb = drag && cards[drag.i] === c && k === 3 ? 0 : b.w;
+          const wa = held === k ? 0 : a.w;
+          const wb = held === k + 1 ? 0 : b.w;
           if (wa + wb === 0) continue;
           const diff = (d - len) / d / (wa + wb);
           a.x += dx * diff * wa;
@@ -467,8 +468,7 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
       // spin about the vertical axis, settling face-forward
       const centre = c.pts[4];
       const vx = (centre.x - centre.px) / STEP;
-      const held = drag && cards[drag.i] === c;
-      const target = Math.round(c.yaw / (Math.PI * 2)) * Math.PI * 2 + (held ? THREE.MathUtils.clamp(vx * 0.0012, -0.7, 0.7) : 0);
+      const target = Math.round(c.yaw / (Math.PI * 2)) * Math.PI * 2 + (held > 0 ? THREE.MathUtils.clamp(vx * 0.0012, -0.7, 0.7) : 0);
       c.yawV += ((target - c.yaw) * 14 - c.yawV * 3) * STEP;
       c.yaw += c.yawV * STEP;
     }
@@ -537,14 +537,15 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
     if (!raf && visible && !disposed) raf = requestAnimationFrame(loop);
   }
 
-  /* input: drag a card, or tap one to flick it */
+  /* input: grab a card or its strap anywhere and pull; tap a card to flick it */
 
-  let drag: { i: number; id: number; ox: number; oy: number; tx: number; ty: number; x0: number; t0: number; moved: number } | null = null;
+  let drag: { i: number; k: number; id: number; ox: number; oy: number; tx: number; ty: number; x0: number; t0: number; moved: number } | null = null;
   const local = (e: PointerEvent) => {
     const r = canvas.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
-  const hit = (x: number, y: number) => {
+  // what's under the pointer: a card (k = 4) or a point on a strap (k = 1..3)
+  const hit = (x: number, y: number): { i: number; k: number } | null => {
     for (let i = cards.length - 1; i >= 0; i--) {
       const c = cards[i];
       const ring = c.pts[3];
@@ -555,19 +556,37 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
       const lx = dx * Math.cos(roll) - dy * Math.sin(roll);
       const ly = dx * Math.sin(roll) + dy * Math.cos(roll);
       const hw = (wallCardW() / 2) * Math.max(0.35, Math.abs(Math.cos(c.yaw)));
-      if (Math.abs(lx) < hw && Math.abs(ly) < c.half - RING / 2) return i;
+      if (Math.abs(lx) < hw && Math.abs(ly) < c.half - RING / 2) return { i, k: 4 };
     }
-    return -1;
+    const reach = Math.max(12, (cards[0]?.band.userData.width ?? 8) / 2 + 8);
+    for (let i = cards.length - 1; i >= 0; i--) {
+      const pts = cards[i].pts;
+      for (let k = 0; k < 3; k++) {
+        const a = pts[k];
+        const b = pts[k + 1];
+        const vx = b.x - a.x;
+        const vy = b.y - a.y;
+        const t = Math.max(0, Math.min(1, ((x - a.x) * vx + (y - a.y) * vy) / (vx * vx + vy * vy || 1)));
+        if (Math.hypot(x - (a.x + vx * t), y - (a.y + vy * t)) < reach) {
+          // pull the strap point nearest the grab (never the fixed peg)
+          let best = 1;
+          for (let j = 2; j <= 3; j++) if (Math.hypot(x - pts[j].x, y - pts[j].y) < Math.hypot(x - pts[best].x, y - pts[best].y)) best = j;
+          return { i, k: best };
+        }
+      }
+    }
+    return null;
   };
   const wallCardW = () => slots[0]?.getBoundingClientRect().width ?? 0;
 
   const onDown = (e: PointerEvent) => {
     if ((e.target as Element).closest("a") || drag) return;
     const p = local(e);
-    const i = hit(p.x, p.y);
-    if (i < 0) return;
-    const centre = cards[i].pts[4];
-    drag = { i, id: e.pointerId, ox: p.x - centre.x, oy: p.y - centre.y, tx: centre.x, ty: centre.y, x0: p.x, t0: performance.now(), moved: 0 };
+    const h = hit(p.x, p.y);
+    if (!h) return;
+    if (e.pointerType === "mouse") e.preventDefault(); // no text selection or image dragging
+    const g = cards[h.i].pts[h.k];
+    drag = { i: h.i, k: h.k, id: e.pointerId, ox: p.x - g.x, oy: p.y - g.y, tx: g.x, ty: g.y, x0: p.x, t0: performance.now(), moved: 0 };
     try {
       wall.setPointerCapture(e.pointerId);
     } catch {
@@ -583,14 +602,14 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
       drag.moved = Math.max(drag.moved, Math.abs(p.x - drag.x0));
       wake();
     } else if (e.pointerType === "mouse") {
-      wall.style.cursor = hit(p.x, p.y) >= 0 ? "grab" : "";
+      wall.style.cursor = hit(p.x, p.y) ? "grab" : "";
     }
   };
   const onUp = (e: PointerEvent) => {
     if (!drag || e.pointerId !== drag.id) return;
     const c = cards[drag.i];
     const centre = c.pts[4];
-    if (drag.moved < 6 && performance.now() - drag.t0 < 300) {
+    if (drag.k === 4 && drag.moved < 6 && performance.now() - drag.t0 < 300) {
       // a tap: flick the card so it swings and turns
       const dir = Math.random() < 0.5 ? -1 : 1;
       centre.px = centre.x - dir * 7;
@@ -610,6 +629,8 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
     wake();
   };
   wall.addEventListener("pointercancel", onCancel);
+  const noDrag = (e: DragEvent) => e.preventDefault();
+  wall.addEventListener("dragstart", noDrag);
 
   const ro = new ResizeObserver(() => {
     build();
@@ -652,6 +673,7 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
     wall.removeEventListener("pointermove", onMove);
     wall.removeEventListener("pointerup", onUp);
     wall.removeEventListener("pointercancel", onCancel);
+    wall.removeEventListener("dragstart", noDrag);
     wall.classList.remove("is-3d");
     scene.traverse((o) => {
       if (o instanceof THREE.Mesh) {
