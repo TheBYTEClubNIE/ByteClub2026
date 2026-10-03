@@ -1,8 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { Hammer, Lightbulb, Sprout, Users, type LucideIcon } from "lucide-react";
 import {
+  EVENTS,
   type ClubEvent,
   boardDate,
   boardTime,
@@ -188,38 +189,75 @@ function Receipt({ now, serial }: { now: number; serial: number }) {
   );
 }
 
-// One past event on its own slip: what it was, a photo, and a way to see more.
-function EventSlip({ e }: { e: ClubEvent }) {
-  const n = e.photos?.length ?? 0;
+/* ───────── what we run, how to get in ───────── */
+
+// The kinds of events the club runs, each pointing at the last one it held
+// (its photos are in the changelog).
+const FORMATS: { name: string; blurb: string; icon: LucideIcon; example: string }[] = [
+  { name: "Ideathons", blurb: "Pitch a bold idea as a team, then take the panel's questions.", icon: Lightbulb, example: "BBI" },
+  { name: "Beginner sessions", blurb: "From the basics of tech to building something real. No experience needed.", icon: Sprout, example: "B2B" },
+  { name: "Build sessions", blurb: "A time limit, one real problem, and the tools to solve it.", icon: Hammer, example: "BTL" },
+  { name: "Meetups", blurb: "The whole community in one room, members old and new.", icon: Users, example: "ASM" },
+];
+
+const STEPS = [
+  { title: "It's announced", text: `New events are posted ${JOIN_LINK.where} first.` },
+  { title: "You register", text: "Sign up with the form linked in the post, or on the receipt here." },
+  { title: "You show up", text: "Open to all years, and no experience needed." },
+  { title: "We post the photos", text: "Every event ends up in the changelog below." },
+];
+
+function WhatWeRun() {
   return (
-    <li className="slip">
-      <article className="receipt receipt--slip">
-        <p className="r-row">
-          <span className="r-code">{e.code}</span>
-          <span>{e.start ? `${boardDate(e.start)} ${boardYear(e.start)}` : "Shipped"}</span>
-        </p>
-        <h4 className="r-ev-name">{e.name}</h4>
-        {e.photos?.[0] && (
-          <span className="r-photo">
-            <Image
-              src={e.photos[0].src}
-              alt={`${e.name}: ${e.photos[0].caption}`}
-              fill
-              sizes="(min-width: 1100px) 280px, (min-width: 680px) 46vw, 92vw"
-              quality={90}
-              className="object-cover"
-            />
-          </span>
-        )}
-        <p className="r-ev-sum">{e.summary}</p>
-        {n > 0 && (
-          <a className="r-more" href={`#past-${slugOf(e)}`}>
-            View {n} photos →
-          </a>
-        )}
-        <Barcode text={e.name.toUpperCase()} />
-      </article>
-    </li>
+    <div>
+      <h3 className="ev-h3">What we run</h3>
+      <ul className="ev-formats">
+        {FORMATS.map((f) => {
+          const last = EVENTS.find((e) => e.code === f.example);
+          const Icon = f.icon;
+          return (
+            <li key={f.name} className="ev-format">
+              <span className="ev-icon">
+                <Icon size={18} aria-hidden />
+              </span>
+              <div>
+                <p className="ev-format-name">{f.name}</p>
+                <p className="ev-format-blurb">{f.blurb}</p>
+                {last && (
+                  <a className="ev-format-link" href={`#past-${slugOf(last)}`}>
+                    Last one: {last.name} ↓
+                  </a>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function HowToGetIn() {
+  return (
+    <div>
+      <h3 className="ev-h3">How to get in</h3>
+      <ol className="ev-steps">
+        {STEPS.map((step, i) => (
+          <li key={step.title} className="ev-step">
+            <span className="ev-step-n" aria-hidden>
+              {i + 1}
+            </span>
+            <div>
+              <p className="ev-step-title">{step.title}</p>
+              <p className="ev-step-text">{step.text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <a className="btn btn-accent ev-cta" href={JOIN_LINK.href} target="_blank" rel="noopener noreferrer">
+        {JOIN_LINK.label}
+      </a>
+    </div>
   );
 }
 
@@ -236,9 +274,7 @@ type Printer = (typeof PRINTERS)[number]["id"];
 // "Reprint" tears the paper off and prints a fresh copy.
 export default function EventsBoard({ builtAt }: { builtAt: number }) {
   const now = useNow(builtAt);
-  const { upcoming, past } = splitEvents(now);
-  const live = upcoming.length > 0;
-  const photos = past.reduce((n, e) => n + (e.photos?.length ?? 0), 0);
+  const live = splitEvents(now).upcoming.length > 0;
   const stage = useRef<HTMLDivElement>(null);
   const [serial, setSerial] = useState(1);
   const [torn, setTorn] = useState(false);
@@ -291,22 +327,16 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
     <section id="events" className="section">
       <style>{RECEIPT_CSS}</style>
       <div className="ev-grid">
-        <div className="ev-copy">
-          <header className="section-head" style={{ marginBottom: 0 }}>
-            <h2 className="section-title">Events</h2>
-            <p className="section-lede">
-              Hands-on sessions, ideathons and build nights, open to all years.
-              Here&apos;s what&apos;s next, and what we&apos;ve already run.
-            </p>
-          </header>
-          <div className="ev-actions">
-            <a className="btn btn-accent" href={JOIN_LINK.href} target="_blank" rel="noopener noreferrer">
-              {JOIN_LINK.label}
-            </a>
-            <a className="btn btn-ghost" href="#past">
-              See past events
-            </a>
-          </div>
+        <header className="section-head ev-head" style={{ marginBottom: 0 }}>
+          <h2 className="section-title">Events</h2>
+          <p className="section-lede">
+            Hands-on sessions, ideathons and build nights, open to all years.
+            Here&apos;s what&apos;s next, what we run, and how to get in.
+          </p>
+        </header>
+        <div className="ev-body">
+          <WhatWeRun />
+          <HowToGetIn />
         </div>
 
         <div ref={stage} className="stage" data-printer={printer}>
@@ -349,33 +379,36 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
           </div>
         </div>
       </div>
-
-      {past.length > 0 && (
-        <div className="ev-shipped" data-printer={printer}>
-          <div className="ev-shipped-head">
-            <h3>Shipped</h3>
-            <span>
-              {past.length} events · {photos} photos
-            </span>
-          </div>
-          <ul className="ev-slips">
-            {past.map((e) => (
-              <EventSlip key={e.code + (e.start ?? "")} e={e} />
-            ))}
-          </ul>
-        </div>
-      )}
     </section>
   );
 }
 
 const RECEIPT_CSS = `
-.ev-grid { display: grid; gap: 40px; }
-.ev-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+/* phones: intro, the printout, then the details. desktop: printout on the right */
+.ev-grid { display: grid; gap: 44px; grid-template-areas: "head" "stage" "body"; }
+.ev-head { grid-area: head; }
+.stage { grid-area: stage; }
+.ev-body { grid-area: body; display: grid; gap: 44px; }
 @media (min-width: 960px) {
-  .ev-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 31rem); gap: 72px; align-items: start; }
-  .ev-copy { position: sticky; top: 120px; }
+  .ev-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 31rem); grid-template-areas: "head stage" "body stage"; grid-template-rows: auto 1fr; gap: 40px 72px; align-items: start; }
 }
+
+.ev-h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.25rem; letter-spacing: -0.01em; color: var(--ink); }
+.ev-formats { margin-top: 12px; }
+.ev-format { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; padding: 16px 0; border-top: 1px solid var(--line); }
+.ev-format:last-child { border-bottom: 1px solid var(--line); }
+.ev-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.ev-format-name { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; color: var(--ink); }
+.ev-format-blurb { margin-top: 2px; max-width: 52ch; font-size: 15px; line-height: 1.55; color: var(--ink-muted); }
+.ev-format-link { display: inline-block; margin-top: 6px; font-size: 14px; font-weight: 500; color: var(--accent); transition: color 0.2s ease; }
+.ev-format-link:hover { color: var(--accent-strong); }
+.ev-steps { display: grid; gap: 16px; margin-top: 16px; }
+.ev-step { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; }
+.ev-step-n { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line-strong); font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+.ev-step-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+.ev-step-text { margin-top: 2px; font-size: 14.5px; line-height: 1.5; color: var(--ink-muted); }
+.ev-cta { margin-top: 24px; }
+@media (min-width: 640px) { .ev-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 28px; } }
 
 /* the printer */
 .stage { --r-paper: #f5f2ea; --r-ink: #16181a; position: relative; width: min(100%, 31rem); margin-inline: auto; }
@@ -454,26 +487,11 @@ const RECEIPT_CSS = `
 .r-cal { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 12px; }
 .r-cal a { text-decoration: underline; text-underline-offset: 3px; }
 
-.r-ev-name { margin-top: 2px; font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; line-height: 1.2; letter-spacing: -0.01em; }
-.r-ev-sum { margin-top: 10px; font-family: var(--font-body); font-size: 14.5px; line-height: 1.6; color: #3a4046; }
 .r-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; font-variant-numeric: tabular-nums; color: #4a5056; }
 .r-code { font-weight: 700; }
-.r-photo { position: relative; display: block; width: 100%; aspect-ratio: 16 / 10; margin-top: 12px; overflow: hidden; border-radius: 4px; background: #e4e0d6; box-shadow: 0 0 0 1px rgba(22, 24, 26, 0.12); }
 .r-more { display: inline-block; margin-top: 10px; font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 .r-more:hover { text-decoration-thickness: 2px; }
 
-/* shipped: every event on its own slip */
-.ev-shipped { margin-top: 72px; }
-.ev-shipped-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 22px; }
-.ev-shipped-head h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.4rem; letter-spacing: -0.01em; color: var(--ink); }
-.ev-shipped-head span { font-family: var(--font-mono); font-size: 13px; color: var(--ink-muted); }
-.ev-slips { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px 20px; align-items: start; }
-.slip { position: relative; --r-paper: #f5f2ea; --r-ink: #16181a; }
-.slip::before { content: ""; position: absolute; inset: 12px 8px 4px; box-shadow: 0 26px 40px -22px rgba(0, 0, 0, 0.9); pointer-events: none; }
-.receipt--slip { padding: 20px 20px 32px; }
-.receipt--slip .r-barcode { height: 30px; margin: 18px 0 0; }
-@media (min-width: 680px) { .ev-slips { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1100px) { .ev-slips { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .r-foot { text-align: center; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
 .r-barcode { display: block; width: 100%; height: 46px; margin-bottom: 12px; fill: var(--r-ink); }
 
@@ -488,7 +506,7 @@ const RECEIPT_CSS = `
 [data-printer="matrix"] .receipt::after { right: 24px; }
 [data-printer="matrix"] .receipt hr { border-top-style: dotted; }
 [data-printer="matrix"] .r-brand { font-family: var(--font-mono); font-size: 1.3rem !important; letter-spacing: 0.14em !important; text-transform: uppercase !important; }
-[data-printer="matrix"] :is(.r-big, .r-ev-name) { font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 0.04em; text-transform: uppercase; }
+[data-printer="matrix"] .r-big { font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 0.04em; text-transform: uppercase; }
 [data-printer="matrix"] :is(.r-doc, .r-tag) { background: none; color: var(--r-ink); box-shadow: inset 0 0 0 1.5px var(--r-ink); }
 [data-printer="matrix"] .r-btn { background: none; color: var(--r-ink); box-shadow: inset 0 0 0 2px var(--r-ink); }
 [data-printer="matrix"] .r-btn:hover { background: var(--r-ink); color: var(--r-paper); }
