@@ -29,8 +29,7 @@ const creativeMembers: Member[] = [
     { id: 1, name: "Shreshth bhagel", role: "UI Designer", insta: "https://www.instagram.com/baghel.harsh1", linkedin: "https://www.linkedin.com/in/shreshthbaghel", github: "https://github.com/Shreshthbaghel", image: "/Core/Creativity/shresth.jpg.jpeg", frame: { position: "45% 25%", origin: "45% 25%", zoom: 1.8 } },
     { id: 2, name: "Chythra Shyamanandan", role: "Content Creator", insta: "https://www.instagram.com/tidesofcharlie._", linkedin: "https://www.linkedin.com/in/chythra-shyamnandan-780059312", github: "https://github.com/Chythrasn0407", image: "/Core/Creativity/chythra.jpg.jpeg", frame: { position: "66% 25%", origin: "66% 25%", zoom: 1.3 } },
     { id: 3, name: "Nakul R", role: "Content Creator", insta: "insta_id", linkedin: "linkedin_id", github: "github_id", image: "/Core/Creativity/Nakul.jpeg", frame: { position: "51% 27%", origin: "51% 27%", zoom: 1.8 } },
-    // no photo yet (initials show). Photo goes in /public/Core/Creativity/
-    { id: 6, name: "Rahul Panchal", role: "Core Member", insta: "https://www.instagram.com/rahulpanchal.404", linkedin: "https://www.linkedin.com/in/rahul-panchal-6a543b319", github: "https://github.com/RahulPanchal-404", image: "" },
+    { id: 6, name: "Rahul Panchal", role: "Core Member", insta: "https://www.instagram.com/rahulpanchal.404", linkedin: "https://www.linkedin.com/in/rahul-panchal-6a543b319", github: "https://github.com/RahulPanchal-404", image: "/Core/Creativity/rahul.jpg", frame: { position: "50% 21%", origin: "50% 50%", zoom: 1.2 } },
 ];
 
 const teamData: Record<string, Member[]> = {
