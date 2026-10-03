@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { ClipboardList, Code2, Handshake, PenTool, Sparkles, type LucideIcon } from "lucide-react";
 import { DOMAINS, LEADS, type Domain, type Lead, isProfileUrl, photoStyle, zoomedSizes } from "@/content/team";
-import Art from "./DomainArt";
 import { Holo } from "./effects";
 import { GithubIcon, InstagramIcon, LinkedInIcon } from "./DisplayCore";
 
@@ -17,27 +16,77 @@ const ICON: Record<Domain, LucideIcon> = {
 };
 const TOTAL = DOMAINS.length;
 const colorOf = (id: Domain) => DOMAINS.find((d) => d.id === id)!.color;
-
 const labelOf = (id: Domain) => DOMAINS.find((d) => d.id === id)!.label;
+
+const [HEAD, ...REST] = LEADS;
+const OWNERS = REST.map((l) => l.arsenal[0]);
+// One lane per domain, leaving the club lead's photo and ending at the last
+// lead of that domain. The lane that ends first sits nearest the content,
+// so no line ever crosses another.
+const LANES = [...new Set(OWNERS)].sort((a, b) => OWNERS.lastIndexOf(b) - OWNERS.lastIndexOf(a));
+
+type Pt = { x: number; y: number };
+interface Bus {
+  w: number;
+  h: number;
+  lanes: { d: Domain; x: number; top: number; bottom: number; path: string }[];
+  branches: { d: Domain; path: string }[];
+  pins: Pt[];
+  gap: number;
+}
+
+// Lane geometry comes from where the photos actually sit, so the lines
+// follow the layout at every breakpoint. Spacing is set in CSS.
+function layoutBus(el: HTMLElement): Bus {
+  const box = el.getBoundingClientRect();
+  const css = getComputedStyle(el);
+  const gap = parseFloat(css.getPropertyValue("--lane-gap"));
+  const x0 = parseFloat(css.getPropertyValue("--lane-x0"));
+  const pins = [...el.querySelectorAll<HTMLElement>("[data-pin]")].map((p) => {
+    const r = p.getBoundingClientRect();
+    return { x: r.left - box.left, y: r.top - box.top + r.height / 2 };
+  });
+  const [src, ...ends] = pins;
+  const n = LANES.length;
+  const R = (n - 1) * gap + 4; // concentric corners as the lines leave the club lead
+
+  const lanes = LANES.map((d, k) => {
+    const x = x0 + k * gap;
+    const r = R - k * gap;
+    const y = src.y + (k - (n - 1) / 2) * gap;
+    const end = ends[OWNERS.lastIndexOf(d)];
+    const t = Math.min(10, end.x - x);
+    return {
+      d,
+      x,
+      top: y + r,
+      bottom: end.y - t,
+      path: `M${src.x} ${y}H${x + r}A${r} ${r} 0 0 0 ${x} ${y + r}V${end.y - t}A${t} ${t} 0 0 0 ${x + t} ${end.y}H${end.x}`,
+    };
+  });
+  const branches = REST.flatMap((l, i) => {
+    const d = l.arsenal[0];
+    if (OWNERS.lastIndexOf(d) === i) return [];
+    const x = lanes.find((ln) => ln.d === d)!.x;
+    const p = ends[i];
+    const t = Math.min(10, p.x - x);
+    return [{ d, path: `M${x} ${p.y - t}A${t} ${t} 0 0 0 ${x + t} ${p.y}H${p.x}` }];
+  });
+  return { w: Math.max(...pins.map((p) => p.x)) + 4, h: box.height, lanes, branches, pins, gap };
+}
 
 /* ───────── pieces ───────── */
 
-function SkillSet({ lead, large = false }: { lead: Lead; large?: boolean }) {
+function SkillSet({ lead }: { lead: Lead }) {
   return (
-    <ul className={large ? "skills skills--lg" : "skills"} aria-label="Skill set">
+    <ul className="skills" aria-label="Skill set">
       {DOMAINS.map((d, i) => {
         const Icon = ICON[d.id];
         const on = lead.arsenal.includes(d.id);
         return (
-          <li
-            key={d.id}
-            className={`skill ${on ? "is-on" : ""}`}
-            style={{ ["--c" as string]: d.color, ["--i" as string]: i }}
-          >
-            <span className="skill-icon">
-              <Icon size={large ? 22 : 14} aria-hidden />
-            </span>
-            <span className="skill-label">
+          <li key={d.id} className={`skill ${on ? "is-on" : ""}`} style={{ ["--c" as string]: d.color, ["--i" as string]: i }}>
+            <Icon size={22} aria-hidden />
+            <span>
               {d.label}
               {!on && <span className="sr-only"> (not covered)</span>}
             </span>
@@ -56,7 +105,7 @@ function Socials({ lead }: { lead: Lead }) {
   ].filter((l) => isProfileUrl(l.href));
   if (!links.length) return null;
   return (
-    <div className="lead-links">
+    <div className="crew-links">
       {links.map((l) => (
         <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" aria-label={`${lead.name} on ${l.label}`}>
           {l.icon}
@@ -66,188 +115,291 @@ function Socials({ lead }: { lead: Lead }) {
   );
 }
 
+function Shot({ lead, sizes, head = false }: { lead: Lead; sizes: string; head?: boolean }) {
+  return (
+    <div className={`crew-shot ${head ? "crew-shot--head" : ""}`} data-pin>
+      <Holo>
+        <div className="crew-photo" data-holo-card>
+          <Image
+            src={lead.image}
+            alt={lead.name}
+            fill
+            sizes={zoomedSizes(sizes, lead.frame?.zoom)}
+            quality={90}
+            className="object-cover"
+            style={photoStyle(lead.frame)}
+          />
+        </div>
+      </Holo>
+    </div>
+  );
+}
+
 /* ───────── section ───────── */
 
-// Every lead on screen at once; each card shows the domains that lead covers.
+// The club lead's five domains leave their photo as a bus of coloured lines
+// that runs down the section; each lead is plugged into their own colour.
+// The bus draws itself with the scroll, and each lead powers up as the
+// signal reaches them. Everything is readable without any of it.
 export default function LeadsRoster() {
-  const [head, ...rest] = LEADS;
   const ref = useRef<HTMLDivElement>(null);
-  // null on the server (skills simply show lit); false = waiting offscreen; true = light up
-  const [seen, setSeen] = useState<boolean | null>(null);
+  const heads = useRef<(SVGGElement | null)[]>([]);
+  const [bus, setBus] = useState<Bus | null>(null);
+  const [hot, setHot] = useState<Domain | null>(null);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    setSeen(false);
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setSeen(true);
-          io.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-    io.observe(ref.current!);
-    return () => io.disconnect();
+    const el = ref.current!;
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const rows = [...el.querySelectorAll<HTMLElement>("[data-row]")];
+    let current: Bus | null = null;
+    let raf = 0;
+
+    const tick = () => {
+      raf = 0;
+      const box = el.getBoundingClientRect();
+      el.classList.toggle("is-on", box.bottom > 0 && box.top < innerHeight);
+      if (calm || !current) return;
+      // the signal front rides a little below the middle of the screen
+      const y = Math.min(Math.max(innerHeight * 0.72 - box.top, 0), box.height);
+      el.style.setProperty("--head", `${y}px`);
+      current.lanes.forEach((ln, k) => {
+        const g = heads.current[k];
+        if (!g) return;
+        const on = y > ln.top && y < ln.bottom;
+        g.style.opacity = on ? "1" : "0";
+        if (on) g.setAttribute("transform", `translate(${ln.x} ${y})`);
+      });
+      current.pins.forEach((p, i) => {
+        if (y >= p.y - 8) rows[i]?.classList.add("is-live");
+      });
+    };
+    const queue = () => {
+      if (!raf) raf = requestAnimationFrame(tick);
+    };
+    const measure = () => {
+      current = layoutBus(el);
+      setBus(current);
+      queue();
+    };
+
+    if (!calm) el.classList.add("is-armed");
+    current = layoutBus(el);
+    setBus(current);
+    tick(); // same task as arming, so rows already on screen never flash
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    addEventListener("scroll", queue, { passive: true });
+    addEventListener("resize", queue);
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(raf);
+      removeEventListener("scroll", queue);
+      removeEventListener("resize", queue);
+    };
   }, []);
 
-  const all = head.arsenal.length === TOTAL;
+  const dim = (d: Domain) => (hot && hot !== d ? "is-dim" : "");
+  const hover = (d: Domain | null) => (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setHot(d);
+  };
 
   return (
-    <div ref={ref} className={`leads ${seen === false ? "is-waiting" : ""} ${seen ? "is-seen" : ""}`}>
-      <style>{LEADS_CSS}</style>
+    <div ref={ref} className="crew">
+      <style>{CREW_CSS}</style>
 
-      <article className="lead-hero">
-        <Art domain="all" />
-        <Holo className="lead-hero-photo-wrap">
-          <div className="lead-photo" data-holo-card>
-            <Image
-              src={head.image}
-              alt={head.name}
-              fill
-              sizes={zoomedSizes("(min-width: 1024px) 320px, (min-width: 768px) 272px, 7.5rem", head.frame?.zoom)}
-              quality={90}
-              className="object-cover"
-              style={photoStyle(head.frame)}
-            />
-          </div>
-        </Holo>
-        <div className="lead-hero-top">
-          <p className="lead-role">{head.role}</p>
-          <h3 className="lead-name lead-name--hero">{head.name}</h3>
-          <p className="lead-area">{head.area}</p>
-        </div>
-        <div className="lead-hero-body">
-          <div className="skills-head">
-            <span className="skills-title">Skill set</span>
-            <span className="skills-count">{all ? "Covers every domain" : `${head.arsenal.length} of ${TOTAL} domains`}</span>
-          </div>
-          <SkillSet lead={head} large />
-          <div className="perks">
-            {head.skills.map((s) => (
-              <span key={s} className="perk">
-                {s}
-              </span>
+      {bus && (
+        <>
+          <svg className="bus bus-draw" width={bus.w} height={bus.h} aria-hidden>
+            {[...bus.lanes, ...bus.branches].map((ln, i) => (
+              <g key={i} className={dim(ln.d)} style={{ ["--lc" as string]: colorOf(ln.d) }}>
+                <path className="bus-line" d={ln.path} />
+                <path className="bus-flow" d={ln.path} style={{ animationDelay: `${-i * 0.41}s` }} />
+              </g>
             ))}
+            {bus.pins.slice(1).map((p, i) => (
+              <circle key={i} className={`bus-pin ${dim(REST[i].arsenal[0])}`} cx={p.x - 1} cy={p.y} r="3.5" fill={colorOf(REST[i].arsenal[0])} />
+            ))}
+            <rect
+              className="bus-plug"
+              x={bus.pins[0].x - 5}
+              y={bus.pins[0].y - ((LANES.length - 1) * bus.gap) / 2 - 4}
+              width="6"
+              height={(LANES.length - 1) * bus.gap + 8}
+              rx="2"
+            />
+          </svg>
+          <svg className="bus" width={bus.w} height={bus.h} aria-hidden>
+            {bus.lanes.map((ln, k) => (
+              <g key={ln.d} ref={(g) => void (heads.current[k] = g)} className="bus-head" style={{ opacity: 0 }}>
+                <circle r="9" fill={colorOf(ln.d)} opacity="0.22" />
+                <circle r="2.6" fill="#fff" />
+              </g>
+            ))}
+          </svg>
+        </>
+      )}
+
+      <article data-row className="crew-head" onPointerEnter={hover(null)}>
+        <Shot lead={HEAD} head sizes="(min-width: 1024px) 304px, (min-width: 768px) 240px, 8.5rem" />
+        <div className="crew-id">
+          <p className="crew-role crew-fade">{HEAD.role}</p>
+          <h3 className="crew-name crew-name--head">
+            <span>{HEAD.name}</span>
+          </h3>
+          <p className="crew-area crew-fade">{HEAD.area}</p>
+        </div>
+        <div className="crew-body crew-fade">
+          <div className="crew-skillhead">
+            <span className="crew-label">Skill set</span>
+            <span className="crew-count">
+              {HEAD.arsenal.length === TOTAL ? "Covers every domain" : `${HEAD.arsenal.length} of ${TOTAL} domains`}
+            </span>
           </div>
-          <p className="lead-bio">{head.description}</p>
-          <Socials lead={head} />
+          <SkillSet lead={HEAD} />
+          <ul className="crew-chips">
+            {HEAD.skills.map((s) => (
+              <li key={s} className="crew-chip">
+                {s}
+              </li>
+            ))}
+          </ul>
+          <p className="crew-bio">{HEAD.description}</p>
+          <Socials lead={HEAD} />
         </div>
       </article>
 
-      <ul className="lead-grid">
-        {rest.map((lead) => (
-          <li key={lead.id} className="lead-card" style={{ ["--c" as string]: colorOf(lead.arsenal[0]) }}>
-            <Art domain={lead.arsenal[0]} />
-            <Holo className="lead-card-photo-wrap">
-              <div className="lead-photo" data-holo-card>
-                <Image
-                  src={lead.image}
-                  alt={lead.name}
-                  fill
-                  sizes={zoomedSizes("(min-width: 1024px) 200px, (min-width: 768px) 136px, 104px", lead.frame?.zoom)}
-                  quality={90}
-                  className="object-cover"
-                  style={photoStyle(lead.frame)}
-                />
+      <ul className="crew-list">
+        {REST.map((lead) => {
+          const d = lead.arsenal[0];
+          const Icon = ICON[d];
+          return (
+            <li
+              key={lead.id}
+              data-row
+              className="crew-row"
+              style={{ ["--c" as string]: colorOf(d) }}
+              onPointerEnter={hover(d)}
+              onPointerLeave={hover(null)}
+            >
+              <Shot lead={lead} sizes="(min-width: 1024px) 176px, (min-width: 768px) 144px, 6.75rem" />
+              <div className="crew-id">
+                <p className="crew-role crew-fade">{lead.role}</p>
+                <h3 className="crew-name">
+                  <span>{lead.name}</span>
+                </h3>
+                <p className="crew-area crew-fade">{lead.area}</p>
               </div>
-            </Holo>
-            <div className="lead-card-info">
-              <p className="lead-role">{lead.role}</p>
-              <h3 className="lead-name">{lead.name}</h3>
-              <p className="lead-area">{lead.area}</p>
-            </div>
-            <div className="lead-card-body">
-              <p className="skills-title skills-title--sm">
-                Skill set <span>· {lead.arsenal.map(labelOf).join(", ")}</span>
-              </p>
-              <SkillSet lead={lead} />
-              <p className="lead-bio">{lead.description}</p>
-              <Socials lead={lead} />
-            </div>
-          </li>
-        ))}
+              <div className="crew-body crew-fade">
+                <p className="crew-label">Skill set</p>
+                <ul className="crew-chips">
+                  <li className="crew-chip is-domain">
+                    <Icon size={14} aria-hidden />
+                    {labelOf(d)}
+                  </li>
+                  {lead.skills.filter((s) => s.toLowerCase() !== labelOf(d).toLowerCase()).map((s) => (
+                    <li key={s} className="crew-chip">
+                      {s}
+                    </li>
+                  ))}
+                </ul>
+                <p className="crew-bio">{lead.description}</p>
+                <Socials lead={lead} />
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
 }
 
-const LEADS_CSS = `
-.lead-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 12px; background: #07090b; }
-.lead-role { display: inline-block; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c, var(--accent)) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c, var(--accent)) 45%, transparent); font-family: var(--font-mono); font-size: 12px; color: var(--c, var(--accent-strong)); }
-.lead-name { margin-top: 8px; font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; line-height: 1.15; letter-spacing: -0.015em; color: var(--ink); }
-.lead-area { margin-top: 4px; font-size: 14px; color: var(--ink-muted); }
-.lead-bio { position: relative; margin-top: 14px; font-size: 15px; line-height: 1.65; color: rgba(243,245,247,0.86); }
-.lead-links { display: flex; gap: 4px; margin-top: 12px; margin-left: -6px; }
-.lead-links a { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; color: var(--ink-muted); transition: color 0.2s ease, background-color 0.2s ease; }
-.lead-links a:hover { color: var(--c, var(--accent)); background: rgba(255,255,255,0.05); }
+const CREW_CSS = `
+.crew { --gutter: 36px; --lane-gap: 5; --lane-x0: 4; --c: var(--accent); position: relative; padding-left: var(--gutter); }
 
-/* background art: faint, in the card's domain colour, fading toward the text */
-.lead-art { position: absolute; z-index: 0; right: -20px; bottom: -16px; width: 280px; height: auto; color: var(--c); opacity: 0.24; pointer-events: none; -webkit-mask-image: linear-gradient(135deg, transparent 10%, #000 60%); mask-image: linear-gradient(135deg, transparent 10%, #000 60%); transition: opacity 0.4s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-.lead-card:hover .lead-art { opacity: 0.36; transform: translate(-6px, -6px); }
-.lead-art--all { top: -80px; right: -80px; bottom: auto; width: 440px; opacity: 0.6; -webkit-mask-image: radial-gradient(circle at 70% 30%, #000 30%, transparent 70%); mask-image: radial-gradient(circle at 70% 30%, #000 30%, transparent 70%); animation: orbit 60s linear infinite; }
-@keyframes orbit { to { transform: rotate(360deg); } }
-.lead-hero > :not(.lead-art), .lead-card > :not(.lead-art) { position: relative; z-index: 1; }
+/* the bus */
+.bus { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.bus-draw { clip-path: inset(-40px -80px calc(100% - var(--head, 100%)) -80px); }
+.bus g { transition: opacity 0.3s ease; }
+.bus g.is-dim, .bus-pin.is-dim { opacity: 0.15; }
+.bus-line { fill: none; stroke: var(--lc); stroke-width: 2; stroke-linecap: round; opacity: 0.6; }
+.bus-flow { fill: none; stroke: color-mix(in srgb, var(--lc) 45%, #fff); stroke-width: 2.6; stroke-linecap: round; stroke-dasharray: 0.1 120; animation: bus-flow 2.6s linear infinite; animation-play-state: paused; }
+.crew.is-on .bus-flow { animation-play-state: running; }
+@keyframes bus-flow { to { stroke-dashoffset: -120; } }
+.bus-pin { transition: opacity 0.3s ease; }
+.bus-plug { fill: var(--bg-elevated); stroke: var(--line-strong); }
+.bus-head { transition: opacity 0.25s ease; }
 
-/* skill set: every domain listed, the covered ones lit in their colour */
-.skills-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 22px; }
-.skills-title { font-family: var(--font-display); font-weight: 600; font-size: 1rem; color: var(--ink); }
-.skills-title span { font-family: var(--font-body); font-weight: 500; font-size: 14px; color: var(--c); }
-.skills-title--sm { margin-top: 16px; font-size: 0.95rem; }
-.skills-count { font-family: var(--font-mono); font-size: 13px; color: var(--accent-strong); }
+/* a lead */
+.crew-head, .crew-row { position: relative; display: grid; gap: 6px 16px; grid-template-areas: "shot id" "body body"; }
+.crew-head { grid-template-columns: 8.5rem minmax(0, 1fr); }
+.crew-row { grid-template-columns: 6.75rem minmax(0, 1fr); }
+.crew-shot { grid-area: shot; position: relative; }
+.crew-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 14px; background: #07090b; outline: 1px solid color-mix(in srgb, var(--c) 40%, transparent); outline-offset: -1px; }
+.crew-head .crew-photo { outline-color: var(--line-strong); }
+.crew-id { grid-area: id; align-self: end; min-width: 0; }
+.crew-role { display: inline-block; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); font-family: var(--font-mono); font-size: 12px; color: var(--c); }
+.crew-head .crew-role { color: var(--accent-strong); }
+.crew-name { margin-top: 10px; overflow: hidden; padding-bottom: 0.06em; font-family: var(--font-display); font-weight: 600; font-size: clamp(1.55rem, 3.2vw, 2rem); line-height: 1.08; letter-spacing: -0.02em; color: var(--ink); text-wrap: balance; }
+.crew-name > span { display: block; }
+.crew-name--head { font-size: clamp(2rem, 6vw, 4.25rem); font-weight: 700; line-height: 1; letter-spacing: -0.035em; }
+.crew-area { margin-top: 6px; font-size: 14px; color: var(--ink-muted); }
+.crew-body { grid-area: body; min-width: 0; margin-top: 16px; }
+.crew-label { font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; color: var(--ink); }
+.crew-skillhead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.crew-count { font-family: var(--font-mono); font-size: 13px; color: var(--accent-strong); }
+.crew-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.crew-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(7, 9, 11, 0.4); font-size: 13px; color: var(--ink); }
+.crew-chip.is-domain { padding-left: 8px; border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.crew-chip.is-domain svg { color: var(--c); }
+.crew-bio { margin-top: 14px; max-width: 62ch; font-size: 15px; line-height: 1.65; color: rgba(243, 245, 247, 0.86); }
+.crew-links { display: flex; gap: 4px; margin-top: 10px; margin-left: -6px; }
+.crew-links a { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; color: var(--ink-muted); transition: color 0.2s ease, background-color 0.2s ease; }
+.crew-links a:hover { color: var(--c); background: rgba(255, 255, 255, 0.05); }
+.crew-list { display: grid; gap: 56px; margin-top: 64px; }
+
+/* the club lead's five domains, lit in their colours */
 .skills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.skill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 7px; border-radius: 999px; border: 1px dashed var(--line-strong); font-size: 12.5px; color: var(--ink-faint); }
-.skill-icon { display: grid; place-items: center; }
-.skill.is-on { border: 1px solid var(--c); color: var(--ink); background: color-mix(in srgb, var(--c) 16%, transparent); box-shadow: 0 0 14px -4px color-mix(in srgb, var(--c) 70%, transparent); }
-.skill.is-on .skill-icon { color: var(--c); }
-.leads.is-waiting .skill.is-on { opacity: 0.3; transform: scale(0.85); box-shadow: none; }
-.leads.is-seen .skill.is-on { animation: skill-on 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i) * 110ms + 150ms); }
-@keyframes skill-on { from { opacity: 0.3; transform: scale(0.85); box-shadow: none; } to { opacity: 1; transform: none; } }
+.skill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px 6px 8px; border-radius: 999px; border: 1px dashed var(--line-strong); font-size: 13px; color: var(--ink-faint); }
+.skill svg { width: 16px; height: 16px; }
+.skill.is-on { border: 1px solid var(--c); color: var(--ink); background: color-mix(in srgb, var(--c) 16%, transparent); }
+.skill.is-on svg { color: var(--c); }
+.crew-head .crew-chips { margin-top: 14px; }
 
-.skills--lg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.skills--lg .skill { flex-direction: column; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 14px; font-size: 12.5px; text-align: center; }
-
-/* club lead */
-.lead-hero { position: relative; overflow: hidden; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); grid-template-areas: "photo top" "body body"; gap: 4px 16px; padding: 16px; border-radius: 20px; border: 1px solid var(--line-strong);
-  background:
-    radial-gradient(60% 50% at 100% 0%, rgba(40,194,255,0.14), transparent 70%),
-    radial-gradient(40% 40% at 0% 100%, rgba(198,166,255,0.12), transparent 70%),
-    radial-gradient(40% 40% at 60% 110%, rgba(255,191,127,0.10), transparent 70%),
-    radial-gradient(30% 30% at 100% 70%, rgba(126,224,181,0.08), transparent 70%),
-    var(--bg-elevated); }
-.lead-hero-photo-wrap { grid-area: photo; perspective: 900px; }
-.lead-hero-top { grid-area: top; align-self: end; }
-.lead-hero-body { grid-area: body; }
-.lead-name--hero { font-size: clamp(1.5rem, 5vw, 2.8rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
-.perks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-.perk { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: rgba(7,9,11,0.4); font-size: 13px; color: var(--ink); }
-.lead-hero .lead-bio { max-width: 62ch; }
-
-/* the other leads */
-.lead-grid { display: grid; gap: 12px; margin-top: 12px; }
-.lead-card { position: relative; overflow: hidden; display: grid; grid-template-columns: 104px minmax(0, 1fr); grid-template-areas: "photo info" "body body"; gap: 4px 16px; padding: 14px; border-radius: 18px; border: 1px solid var(--line);
-  background: radial-gradient(90% 70% at 100% 100%, color-mix(in srgb, var(--c) 12%, transparent), transparent 70%), var(--bg-elevated);
-  transition: border-color 0.25s ease; }
-.lead-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--c); }
-.lead-card:hover { border-color: color-mix(in srgb, var(--c) 45%, transparent); }
-.lead-card-photo-wrap { grid-area: photo; perspective: 700px; }
-.lead-card-info { grid-area: info; align-self: end; }
-.lead-card-body { grid-area: body; }
+/* power-up: only once the script has armed the section, so it reads fine without */
+.crew-shot::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: 14px; background: var(--c); clip-path: inset(0 0 0 100%); pointer-events: none; }
+.crew-shot--head::after { background: linear-gradient(100deg, #ff9db0, #c6a6ff 30%, #ffbf7f 55%, #7ee0b5 78%, #28c2ff); }
+.crew-name > span { transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.3s; }
+.crew-fade { transition: opacity 0.6s ease 0.45s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.45s; }
+.crew.is-armed [data-row]:not(.is-live) .crew-photo { opacity: 0; }
+.crew.is-armed [data-row]:not(.is-live) .crew-name > span { transform: translateY(110%); }
+.crew.is-armed [data-row]:not(.is-live) .crew-fade { opacity: 0; transform: translateY(12px); }
+.crew.is-armed [data-row]:not(.is-live) .skill.is-on { opacity: 0.3; transform: scale(0.85); }
+.crew.is-armed .is-live .crew-shot::after { animation: crew-wipe 0.95s cubic-bezier(0.77, 0, 0.18, 1) both; }
+.crew.is-armed .is-live .crew-photo { animation: crew-shot 0.95s linear both; }
+.crew.is-armed .is-live .skill.is-on { animation: skill-on 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i) * 110ms + 700ms); }
+@keyframes crew-wipe { 0% { clip-path: inset(0 100% 0 0); } 45%, 55% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 0 0 100%); } }
+@keyframes crew-shot { 0%, 50% { opacity: 0; } 50.1%, 100% { opacity: 1; } }
+@keyframes skill-on { from { opacity: 0.3; transform: scale(0.85); } to { opacity: 1; transform: none; } }
 
 @media (min-width: 768px) {
-  .lead-hero { grid-template-columns: minmax(0, 17rem) minmax(0, 1fr); grid-template-areas: "photo top" "photo body"; grid-template-rows: auto 1fr; gap: 0 32px; padding: 24px; }
-  .lead-hero-top { align-self: start; }
-  .lead-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
-  .lead-card { grid-template-columns: 136px minmax(0, 1fr); padding: 16px; }
+  .crew { --gutter: 56px; --lane-gap: 7; --lane-x0: 6; }
+  .crew-head, .crew-row { grid-template-areas: "shot id" "shot body"; grid-template-rows: auto 1fr; }
+  .crew-head { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 0 36px; }
+  .crew-row { grid-template-columns: 9rem minmax(0, 1fr); gap: 0 28px; }
+  .crew-id { align-self: start; }
+  .crew-list { gap: 64px; margin-top: 88px; }
 }
 @media (min-width: 1024px) {
-  .lead-hero { grid-template-columns: minmax(0, 20rem) minmax(0, 1fr); gap: 0 48px; padding: 28px; }
-  /* desktop: two per row, photo beside the text, same 4:5 frame as phones */
-  .lead-grid { gap: 20px; margin-top: 20px; }
-  .lead-card { grid-template-columns: 12.5rem minmax(0, 1fr); grid-template-areas: "photo info" "photo body"; grid-template-rows: auto 1fr; gap: 0 24px; padding: 20px; }
-  .lead-card-info { align-self: start; }
+  .crew { --gutter: 72px; --lane-gap: 8; --lane-x0: 8; }
+  .crew-head { grid-template-columns: minmax(0, 19rem) minmax(0, 1fr); gap: 0 56px; }
+  .crew-row { grid-template-columns: 11rem minmax(0, 16rem) minmax(0, 1fr); grid-template-areas: "shot id body"; grid-template-rows: auto; gap: 0 40px; align-items: center; }
+  .crew-row .crew-id { align-self: center; }
+  .crew-row .crew-body { margin-top: 0; }
+  .skills { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .skill { flex-direction: column; justify-content: center; gap: 8px; padding: 12px 4px; border-radius: 14px; font-size: 12.5px; text-align: center; }
+  .skill svg { width: 22px; height: 22px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .leads.is-seen .skill.is-on, .lead-art--all { animation: none; }
+  .bus-flow { display: none; }
 }
 `;
