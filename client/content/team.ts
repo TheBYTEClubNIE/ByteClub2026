@@ -122,7 +122,7 @@ export const LEADS: Lead[] = [
   },
   {
     id: 4,
-    name: "Sashwat Sharma",
+    name: "Shashwat Singh",
     frame: { zoom: 2.1, origin: "52% 36%" },
     role: "Creativity Lead",
     area: "Media & Brand Identity",

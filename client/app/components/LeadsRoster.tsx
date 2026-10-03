@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ClipboardList, Code2, Handshake, PenTool, Sparkles, type LucideIcon } from "lucide-react";
 import { DOMAINS, LEADS, type Domain, type Lead, isProfileUrl, photoStyle, zoomedSizes } from "@/content/team";
 import { Holo } from "./effects";
-import { GithubIcon, InstagramIcon, LinkedInIcon } from "./DisplayCore";
+import { GithubIcon, InstagramIcon, LinkedInIcon } from "./icons";
 
 const ICON: Record<Domain, LucideIcon> = {
   tech: Code2,

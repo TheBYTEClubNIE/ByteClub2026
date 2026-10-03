@@ -1,18 +1,7 @@
 import Image from "next/image";
-import { DOMAINS, LEADS, type Domain, type PhotoFrame, isProfileUrl, photoStyle, zoomedSizes } from "@/content/team";
+import { DOMAINS, LEADS, type Domain, photoStyle, zoomedSizes } from "@/content/team";
 import DomainArt from "./DomainArt";
-import PullBadge from "./PullBadge";
-
-interface Member {
-    id: number;
-    name: string;
-    role: string;
-    insta: string;
-    linkedin: string;
-    github: string;
-    image: string;
-    frame?: PhotoFrame;
-}
+import LanyardWall, { type WallMember as Member } from "./LanyardWall";
 
 const techMembers: Member[] = [
     { id: 1, name: "Diwakar Sharma Aditya", role: "Frontend Dev", insta: "https://www.instagram.com/", linkedin: "https://www.linkedin.com/in/diwakar-sharma15", github: "https://github.com/thewalker045", image: "/Core/Tech/diwakarsharma.jpg.jpeg", frame: { position: "50% 30%", origin: "50% 30%", zoom: 1.6 } },
@@ -55,73 +44,6 @@ const teamLabels: Record<string, string> = {
     creative: "Creative squad",
 };
 const domainColor = (id: string) => DOMAINS.find((d) => d.id === id)?.color ?? "var(--accent)";
-
-export function InstagramIcon() {
-    return (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="2" width="20" height="20" rx="5" />
-            <circle cx="12" cy="12" r="4" />
-            <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
-        </svg>
-    );
-}
-
-export function LinkedInIcon() {
-    return (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
-        </svg>
-    );
-}
-
-export function GithubIcon() {
-    return (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-            <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-            />
-        </svg>
-    );
-}
-
-// A club ID badge: clip on top, squad band, framed photo, name, role, socials.
-function Badge({ member }: { member: Member }) {
-    const links = [
-        { href: member.insta, label: "Instagram", icon: <InstagramIcon /> },
-        { href: member.linkedin, label: "LinkedIn", icon: <LinkedInIcon /> },
-        { href: member.github, label: "GitHub", icon: <GithubIcon /> },
-    ].filter((l) => isProfileUrl(l.href));
-
-    return (
-        <PullBadge>
-            <span className="badge-clip" aria-hidden />
-            <div className="badge-photo" data-holo-card>
-                <Image
-                    src={member.image}
-                    alt=""
-                    fill
-                    sizes={zoomedSizes("(min-width: 1024px) 170px, (min-width: 640px) 22vw, 30vw", member.frame?.zoom)}
-                    quality={90}
-                    className="object-cover"
-                    style={photoStyle(member.frame)}
-                />
-            </div>
-            <p className="badge-name">{member.name}</p>
-            <p className="badge-role">{member.role}</p>
-            {links.length > 0 && (
-                <div className="badge-links">
-                    {links.map((l) => (
-                        <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" aria-label={`${member.name} on ${l.label}`}>
-                            {l.icon}
-                        </a>
-                    ))}
-                </div>
-            )}
-        </PullBadge>
-    );
-}
 
 export default function TeamMembers({ teamId }: { teamId: string }) {
     const members = teamData[teamId] ?? [];
@@ -167,11 +89,7 @@ export default function TeamMembers({ teamId }: { teamId: string }) {
                     </div>
                 )}
             </header>
-            <ul className="badge-grid">
-                {members.map((member) => (
-                    <Badge key={member.id} member={member} />
-                ))}
-            </ul>
+            <LanyardWall members={members} color={domainColor(teamId)} label={teamLabels[teamId] ?? "Team"} />
         </section>
     );
 }
@@ -182,7 +100,6 @@ export const FACE_WALL_CSS = `
 /* only the artwork is clipped, so a pulled badge can swing past the panel edge */
 .squad-art { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
 .squad-art::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--squad); }
-.squad:has(.is-pulled) { z-index: 10; }
 .squad .lead-art { position: absolute; z-index: 0; top: -12px; right: -12px; width: 260px; height: auto; color: var(--squad); opacity: 0.2; pointer-events: none;
   -webkit-mask-image: linear-gradient(225deg, #000 30%, transparent 75%); mask-image: linear-gradient(225deg, #000 30%, transparent 75%); }
 .squad > :not(.squad-art) { position: relative; z-index: 1; }
@@ -200,30 +117,29 @@ export const FACE_WALL_CSS = `
 .squad-avatar { position: relative; width: 38px; height: 38px; overflow: hidden; border-radius: 50%; border: 2px solid var(--squad); background: #07090b; }
 .squad-avatar + .squad-avatar { margin-left: -10px; }
 
-.badge-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px 10px; }
-.badge-slot { position: relative; }
-.badge-slot.is-pulled { z-index: 5; }
-.badge-strap { position: absolute; z-index: 0; left: 50%; top: -4px; width: 12px; height: 0; transform-origin: top center; border-radius: 2px; background: linear-gradient(90deg, color-mix(in srgb, var(--squad) 70%, #000), var(--squad) 30%, var(--squad) 70%, color-mix(in srgb, var(--squad) 70%, #000)); box-shadow: 0 4px 10px rgba(0,0,0,0.5); pointer-events: none; }
-.badge { position: relative; z-index: 1; cursor: grab; user-select: none; touch-action: pan-y; padding: 14px 7px 8px; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(180deg, #161b20, #0f1316); box-shadow: 0 12px 26px -16px rgba(0, 0, 0, 0.85); transform-origin: 50% -14px; }
-.badge::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; border-radius: 14px 14px 0 0; background: var(--squad); }
-.badge-clip { position: absolute; z-index: 2; top: -7px; left: 50%; width: 30px; height: 12px; transform: translateX(-50%); border-radius: 4px; background: #3a4249; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35); }
-.badge-clip::after { content: ""; position: absolute; left: 50%; top: 4px; width: 14px; height: 3px; transform: translateX(-50%); border-radius: 2px; background: #0a0b0d; }
-.badge-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; border-radius: 9px; background: #07090b; }
-.badge-name { margin-top: 9px; font-size: 13px; font-weight: 600; line-height: 1.25; text-align: center; color: var(--ink); }
-.badge-role { margin-top: 2px; font-size: 12px; text-align: center; color: var(--squad); }
-.badge-links { display: flex; justify-content: center; margin-top: 4px; }
-.badge-links a { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; color: var(--ink-muted); transition: color 0.2s ease, background-color 0.2s ease; }
+/* ID cards on lanyards: the 3D scene hangs them from --rope above each card */
+.lanyard-wall { --rope: 46px; position: relative; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.lanyard-canvas { position: absolute; z-index: 0; left: -28px; top: -20px; width: calc(100% + 56px); height: calc(100% + 76px); pointer-events: none; }
+.badge-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 12px; }
+.slot { position: relative; padding-top: var(--rope); }
+.slot::before { content: ""; position: absolute; left: 50%; top: 0; width: 7px; height: calc(var(--rope) + 4px); transform: translateX(-50%); border-radius: 2px; background: var(--squad); opacity: 0.85; }
+.badge { position: relative; aspect-ratio: 21 / 32; display: flex; flex-direction: column; align-items: center; padding: 11% 9.5% 0; overflow: hidden; border-radius: 8% / 5.3%; border: 1px solid var(--line); background: linear-gradient(180deg, #192028, #0d1114); }
+.badge::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 7.2%; background: var(--squad); }
+.badge-photo { position: relative; width: 100%; aspect-ratio: 340 / 320; overflow: hidden; border-radius: 7%; background: #07090b; }
+.badge-name { margin-top: 7%; font-size: 13px; font-weight: 600; line-height: 1.15; text-align: center; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.badge-role { margin-top: 3px; font-size: 11.5px; text-align: center; color: var(--squad); }
+.lanyard-wall.is-3d .badge, .lanyard-wall.is-3d .slot::before { opacity: 0; }
+.badge-links { display: flex; justify-content: center; margin-top: 6px; }
+.badge-links a { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; color: var(--ink-muted); transition: color 0.2s ease, background-color 0.2s ease; }
 .badge-links a:hover { color: var(--squad); background: rgba(255, 255, 255, 0.05); }
-.badge:active { cursor: grabbing; }
-.badge-slot.is-pulled .badge { box-shadow: 0 24px 40px -16px rgba(0, 0, 0, 0.9); }
 
-@media (min-width: 640px) { .badge-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 14px; } }
+@media (min-width: 640px) { .badge-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 18px; } }
 @media (min-width: 768px) {
   .squad { padding: 24px; }
   .squad-head { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
 }
 @media (min-width: 1024px) {
-  .badge-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 26px 16px; }
-  .badge-name { font-size: 14px; }
+  .lanyard-wall { --rope: 56px; }
+  .badge-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px 22px; }
 }
 `;
