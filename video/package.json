@@ -1,0 +1,13 @@
+{
+  "name": "byte-club-hero-video",
+  "private": true,
+  "type": "module",
+  "description": "Renders composition.html (15s, 1920x1080) to an MP4 for the website hero",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "puppeteer-core": "^24.0.0"
+  }
+}

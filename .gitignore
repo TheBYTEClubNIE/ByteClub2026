@@ -22,3 +22,6 @@ scratch/
 .vercel
 .env*
 **/.impeccable/live/
+
+# rendered hero video frames/output
+video/out/

@@ -1,0 +1,827 @@
+<!doctype html>
+<!--
+  The Byte Club hero video: 15s, 1920x1080, 30fps.
+  Every frame is a pure function of time: window.seek(t) puts the whole
+  scene in its state at t seconds. render.mjs steps t frame by frame and
+  pipes screenshots into ffmpeg. Open this file in a browser and add
+  ?play to watch it live.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Byte Club hero video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=block" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0b0d; --el: #101317; --ink: #f3f5f7; --muted: #9aa2ab; --faint: #7c848c;
+    --line: rgba(255,255,255,0.09); --line2: rgba(255,255,255,0.16);
+    --accent: #28c2ff; --accent2: #2af5ff;
+    --tech: #28c2ff; --design: #c6a6ff; --creative: #ffbf7f; --mgmt: #7ee0b5; --outreach: #ff9db0;
+    --display: "Unbounded", sans-serif; --body: "IBM Plex Sans", sans-serif; --mono: "IBM Plex Mono", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--body); }
+  .scene { position: absolute; inset: 0; opacity: 0; will-change: transform, opacity; }
+  .abs { position: absolute; }
+  img { display: block; }
+
+  /* background */
+  #bg { position: absolute; inset: 0; }
+  #grid { position: absolute; inset: -60px; background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px); background-size: 60px 60px; }
+  #glow1 { position: absolute; width: 1400px; height: 1400px; border-radius: 50%; background: radial-gradient(circle, rgba(40,194,255,0.16), transparent 62%); }
+  #glow2 { position: absolute; width: 1200px; height: 1200px; border-radius: 50%; background: radial-gradient(circle, rgba(198,166,255,0.10), transparent 62%); }
+  .dot { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--accent2); }
+  #vignette { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,0.65)); pointer-events: none; }
+
+  /* chrome */
+  #chapter { position: absolute; left: 96px; top: 70px; font-family: var(--mono); font-size: 24px; letter-spacing: 0.12em; color: var(--accent); opacity: 0; z-index: 20; }
+  #chapter .n { color: var(--faint); margin-right: 14px; }
+  #brand { position: absolute; right: 96px; top: 58px; display: flex; align-items: center; gap: 14px; opacity: 0; z-index: 20; font-family: var(--display); font-weight: 600; font-size: 22px; }
+  #brand img { width: 52px; height: 52px; }
+  #progress { position: absolute; left: 0; bottom: 0; height: 4px; width: 1920px; transform-origin: left; background: var(--accent); box-shadow: 0 0 16px rgba(40,194,255,0.8); z-index: 20; }
+  #url { position: absolute; right: 96px; bottom: 40px; font-family: var(--mono); font-size: 20px; color: var(--faint); opacity: 0; z-index: 20; }
+  #fade { position: absolute; inset: 0; background: #000; z-index: 50; pointer-events: none; }
+
+  /* S1 intro */
+  #s1-logo { position: absolute; left: 50%; top: 150px; width: 250px; height: 250px; margin-left: -125px; }
+  #s1-ring { position: absolute; left: 50%; top: 275px; width: 420px; height: 420px; margin: -210px 0 0 -210px; border-radius: 50%; border: 2px solid rgba(40,194,255,0.5); box-shadow: 0 0 60px rgba(40,194,255,0.35), inset 0 0 40px rgba(40,194,255,0.25); }
+  #s1-title { position: absolute; left: 0; right: 0; top: 470px; text-align: center; font-family: var(--display); font-weight: 600; font-size: 150px; letter-spacing: -0.04em; line-height: 1; }
+  #s1-title .g { color: var(--accent); }
+  #s1-type { position: absolute; left: 0; right: 0; top: 690px; text-align: center; font-family: var(--mono); font-size: 44px; color: var(--accent); }
+  #s1-type .dim { color: var(--muted); }
+  .caret { display: inline-block; width: 24px; height: 46px; margin-left: 6px; vertical-align: -8px; background: var(--accent); }
+
+  /* S2 bands */
+  .band { position: absolute; left: -200px; width: 2320px; padding: 34px 0; background: var(--bg); border-block: 2px solid var(--line2); overflow: hidden; }
+  .band-track { display: flex; white-space: nowrap; }
+  .bw { font-family: var(--display); font-weight: 700; font-size: 150px; line-height: 1; letter-spacing: -0.03em; text-transform: uppercase; padding: 0 40px; color: transparent; -webkit-text-stroke: 2px rgba(243,245,247,0.4); }
+  .bw.solid { color: var(--ink); -webkit-text-stroke: 0; }
+  .bs { font-size: 90px; color: var(--accent); align-self: center; }
+
+  /* shared section title */
+  .stitle { position: absolute; font-family: var(--display); font-weight: 600; font-size: 92px; letter-spacing: -0.035em; line-height: 1; }
+  .slede { position: absolute; font-size: 30px; line-height: 1.45; color: var(--muted); }
+
+  /* S3 events board */
+  #board { position: absolute; left: 240px; top: 230px; width: 1440px; border-radius: 22px; border: 2px solid var(--line); background: #07090b; overflow: hidden; }
+  .bh { display: flex; justify-content: space-between; align-items: center; padding: 26px 40px; background: #0c0f12; border-bottom: 2px solid var(--line); }
+  .bh h3 { font-family: var(--display); font-weight: 600; font-size: 36px; display: flex; align-items: center; gap: 18px; }
+  .bh h3 i { width: 18px; height: 18px; border-radius: 4px; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+  .bh span { font-family: var(--mono); font-size: 26px; color: var(--muted); }
+  .brow { display: grid; grid-template-columns: 170px 1fr 230px 200px 290px; align-items: center; gap: 24px; padding: 22px 40px; border-bottom: 2px solid var(--line); }
+  .brow:last-child { border-bottom: 0; }
+  .bname { font-family: var(--display); font-weight: 500; font-size: 34px; letter-spacing: -0.01em; }
+  .bsub { padding: 14px 40px; font-family: var(--display); font-weight: 600; font-size: 24px; color: var(--muted); background: #0c0f12; border-bottom: 2px solid var(--line); }
+  .flap { display: inline-flex; gap: 5px; }
+  .tile { position: relative; width: 34px; height: 48px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: linear-gradient(180deg, #252c33, #181d22); display: grid; place-items: center; font-family: var(--mono); font-weight: 500; font-size: 32px; overflow: hidden; }
+  .tile::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(0,0,0,0.65); }
+  .tile .lid { position: absolute; left: 0; right: 0; top: 0; height: 50%; background: linear-gradient(180deg, #2f373f, #22282e); transform-origin: bottom; }
+
+  /* S4 leads */
+  #lead { position: absolute; left: 160px; top: 170px; width: 1600px; height: 560px; border-radius: 28px; border: 2px solid var(--line2); overflow: hidden;
+    background: radial-gradient(60% 60% at 100% 0%, rgba(40,194,255,0.16), transparent 70%), radial-gradient(40% 50% at 0% 100%, rgba(198,166,255,0.14), transparent 70%), radial-gradient(40% 40% at 60% 110%, rgba(255,191,127,0.12), transparent 70%), var(--el); }
+  #lead-photo { position: absolute; left: 40px; top: 40px; width: 384px; height: 480px; border-radius: 20px; overflow: hidden; background: #07090b; }
+  #lead-photo img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.25); transform-origin: 55% 20%; }
+  #orbit { position: absolute; right: -140px; top: -170px; width: 640px; height: 640px; opacity: 0.75; }
+  .role { display: inline-block; padding: 8px 20px; border-radius: 999px; font-family: var(--mono); font-size: 24px; }
+  #lead-role { position: absolute; left: 480px; top: 64px; background: rgba(40,194,255,0.14); border: 2px solid rgba(40,194,255,0.45); color: var(--accent2); }
+  #lead-name { position: absolute; left: 480px; top: 128px; font-family: var(--display); font-weight: 700; font-size: 104px; letter-spacing: -0.04em; line-height: 1; }
+  #lead-area { position: absolute; left: 484px; top: 252px; font-size: 30px; color: var(--muted); }
+  #lead-sk { position: absolute; left: 484px; top: 318px; display: flex; justify-content: space-between; width: 1060px; font-family: var(--display); font-weight: 600; font-size: 30px; }
+  #lead-sk span { font-family: var(--mono); font-weight: 500; font-size: 24px; color: var(--accent2); }
+  #skills { position: absolute; left: 484px; top: 372px; display: grid; grid-template-columns: repeat(5, 196px); gap: 20px; }
+  .skill { height: 140px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-size: 24px; border: 2px dashed var(--line2); color: #3d454d; }
+  .skill svg { width: 46px; height: 46px; }
+  .skill.on { border: 2px solid var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); box-shadow: 0 0 34px -6px color-mix(in srgb, var(--c) 80%, transparent); }
+  .skill.on b { color: var(--ink); }
+  .skill b { font-weight: 500; color: var(--faint); }
+  #strip { position: absolute; left: 160px; top: 770px; width: 1600px; display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; }
+  .mini { position: relative; height: 210px; border-radius: 20px; border: 2px solid var(--line); background: radial-gradient(80% 70% at 100% 100%, color-mix(in srgb, var(--c) 16%, transparent), transparent 70%), var(--el); overflow: hidden; }
+  .mini::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--c); }
+  .mini .ph { position: absolute; left: 18px; top: 22px; width: 100px; height: 125px; border-radius: 12px; overflow: hidden; background: #07090b; }
+  .mini .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .mini .nm { position: absolute; left: 132px; top: 30px; right: 12px; font-family: var(--display); font-weight: 600; font-size: 22px; line-height: 1.15; }
+  .mini .rl { position: absolute; left: 132px; top: 92px; font-family: var(--mono); font-size: 17px; color: var(--c); }
+  .mini .ch { position: absolute; left: 18px; bottom: 16px; padding: 6px 14px; border-radius: 999px; border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); font-size: 18px; }
+
+  /* S5 badges */
+  #rail { position: absolute; left: 190px; width: 1540px; top: 168px; height: 8px; border-radius: 4px; background: linear-gradient(180deg, #4a535c, #262c32); box-shadow: 0 6px 14px rgba(0,0,0,0.6); }
+  #squad { position: absolute; left: 160px; top: 760px; display: flex; align-items: center; gap: 22px; font-family: var(--display); font-weight: 600; font-size: 52px; }
+  #squad i { width: 22px; height: 22px; border-radius: 6px; background: var(--tech); box-shadow: 0 0 20px var(--tech); }
+  #squad span { font-family: var(--body); font-weight: 500; font-size: 28px; color: var(--muted); }
+  #led { position: absolute; left: 160px; top: 832px; font-size: 28px; color: var(--tech); }
+  .strap { position: absolute; width: 14px; margin-left: -7px; top: 172px; transform-origin: top center; background: linear-gradient(90deg, #0f6f93, #28c2ff 30%, #28c2ff 70%, #0f6f93); }
+  .badge { position: absolute; width: 236px; padding: 22px 12px 14px; border-radius: 20px; border: 2px solid var(--line); background: linear-gradient(180deg, #161b20, #0f1316); box-shadow: 0 30px 50px -24px rgba(0,0,0,0.9); transform-origin: 50% -24px; }
+  .badge::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; border-radius: 20px 20px 0 0; background: var(--c); }
+  .badge .clip { position: absolute; left: 50%; top: -12px; width: 46px; height: 18px; margin-left: -23px; border-radius: 6px; background: #3a4249; }
+  .badge .clip::after { content: ""; position: absolute; left: 50%; top: 6px; width: 22px; height: 5px; margin-left: -11px; border-radius: 3px; background: #0a0b0d; }
+  .badge .ph { position: relative; height: 265px; border-radius: 12px; overflow: hidden; background: #07090b; }
+  .badge .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .badge .nm { margin-top: 14px; text-align: center; font-weight: 600; font-size: 22px; }
+  .badge .rl { margin-top: 4px; text-align: center; font-size: 18px; color: var(--c); }
+
+  /* S6 changelog */
+  .cl-bg { position: absolute; inset: 0; overflow: hidden; }
+  .cl-bg img { width: 100%; height: 100%; object-fit: cover; }
+  .cl-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,9,11,0.7) 0%, rgba(7,9,11,0.1) 30%, rgba(7,9,11,0.25) 52%, rgba(7,9,11,0.95) 85%, #07090b 100%); }
+  .cl-lines { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0 2px, transparent 2px 5px); }
+  .scan { position: absolute; left: 0; right: 0; height: 4px; background: var(--accent2); box-shadow: 0 0 40px 10px rgba(42,245,255,0.6); }
+  #cl-map { position: absolute; left: 260px; top: 150px; width: 1400px; height: 110px; border-radius: 22px; background: rgba(7,9,11,0.8); border: 2px solid var(--line2); }
+  #cl-map .o, #cl-map .nx { position: absolute; top: 46px; font-family: var(--mono); font-size: 22px; color: var(--muted); }
+  #cl-map .nx { right: 34px; color: var(--ink); }
+  #cl-line { position: absolute; left: 290px; right: 210px; top: 58px; height: 3px; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.3) 0 4px, transparent 4px 12px); }
+  #cl-lit { position: absolute; left: 0; top: 0; height: 3px; width: 100%; transform-origin: left; background: var(--accent); box-shadow: 0 0 14px var(--accent); }
+  .cdot { position: absolute; top: -8px; width: 19px; height: 19px; margin-left: -9px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.4); background: #07090b; }
+  .cdot.on { border-color: var(--accent); background: var(--accent); }
+  .cdot b { position: absolute; top: 28px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-weight: 500; font-size: 20px; color: var(--muted); }
+  #head { position: absolute; top: -50px; padding: 4px 12px; margin-left: -34px; border-radius: 8px; background: var(--accent2); color: #031018; font-family: var(--mono); font-weight: 500; font-size: 20px; box-shadow: 0 0 20px rgba(42,245,255,0.7); }
+  #cl-text { position: absolute; left: 160px; bottom: 140px; }
+  #cl-tag { font-family: var(--mono); font-size: 28px; color: var(--accent); }
+  #cl-tag b { display: inline-block; padding: 4px 14px; margin-right: 14px; border-radius: 999px; background: var(--accent); color: #031018; font-weight: 500; }
+  #cl-name { margin-top: 18px; font-family: var(--display); font-weight: 700; font-size: 150px; letter-spacing: -0.045em; line-height: 0.95; }
+  #cl-name .w { display: inline-block; overflow: hidden; vertical-align: top; margin-right: 0.22em; padding-bottom: 0.06em; }
+  #cl-name .l { display: inline-block; }
+  #cl-meta { margin-top: 18px; font-size: 30px; color: var(--accent); }
+  .stamp { position: absolute; width: 230px; height: 230px; border-radius: 50%; border: 5px solid var(--accent); outline: 2px solid rgba(40,194,255,0.7); outline-offset: -18px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--accent); background: rgba(7,9,11,0.55); }
+  .stamp b { font-family: var(--display); font-weight: 700; font-size: 60px; line-height: 1; }
+  .stamp span { margin-top: 10px; font-family: var(--mono); font-weight: 500; font-size: 26px; letter-spacing: 0.08em; }
+  .polaroid { position: absolute; padding: 12px 12px 44px; background: #eef1f4; border-radius: 6px; box-shadow: 0 40px 70px -20px rgba(0,0,0,0.8); }
+  .polaroid img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* S7 blog */
+  #shelf { position: absolute; left: 1010px; top: 260px; width: 760px; height: 520px; perspective: 1600px; perspective-origin: 50% 20%; display: flex; align-items: flex-end; justify-content: center; gap: 22px; }
+  #plank { position: absolute; left: 980px; top: 776px; width: 820px; height: 26px; border-radius: 6px; background: linear-gradient(180deg, #2a3138, #161a1e); box-shadow: 0 30px 50px -20px rgba(0,0,0,0.9); }
+  .book { position: relative; width: 84px; transform-style: preserve-3d; }
+  .bf { position: absolute; top: 0; backface-visibility: hidden; }
+  .bsp { left: 0; width: 84px; height: 100%; transform: translateZ(120px); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 22px 0; border-radius: 5px; background: linear-gradient(90deg, rgba(0,0,0,0.35), transparent 22%, transparent 78%, rgba(0,0,0,0.3)), var(--bg2); }
+  .bsp i { width: 64%; height: 6px; border-radius: 3px; background: var(--band); }
+  .bsp span { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--display); font-weight: 600; font-size: 22px; color: var(--ink); white-space: nowrap; }
+  .bcv { left: -78px; width: 240px; height: 100%; transform: rotateY(90deg) translateZ(42px); border-radius: 3px 10px 10px 3px; padding: 16px; background: radial-gradient(120% 80% at 80% 0%, rgba(255,255,255,0.14), transparent 50%), var(--bg2); }
+  .bcv div { height: 100%; border: 2px solid color-mix(in srgb, var(--band) 60%, transparent); border-radius: 6px; padding: 20px 16px; display: flex; flex-direction: column; }
+  .bcv small { font-family: var(--mono); font-size: 16px; color: rgba(255,255,255,0.7); letter-spacing: 0.08em; }
+  .bcv b { margin-top: auto; font-family: var(--display); font-weight: 700; font-size: 36px; line-height: 1.05; }
+  .bcv em { margin-top: 10px; font-style: normal; font-family: var(--mono); font-size: 18px; color: var(--band); }
+  .btop { left: 0; width: 84px; height: 240px; top: calc((var(--h) - 240px) / 2); transform: rotateX(90deg) translateZ(calc(var(--h) / 2)); background: repeating-linear-gradient(90deg, #efe9dc 0 3px, #d9d2c3 3px 5px); }
+  .bbk { left: -78px; width: 240px; height: 100%; transform: rotateY(-90deg) translateZ(42px); background: var(--bg2); filter: brightness(0.6); }
+  #post { position: absolute; left: 160px; top: 560px; width: 760px; padding: 32px 36px; border-radius: 22px; border: 2px solid var(--line); background: var(--el); }
+  #post small { font-size: 22px; color: var(--muted); }
+  #post b { display: block; margin-top: 10px; font-family: var(--display); font-weight: 500; font-size: 38px; line-height: 1.2; }
+  #post span { display: block; margin-top: 14px; font-size: 24px; font-weight: 600; color: var(--accent); }
+
+  /* S8 bytle */
+  #bt-board { position: absolute; left: 1010px; top: 190px; display: grid; gap: 14px; }
+  .bt-row { display: grid; grid-template-columns: repeat(5, 118px); gap: 14px; }
+  .bt { height: 118px; border-radius: 14px; border: 3px solid var(--line2); display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 56px; color: var(--ink); }
+  .bt.full { border-color: var(--faint); }
+  .bt.hit { background: var(--accent); border-color: var(--accent); color: #031018; }
+  .bt.near { background: #ffbf7f; border-color: #ffbf7f; color: #1d1206; }
+  .bt.miss { background: #242a30; border-color: #242a30; color: var(--muted); }
+  #bt-def { position: absolute; left: 160px; top: 600px; width: 720px; padding: 34px 36px; border-radius: 22px; border: 2px solid rgba(40,194,255,0.4); background: linear-gradient(180deg, rgba(40,194,255,0.1), var(--el) 60%); }
+  #bt-def small { font-family: var(--mono); font-size: 24px; color: var(--accent); }
+  #bt-def b { display: block; margin-top: 10px; font-family: var(--display); font-weight: 700; font-size: 84px; letter-spacing: 0.04em; }
+  #bt-def span { display: block; margin-top: 10px; font-size: 30px; color: var(--muted); }
+
+  /* S9 byte id */
+  #id-wrap { position: absolute; left: 1080px; top: 130px; width: 600px; height: 750px; perspective: 1800px; }
+  #idcard { position: relative; width: 600px; height: 750px; border-radius: 34px; overflow: hidden; background: #07090b; box-shadow: 0 60px 120px -40px rgba(40,194,255,0.55), 0 0 0 2px rgba(255,255,255,0.06); }
+  #idcard .gridbg { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.045) 1px, transparent 1px); background-size: 30px 30px; }
+  #idcard .g1 { position: absolute; right: -200px; top: -200px; width: 640px; height: 640px; border-radius: 50%; background: radial-gradient(circle, rgba(40,194,255,0.32), transparent 65%); }
+  #idcard .g2 { position: absolute; left: -220px; bottom: -220px; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(198,166,255,0.24), transparent 65%); }
+  #idcard .frame { position: absolute; inset: 16px; border-radius: 24px; border: 4px solid transparent; background: linear-gradient(135deg, #28c2ff, #c6a6ff, #ffbf7f, #2af5ff) border-box; -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+  #idcard .in { position: absolute; inset: 0; padding: 48px; }
+  #idcard .hd { display: flex; align-items: center; gap: 16px; }
+  #idcard .hd img { width: 66px; height: 66px; }
+  #idcard .hd b { font-family: var(--display); font-weight: 600; font-size: 24px; }
+  #idcard .hd small { display: block; font-family: var(--mono); font-size: 15px; color: var(--muted); }
+  #idcard .no { position: absolute; right: 48px; top: 48px; text-align: right; font-family: var(--mono); font-size: 16px; color: var(--accent); }
+  #idcard .no b { display: block; font-family: var(--display); font-weight: 700; font-size: 32px; color: var(--ink); }
+  #idcard .lab { font-family: var(--mono); font-size: 15px; color: var(--faint); letter-spacing: 0.06em; }
+  #idcard .name { margin-top: 6px; font-family: var(--display); font-weight: 700; font-size: 104px; line-height: 0.95; letter-spacing: -0.03em; }
+  #idcard .track { margin-top: 6px; font-family: var(--display); font-weight: 600; font-size: 38px; color: var(--accent); }
+  #idcard .bar { position: absolute; left: 48px; bottom: 56px; display: flex; gap: 4px; height: 52px; }
+  #idcard .bar i { display: block; background: var(--ink); }
+  #idcard .handle { position: absolute; right: 48px; bottom: 74px; font-family: var(--mono); font-size: 18px; color: var(--accent); }
+  #idcard .shine { position: absolute; inset: -40%; background: linear-gradient(115deg, transparent 38%, rgba(40,194,255,0.35) 45%, rgba(198,166,255,0.35) 50%, rgba(255,191,127,0.3) 55%, transparent 62%); mix-blend-mode: color-dodge; }
+
+  /* S10 end */
+  #e-logo { position: absolute; left: 50%; top: 170px; width: 220px; height: 220px; margin-left: -110px; }
+  #e-title { position: absolute; left: 0; right: 0; top: 440px; text-align: center; font-family: var(--display); font-weight: 600; font-size: 140px; letter-spacing: -0.04em; line-height: 1; }
+  #e-cta { position: absolute; left: 50%; top: 650px; transform: translateX(-50%); display: flex; align-items: center; gap: 24px; }
+  #e-cta .btn { padding: 22px 46px; border-radius: 999px; background: var(--ink); color: var(--bg); font-weight: 600; font-size: 34px; }
+  #e-cta .url { font-family: var(--mono); font-size: 34px; color: var(--accent); }
+  #e-chips { position: absolute; left: 0; right: 0; top: 800px; display: flex; justify-content: center; gap: 16px; }
+  #e-chips span { padding: 10px 26px; border-radius: 999px; border: 2px solid var(--line2); font-size: 26px; color: var(--ink); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg"><div id="grid"></div><div id="glow1"></div><div id="glow2"></div><div id="dots"></div><div id="vignette"></div></div>
+
+  <!-- S1 intro -->
+  <div id="s1" class="scene">
+    <div id="s1-ring"></div>
+    <img id="s1-logo" src="../client/public/Logo/logo-transparent.png" alt="" />
+    <div id="s1-title"></div>
+    <div id="s1-type"><span class="dim">&gt;_ join us for </span><span id="s1-word"></span><span class="caret" id="s1-caret"></span></div>
+  </div>
+
+  <!-- S2 kinetic bands -->
+  <div id="s2" class="scene">
+    <div class="band" id="band1" style="top: 300px; transform: rotate(-7deg)"><div class="band-track" id="track1"></div></div>
+    <div class="band" id="band2" style="top: 580px; transform: rotate(5deg)"><div class="band-track" id="track2"></div></div>
+  </div>
+
+  <!-- S3 events board -->
+  <div id="s3" class="scene">
+    <div id="board">
+      <div class="bh"><h3><i></i>Up next</h3><span>18:30 IST</span></div>
+      <div class="brow" data-row="0"><div class="flap" data-t="---" data-c="#9aa2ab"></div><div class="bname">Next event</div><div class="flap" data-t="-- ---"></div><div class="flap" data-t="--:--"></div><div class="flap" data-t="TBA"></div></div>
+      <div class="bsub">Shipped</div>
+      <div class="brow" data-row="1"><div class="flap" data-t="BTL" data-c="#9aa2ab"></div><div class="bname">Beyond The Labs</div><div class="flap" data-t="08 APR"></div><div class="flap" data-t="14:30"></div><div class="flap" data-t="SHIPPED" data-c="#9aa2ab"></div></div>
+      <div class="brow" data-row="2"><div class="flap" data-t="ASM" data-c="#9aa2ab"></div><div class="bname">Annual Assembly</div><div class="flap" data-t="-- ---"></div><div class="flap" data-t="--:--"></div><div class="flap" data-t="SHIPPED" data-c="#9aa2ab"></div></div>
+      <div class="brow" data-row="3"><div class="flap" data-t="BBI" data-c="#9aa2ab"></div><div class="bname">Beyond BYTE Ideathon</div><div class="flap" data-t="-- ---"></div><div class="flap" data-t="--:--"></div><div class="flap" data-t="SHIPPED" data-c="#9aa2ab"></div></div>
+    </div>
+  </div>
+
+  <!-- S4 leads -->
+  <div id="s4" class="scene">
+    <div id="lead">
+      <svg id="orbit" viewBox="0 0 240 240" fill="none">
+        <circle cx="120" cy="120" r="46" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <circle cx="120" cy="120" r="78" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="4 8"/>
+        <circle cx="120" cy="120" r="110" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+        <g id="planets"></g>
+      </svg>
+      <div id="lead-photo"><img src="../client/public/Leads/ritesh%20president.jpeg" alt="" /></div>
+      <div id="lead-role" class="role">Club Lead</div>
+      <div id="lead-name">Ritesh Kumar</div>
+      <div id="lead-area">Executive &amp; Strategy</div>
+      <div id="lead-sk">Skill set <span id="lead-cover">Covers every domain</span></div>
+      <div id="skills"></div>
+    </div>
+    <div id="strip"></div>
+  </div>
+
+  <!-- S5 core team badges -->
+  <div id="s5" class="scene">
+    <div id="rail"></div>
+    <div id="squad"><i></i>Tech squad <span>6 members · 20 across 3 squads</span></div>
+    <div id="led">Led by Gulshan Kumar &amp; Tanishq Dhawan</div>
+    <div id="badges"></div>
+  </div>
+
+  <!-- S6 changelog -->
+  <div id="s6" class="scene">
+    <div class="cl-bg" id="cl-a"><img src="../client/public/Events/1.jpg" alt="" /><div class="cl-scrim"></div><div class="cl-lines"></div></div>
+    <div class="cl-bg" id="cl-b"><img src="../client/public/Events/beyondlabs8.jpg" alt="" /><div class="cl-scrim"></div><div class="cl-lines"></div><div class="scan" id="scan-b"></div></div>
+    <div class="polaroid" id="pol1" style="width: 300px; height: 280px"><img src="../client/public/Events/beyondlabs5.jpg" alt="" /></div>
+    <div class="polaroid" id="pol2" style="width: 250px; height: 236px"><img src="../client/public/Events/beyondlabs3.jpg" alt="" /></div>
+    <div id="cl-map">
+      <span class="o" style="left: 34px">git init · 2023</span>
+      <div id="cl-line"><div id="cl-lit"></div></div>
+      <span class="nx">next →</span>
+    </div>
+    <div id="cl-text">
+      <div id="cl-tag"><b id="cl-ver">v1.0</b>commit <span id="cl-hash">397b5b6</span></div>
+      <div id="cl-name"></div>
+      <div id="cl-meta"></div>
+    </div>
+    <div class="stamp" id="cl-stamp" style="right: 200px; top: 560px"><b>v4.0</b><span>SHIPPED</span></div>
+  </div>
+
+  <!-- S7 blog -->
+  <div id="s7" class="scene">
+    <div class="stitle" style="left: 160px; top: 250px">Byte Blog</div>
+    <div class="slede" style="left: 164px; top: 380px; width: 740px">Four books. Notes on what the club builds and learns.</div>
+    <div id="post"><small>Web Dev · 24 Sep 2026 · 5 min read</small><b>How Node.js Actually Works: V8 Engine, libuv, and C++ Bindings</b><span>Read →</span></div>
+    <div id="plank"></div>
+    <div id="shelf"></div>
+  </div>
+
+  <!-- S8 bytle -->
+  <div id="s8" class="scene">
+    <div class="stitle" style="left: 160px; top: 230px">Bytle</div>
+    <div class="slede" style="left: 164px; top: 360px; width: 760px">One tech word a day. Six tries. Learn what it means.</div>
+    <div id="bt-board"></div>
+    <div id="bt-def"><small>Compiled first try.</small><b>BYTES</b><span>Groups of eight bits. Also, us.</span></div>
+  </div>
+
+  <!-- S9 byte id -->
+  <div id="s9" class="scene">
+    <div class="stitle" style="left: 160px; top: 330px">Get your<br />Byte ID</div>
+    <div class="slede" style="left: 164px; top: 560px; width: 780px">Pick a track, get a holo club card, post it. Tag @thebyteclubnie.</div>
+    <div id="id-wrap">
+      <div id="idcard">
+        <div class="gridbg"></div><div class="g1"></div><div class="g2"></div>
+        <div class="frame"></div>
+        <div class="in">
+          <div class="hd"><img src="../client/public/Logo/logo-transparent.png" alt="" /><div><b>The Byte Club</b><small>NIE · STUDENT TECH CLUB</small></div></div>
+          <div class="no">BYTE ID<b>#0427</b></div>
+          <div style="margin-top: 150px" class="lab">NAME</div>
+          <div class="name">You.</div>
+          <div style="margin-top: 70px" class="lab">TRACK</div>
+          <div class="track">Just curious</div>
+          <div style="margin-top: 36px; display: flex; gap: 80px">
+            <div><div class="lab">ISSUED</div><div style="font-family: var(--mono); font-size: 24px; margin-top: 4px">OCT 2026</div></div>
+            <div><div class="lab">STATUS</div><div style="font-family: var(--mono); font-size: 24px; margin-top: 4px">SHOWING UP</div></div>
+          </div>
+          <div class="bar" id="idbar"></div>
+          <div class="handle">@thebyteclubnie</div>
+        </div>
+        <div class="shine" id="shine"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S10 end -->
+  <div id="s10" class="scene">
+    <img id="e-logo" src="../client/public/Logo/logo-transparent.png" alt="" />
+    <div id="e-title"></div>
+    <div id="e-cta"><span class="btn">Join the club</span><span class="url">byteclubnie.vercel.app</span></div>
+    <div id="e-chips"><span>Events</span><span>Team</span><span>Changelog</span><span>Blog</span><span>Bytle</span></div>
+  </div>
+
+  <div id="chapter"></div>
+  <div id="brand"><img src="../client/public/Logo/logo-transparent.png" alt="" />The Byte Club</div>
+  <div id="url">byteclubnie.vercel.app</div>
+  <div id="progress"></div>
+  <div id="fade"></div>
+</div>
+
+<script>
+const DUR = 15;
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, x) => a + (b - a) * x;
+const eOut = (x) => 1 - Math.pow(1 - x, 3);
+const eExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const eInOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const eBack = (x) => { const c = 1.6; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+function hash(n) { n = (n ^ 61) ^ (n >>> 16); n = n + (n << 3); n = n ^ (n >>> 4); n = Math.imul(n, 0x27d4eb2d); n = n ^ (n >>> 15); return (n >>> 0) / 4294967296; }
+const GLYPHS = "01<>/{}[]#*+=";
+const ALNUM = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+// Scene window: enter over [a, a+ein], hold, exit over [b-eout, b].
+function windowOf(t, a, b, ein = 0.35, eout = 0.3) {
+  if (t < a || t > b) return { on: false, in: 0, out: 0 };
+  return { on: true, in: eExpo(seg(t, a, a + ein)), out: eInOut(seg(t, b - eout, b)) };
+}
+function show(el, w, transform = "") {
+  el.style.opacity = w.on ? String(Math.min(w.in, 1 - w.out)) : "0";
+  el.style.visibility = w.on ? "visible" : "hidden";
+  el.style.transform = transform;
+}
+
+/* ───────── build static DOM ───────── */
+
+// background dots
+const DOTS = [];
+for (let i = 0; i < 90; i++) {
+  const d = document.createElement("div");
+  d.className = "dot";
+  $("dots").appendChild(d);
+  DOTS.push({ el: d, x: hash(i * 7 + 1) * 1920, y: hash(i * 13 + 5) * 1080, vx: 8 + hash(i * 3 + 9) * 26, ph: hash(i * 17) * 6.28, s: 0.6 + hash(i * 23) * 1.6 });
+}
+
+// letters helper (for decode / rise)
+function lettersInto(el, text, cls = "") {
+  el.innerHTML = "";
+  const spans = [];
+  for (const ch of text) {
+    const s = document.createElement("span");
+    s.textContent = ch;
+    if (cls) s.className = cls;
+    el.appendChild(s);
+    spans.push({ el: s, ch });
+  }
+  return spans;
+}
+const s1Letters = lettersInto($("s1-title"), "The Byte Club.");
+const eLetters = lettersInto($("e-title"), "The Byte Club.");
+function decode(letters, t, a, step) {
+  letters.forEach((L, i) => {
+    if (L.ch === " ") return;
+    const reveal = a + i * step;
+    if (t >= reveal) { L.el.textContent = L.ch; L.el.className = ""; }
+    else { L.el.textContent = GLYPHS[Math.floor(hash(i * 977 + Math.floor(t * 30)) * GLYPHS.length)]; L.el.className = "g"; }
+  });
+}
+
+// bands
+function fillBand(track, words) {
+  let html = "";
+  for (let k = 0; k < 4; k++) words.forEach((w, i) => { html += `<span class="bw ${i % 2 ? "solid" : ""}">${w}</span><span class="bw bs">✦</span>`; });
+  track.innerHTML = html;
+}
+fillBand($("track1"), ["Write code", "Build things", "Ship it", "Show up"]);
+fillBand($("track2"), ["No experience needed", "All years welcome"]);
+
+// split-flap cells
+const FLAPS = [];
+document.querySelectorAll("#board .flap").forEach((cell) => {
+  const row = +cell.parentElement.dataset.row;
+  const col = [...cell.parentElement.children].indexOf(cell);
+  const text = cell.dataset.t;
+  const color = cell.dataset.c || "#f3f5f7";
+  [...text].forEach((ch, i) => {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.innerHTML = `<span></span><div class="lid"></div>`;
+    tile.style.color = ch === "S" && text === "SHIPPED" ? color : color;
+    cell.appendChild(tile);
+    FLAPS.push({ span: tile.firstChild, lid: tile.lastChild, ch, settle: 3.25 + row * 0.16 + col * 0.06 + i * 0.035, seed: FLAPS.length * 31 + 7 });
+  });
+});
+
+// leads: skills + planets + strip
+const ICONS = {
+  Tech: '<path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16"/>',
+  Design: '<path d="m12 19 7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/>',
+  Creative: '<path d="M9.94 14.06 4 20M14 4l1.5 4.5L20 10l-4.5 1.5L14 16l-1.5-4.5L8 10l4.5-1.5z"/>',
+  Management: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01"/>',
+  Outreach: '<path d="m11 17 2 2a1 1 0 1 0 3-3M14 14l2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4M21 3l1 11h-2M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3M3 4h8"/>',
+};
+const DOM = [["Tech", "#28c2ff"], ["Design", "#c6a6ff"], ["Creative", "#ffbf7f"], ["Management", "#7ee0b5"], ["Outreach", "#ff9db0"]];
+const SKILLS = DOM.map(([name, c], i) => {
+  const d = document.createElement("div");
+  d.className = "skill";
+  d.style.setProperty("--c", c);
+  d.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg><b>${name}</b>`;
+  $("skills").appendChild(d);
+  return d;
+});
+$("planets").innerHTML = DOM.map(([, c], i) => `<circle data-i="${i}" r="9" fill="${c}"/>`).join("");
+const PLANETS = [...$("planets").children];
+const LEADS = [
+  ["Gulshan Kumar", "Tech Lead", "Tech", "#28c2ff", "gulshankumar-techlead.jpeg", "42% 18%", 1.1],
+  ["Tanishq Dhawan", "Tech Co-Lead", "Tech", "#28c2ff", "tanishq-technicalcolead.jpeg", "47% 20%", 1.45],
+  ["Mayank Rai", "Management Lead", "Management", "#7ee0b5", "Mayank-managmentlead.jpeg", "45% 40%", 1.3],
+  ["Shashwat Singh", "Creativity Lead", "Creative", "#ffbf7f", "shashwat-creativitylead.jpeg", "52% 36%", 2.1],
+  ["Sambhav Roy", "Design Lead", "Design", "#c6a6ff", "Sambhav.jpeg", "52% 30%", 1.25],
+  ["Vishnu M", "Sponsorship Lead", "Outreach", "#ff9db0", "vishnum-sponshership%20lead.jpeg", "55% 42%", 1.25],
+];
+const MINIS = LEADS.map(([name, role, chip, c, img, origin, zoom]) => {
+  const d = document.createElement("div");
+  d.className = "mini";
+  d.style.setProperty("--c", c);
+  d.innerHTML = `<div class="ph"><img src="../client/public/Leads/${img}" style="transform: scale(${zoom}); transform-origin: ${origin}; object-position: ${origin.split(" ")[0]} 0%" alt=""></div><div class="nm">${name}</div><div class="rl">${role}</div><div class="ch">${chip}</div>`;
+  $("strip").appendChild(d);
+  return d;
+});
+
+// badges
+const TEAM = [
+  ["Diwakar Sharma", "Frontend Dev", "Tech/diwakarsharma.jpg.jpeg", "50% 30%", 1.6],
+  ["Divyansh Kalia", "Backend Dev", "Tech/divyanshkalia.jpg.jpeg", "43% 45%", 2.0],
+  ["Samarth R", "Backend Dev", "Tech/SamarthR.jpg.jpeg", "50% 25%", 1.05],
+  ["Shreyas A S", "Backend Dev", "Tech/shreyash.jpg.jpeg", "53% 36%", 1.4],
+  ["Adwik R", "Backend Dev", "Tech/advikr.jpg.jpeg", "41% 22%", 1.8],
+  ["Ayush Anand", "Backend Dev", "Tech/Ayush.jpg.jpeg", "57% 40%", 2.0],
+];
+const BADGES = TEAM.map(([name, role, img, focus, zoom], i) => {
+  const strap = document.createElement("div");
+  strap.className = "strap";
+  const b = document.createElement("div");
+  b.className = "badge";
+  b.style.setProperty("--c", "#28c2ff");
+  b.innerHTML = `<span class="clip"></span><div class="ph"><img src="../client/public/Core/${img}" style="object-position: ${focus}; transform: scale(${zoom}); transform-origin: ${focus}" alt=""></div><div class="nm">${name}</div><div class="rl">${role}</div>`;
+  $("badges").appendChild(strap);
+  $("badges").appendChild(b);
+  const x = 240 + i * 272 + 118;
+  return { b, strap, x, t0: 6.3 + i * 0.09 };
+});
+
+// changelog commit graph
+const CL_STOPS = ["v1.0", "v2.0", "v3.0", "v4.0"];
+const CDOTS = CL_STOPS.map((v, i) => {
+  const d = document.createElement("div");
+  d.className = "cdot";
+  d.style.left = `${(i / 3) * 100}%`;
+  d.innerHTML = `<b>${v}</b>`;
+  $("cl-line").appendChild(d);
+  return d;
+});
+const headEl = document.createElement("div");
+headEl.id = "head";
+headEl.textContent = "HEAD";
+$("cl-line").appendChild(headEl);
+function wordLetters(el, text) {
+  el.innerHTML = "";
+  const out = [];
+  text.split(" ").forEach((w) => {
+    const wd = document.createElement("span");
+    wd.className = "w";
+    [...w].forEach((ch) => { const l = document.createElement("span"); l.className = "l"; l.textContent = ch; wd.appendChild(l); out.push(l); });
+    el.appendChild(wd);
+  });
+  return out;
+}
+let clName = { text: "", letters: [] };
+
+// blog books
+const BOOKS = [["Web Dev", "#0d3b34", "#28c2ff", 360, "1 post"], ["Machine Learning", "#122a45", "#7fb8ff", 320, "Coming soon"], ["Agentic AI", "#241a3a", "#c6a6ff", 344, "Coming soon"], ["Open Source", "#3a2712", "#ffbf7f", 304, "Coming soon"]];
+const BOOKEL = BOOKS.map(([label, bg, band, h, sub]) => {
+  const b = document.createElement("div");
+  b.className = "book";
+  b.style.height = h + "px";
+  b.style.setProperty("--bg2", bg);
+  b.style.setProperty("--band", band);
+  b.style.setProperty("--h", h + "px");
+  b.innerHTML = `<div class="bf bsp"><i></i><span>${label}</span><i style="width:40%"></i></div><div class="bf bcv"><div><small>THE BYTE CLUB</small><b>${label}</b><em>${sub}</em></div></div><div class="bf bbk"></div><div class="bf btop"></div>`;
+  $("shelf").appendChild(b);
+  return b;
+});
+
+// bytle
+const BT_ROWS = [["CACHE", ["miss", "miss", "miss", "miss", "near"]], ["STACK", ["near", "near", "miss", "miss", "miss"]], ["BYTES", ["hit", "hit", "hit", "hit", "hit"]], ["", []]];
+const BT = BT_ROWS.map(([word]) => {
+  const row = document.createElement("div");
+  row.className = "bt-row";
+  const tiles = [0, 1, 2, 3, 4].map((i) => { const d = document.createElement("div"); d.className = "bt"; d.textContent = word[i] || ""; row.appendChild(d); return d; });
+  $("bt-board").appendChild(row);
+  return tiles;
+});
+
+// id barcode
+(() => {
+  let html = "", x = 0, s = 9137;
+  for (let i = 0; x < 300; i++) { s = (Math.imul(s, 1103515245) + 12345) >>> 0; const w = 3 + (s % 4) * 3; html += i % 2 === 0 ? `<i style="width:${w}px"></i>` : `<span style="width:${w}px;display:block"></span>`; x += w + 4; }
+  $("idbar").innerHTML = html;
+})();
+
+/* ───────── per-frame state ───────── */
+
+const CHAPTERS = [
+  [1.9, 3.0, "01", "SHOW UP"],
+  [3.0, 4.6, "02", "EVENTS"],
+  [4.6, 6.2, "03", "THE LEADS"],
+  [6.2, 7.75, "04", "CORE TEAM"],
+  [7.75, 9.6, "05", "CHANGELOG"],
+  [9.6, 11.0, "06", "BYTE BLOG"],
+  [11.0, 12.6, "07", "BYTLE"],
+  [12.6, 13.9, "08", "BYTE ID"],
+];
+
+function seek(t) {
+  // background
+  $("glow1").style.transform = `translate(${-300 + Math.sin(t * 0.4) * 220}px, ${-500 + Math.cos(t * 0.3) * 160}px)`;
+  $("glow2").style.transform = `translate(${1100 + Math.cos(t * 0.35) * 200}px, ${200 + Math.sin(t * 0.45) * 160}px)`;
+  $("grid").style.transform = `translate(${-(t * 18) % 60}px, ${-(t * 10) % 60}px)`;
+  for (const d of DOTS) {
+    const x = (d.x + d.vx * t) % 1920;
+    const y = d.y + Math.sin(t * 0.9 + d.ph) * 18;
+    d.el.style.transform = `translate(${x}px, ${y}px) scale(${d.s})`;
+    d.el.style.opacity = String(0.15 + 0.35 * (0.5 + 0.5 * Math.sin(t * 2 + d.ph)));
+  }
+
+  // chrome
+  const chromeOn = t > 1.9 && t < 13.9;
+  const chromeA = chromeOn ? Math.min(seg(t, 1.9, 2.3), 1 - seg(t, 13.6, 13.9)) : 0;
+  $("brand").style.opacity = String(chromeA);
+  $("url").style.opacity = String(chromeA);
+  const ch = CHAPTERS.find(([a, b]) => t >= a && t < b);
+  if (ch) {
+    const [a, , n, label] = ch;
+    const p = seg(t, a, a + 0.35);
+    const shown = label.slice(0, Math.ceil(p * label.length));
+    const noise = [...label.slice(shown.length)].map((_, i) => (label[shown.length + i] === " " ? " " : GLYPHS[Math.floor(hash(i * 311 + Math.floor(t * 30)) * GLYPHS.length)])).join("");
+    $("chapter").innerHTML = `<span class="n">${n}</span>${shown}<span style="color:var(--faint)">${noise}</span>`;
+    $("chapter").style.opacity = String(chromeA);
+  } else $("chapter").style.opacity = "0";
+  $("progress").style.transform = `scaleX(${t / DUR})`;
+  // loop-friendly fade in/out
+  $("fade").style.opacity = String(Math.max(1 - seg(t, 0, 0.35), seg(t, 14.55, 15)));
+
+  // S1 intro
+  {
+    const w = windowOf(t, 0, 1.95, 0.3, 0.4);
+    show($("s1"), w, `translateY(${-90 * w.out}px) scale(${1 - 0.05 * w.out})`);
+    if (w.on) {
+      const lp = eExpo(seg(t, 0.05, 0.75));
+      $("s1-logo").style.transform = `scale(${lerp(0.4, 1, lp)}) rotate(${lerp(-30, 0, lp)}deg)`;
+      $("s1-logo").style.filter = `blur(${lerp(14, 0, lp)}px) drop-shadow(0 0 ${30 + 20 * Math.sin(t * 6)}px rgba(40,194,255,0.5))`;
+      $("s1-ring").style.transform = `scale(${lerp(0.3, 1, eExpo(seg(t, 0.2, 0.9)))}) rotate(${t * 40}deg)`;
+      $("s1-ring").style.opacity = String(eOut(seg(t, 0.2, 0.6)) * (0.6 + 0.4 * Math.sin(t * 5)));
+      decode(s1Letters, t, 0.4, 0.05);
+      $("s1-title").style.opacity = String(seg(t, 0.3, 0.45));
+      const word = "hackathons";
+      $("s1-word").textContent = word.slice(0, Math.floor(seg(t, 1.05, 1.55) * word.length));
+      $("s1-type").style.opacity = String(seg(t, 0.85, 1.0));
+      $("s1-caret").style.opacity = Math.floor(t * 3.2) % 2 === 0 ? "1" : "0";
+    }
+  }
+
+  // S2 kinetic bands
+  {
+    const w = windowOf(t, 1.6, 3.1, 0.3, 0.35);
+    show($("s2"), w);
+    if (w.on) {
+      const in1 = eExpo(seg(t, 1.6, 1.95)), in2 = eExpo(seg(t, 1.75, 2.1));
+      const out = eInOut(seg(t, 2.75, 3.1));
+      $("band1").style.transform = `translateY(${-760 * out}px) rotate(-7deg) scaleY(${in1})`;
+      $("band2").style.transform = `translateY(${760 * out}px) rotate(5deg) scaleY(${in2})`;
+      $("track1").style.transform = `translateX(${-(t - 1.6) * 1300}px)`;
+      $("track2").style.transform = `translateX(${-2600 + (t - 1.6) * 1300}px)`;
+    }
+  }
+
+  // S3 events board
+  {
+    const w = windowOf(t, 2.85, 4.58, 0.4, 0.28);
+    const rx = lerp(18, 0, w.in);
+    show($("s3"), w, `perspective(1600px) rotateX(${rx}deg) translateY(${lerp(80, 0, w.in) - 120 * w.out}px) scale(${lerp(0.9, 1, w.in)})`);
+    if (w.on) {
+      for (const f of FLAPS) {
+        if (t >= f.settle) { f.span.textContent = f.ch === " " ? " " : f.ch; f.lid.style.transform = "scaleY(0)"; }
+        else {
+          const step = Math.floor(t * 20);
+          f.span.textContent = ALNUM[Math.floor(hash(f.seed + step * 131) * ALNUM.length)];
+          f.lid.style.transform = `scaleY(${1 - ((t * 20) % 1)})`;
+        }
+      }
+      document.querySelectorAll("#board .bname").forEach((n, i) => {
+        const p = eExpo(seg(t, 3.15 + i * 0.12, 3.6 + i * 0.12));
+        n.style.opacity = String(p);
+        n.style.transform = `translateX(${lerp(-30, 0, p)}px)`;
+      });
+    }
+  }
+
+  // S4 leads
+  {
+    const w = windowOf(t, 4.55, 6.35, 0.4, 0.35);
+    show($("s4"), w, `translateX(${lerp(260, 0, w.in) - 260 * w.out}px)`);
+    if (w.on) {
+      $("lead").style.transform = `perspective(2000px) rotateY(${lerp(-14, 0, w.in)}deg)`;
+      SKILLS.forEach((s, i) => {
+        const p = seg(t, 4.95 + i * 0.12, 5.25 + i * 0.12);
+        s.classList.toggle("on", p > 0);
+        s.style.transform = `scale(${p > 0 ? lerp(0.72, 1, eExpo(p)) : 1})`;
+      });
+      $("lead-cover").style.opacity = String(seg(t, 5.6, 5.8));
+      PLANETS.forEach((pl, i) => {
+        const r = [46, 78, 110, 78, 110][i];
+        const a = (i * 72 - 90 + t * 30 * (i % 2 ? -1 : 1)) * (Math.PI / 180);
+        pl.setAttribute("cx", 120 + r * Math.cos(a));
+        pl.setAttribute("cy", 120 + r * Math.sin(a));
+      });
+      MINIS.forEach((m, i) => {
+        const p = eExpo(seg(t, 5.25 + i * 0.07, 5.7 + i * 0.07));
+        m.style.opacity = String(p);
+        m.style.transform = `translateY(${lerp(140, 0, p)}px)`;
+      });
+    }
+  }
+
+  // S5 core team badges
+  {
+    const w = windowOf(t, 6.15, 7.9, 0.25, 0.3);
+    show($("s5"), w, `scale(${1 + 0.05 * w.out})`);
+    if (w.on) {
+      $("squad").style.opacity = $("led").style.opacity = String(eOut(seg(t, 6.75, 7.05)));
+      $("rail").style.transform = `scaleX(${eExpo(seg(t, 6.15, 6.45))})`;
+      for (const B of BADGES) {
+        const k = t - B.t0;
+        const fall = eBack(clamp(k / 0.5));
+        const top = lerp(-560, 290, fall);
+        const swing = k > 0.35 ? 10 * Math.exp(-3.2 * (k - 0.35)) * Math.sin(10 * (k - 0.35)) : 0;
+        B.b.style.left = B.x - 118 + "px";
+        B.b.style.top = top + "px";
+        B.b.style.transform = `rotate(${swing}deg)`;
+        B.strap.style.left = B.x + "px";
+        B.strap.style.height = Math.max(0, top - 178) + "px";
+        B.strap.style.transform = `rotate(${-swing * 0.15}deg)`;
+      }
+    }
+  }
+
+  // S6 changelog
+  {
+    const w = windowOf(t, 7.6, 9.75, 0.01, 0.3);
+    show($("s6"), w, `scale(${1 + 0.04 * w.out})`);
+    if (w.on) {
+      // scan-line reveal of the first photo, then the second over it
+      const pa = eInOut(seg(t, 7.6, 7.95)), pb = eInOut(seg(t, 8.45, 8.85));
+      $("cl-a").style.clipPath = `inset(${(1 - pa) * 100}% 0 0 0)`;
+      $("cl-b").style.clipPath = `inset(${(1 - pb) * 100}% 0 0 0)`;
+      $("cl-a").querySelector("img").style.transform = `scale(${lerp(1.18, 1.06, seg(t, 7.6, 8.9))})`;
+      $("cl-b").querySelector("img").style.transform = `scale(${lerp(1.16, 1.04, seg(t, 8.45, 9.75))})`;
+      $("scan-b").style.top = `${(1 - pb) * 100}%`;
+      $("scan-b").style.opacity = String(pb > 0 && pb < 1 ? 1 : 0);
+      const second = t >= 8.62;
+      const name = second ? "Beyond The Labs" : "Beyond BYTE Ideathon";
+      if (clName.text !== name) clName = { text: name, letters: wordLetters($("cl-name"), name) };
+      const rs = second ? 8.65 : 7.85;
+      clName.letters.forEach((l, i) => { l.style.transform = `translateY(${lerp(110, 0, eExpo(seg(t, rs + i * 0.018, rs + 0.4 + i * 0.018)))}%)`; });
+      $("cl-ver").textContent = second ? "v4.0" : "v1.0";
+      $("cl-hash").textContent = second ? "3f9c21a" : "397b5b6";
+      $("cl-meta").textContent = second ? "8 Apr 2026 · North Auditorium · 6 photos" : "Team presentations · Q&A rounds · 5 photos";
+      $("cl-text").style.opacity = String(seg(t, 7.8, 8.0));
+      // commit graph: HEAD travels v1 -> v4
+      const hp = eInOut(seg(t, 7.9, 9.0));
+      $("cl-lit").style.transform = `scaleX(${hp})`;
+      headEl.style.left = `${hp * 100}%`;
+      CDOTS.forEach((d, i) => d.classList.toggle("on", hp >= i / 3 - 0.001));
+      $("cl-map").style.opacity = String(seg(t, 7.7, 7.95));
+      // stamp slams
+      const sp = seg(t, 9.0, 9.22);
+      $("cl-stamp").style.opacity = String(sp > 0 ? 1 : 0);
+      $("cl-stamp").style.transform = `rotate(${lerp(-34, -14, eOut(sp))}deg) scale(${sp < 0.65 ? lerp(1.9, 0.93, sp / 0.65) : lerp(0.93, 1, (sp - 0.65) / 0.35)})`;
+      // polaroids drift
+      $("pol1").style.transform = `translate(1420px, ${lerp(560, 300, seg(t, 7.9, 9.75))}px) rotate(7deg)`;
+      $("pol1").style.opacity = String(seg(t, 8.8, 9.05));
+      $("pol2").style.transform = `translate(1180px, ${lerp(380, 120, seg(t, 7.9, 9.75))}px) rotate(-6deg)`;
+      $("pol2").style.opacity = String(seg(t, 8.9, 9.15));
+    }
+  }
+
+  // S7 blog
+  {
+    const w = windowOf(t, 9.55, 11.0, 0.3, 0.25);
+    show($("s7"), w, `translateY(${lerp(60, 0, w.in) - 60 * w.out}px)`);
+    if (w.on) {
+      BOOKEL.forEach((b, i) => {
+        const rise = eExpo(seg(t, 9.6 + i * 0.07, 10.0 + i * 0.07));
+        const pull = i === 0 ? eInOut(seg(t, 10.05, 10.55)) : 0;
+        b.style.transform = `translateZ(-120px) translateY(${lerp(500, 0, rise) - 30 * pull}px) translateZ(${44 * pull}px) rotateY(${-62 * pull}deg)`;
+        b.style.marginLeft = b.style.marginRight = i === 0 ? `${lerp(0, 70, pull)}px` : "0px";
+      });
+      const pp = eExpo(seg(t, 10.35, 10.75));
+      $("post").style.opacity = String(pp);
+      $("post").style.transform = `translateY(${lerp(50, 0, pp)}px)`;
+    }
+  }
+
+  // S8 bytle
+  {
+    const w = windowOf(t, 11.0, 12.6, 0.3, 0.2);
+    show($("s8"), w, `scale(${lerp(0.96, 1, w.in) - 0.04 * w.out})`);
+    if (w.on) {
+      BT.forEach((tiles, r) => tiles.forEach((tile, i) => {
+        const [word, marks] = BT_ROWS[r];
+        if (r < 2) { tile.className = `bt ${marks[i]}`; tile.style.transform = ""; return; }
+        if (r === 3) { tile.className = "bt"; return; }
+        // row 3: typed, then flipped, then a little wave
+        const typed = t >= 11.2 + i * 0.07;
+        tile.textContent = typed ? word[i] : "";
+        const fp = seg(t, 11.65 + i * 0.1, 11.85 + i * 0.1);
+        const flipped = fp >= 0.5;
+        tile.className = `bt ${flipped ? marks[i] : typed ? "full" : ""}`;
+        const flipDeg = fp > 0 && fp < 1 ? (fp < 0.5 ? fp * 180 : (1 - fp) * 180) : 0;
+        const wave = Math.sin(clamp(seg(t, 12.2 + i * 0.05, 12.4 + i * 0.05)) * Math.PI) * -22;
+        tile.style.transform = `rotateX(${flipDeg}deg) translateY(${wave}px) scale(${typed && t < 11.2 + i * 0.07 + 0.08 ? 1.1 : 1})`;
+      }));
+      const dp = eExpo(seg(t, 12.15, 12.45));
+      $("bt-def").style.opacity = String(dp);
+      $("bt-def").style.transform = `translateY(${lerp(40, 0, dp)}px)`;
+    }
+  }
+
+  // S9 byte id
+  {
+    const w = windowOf(t, 12.6, 13.9, 0.3, 0.25);
+    show($("s9"), w);
+    if (w.on) {
+      const fp = eExpo(seg(t, 12.6, 13.15));
+      $("idcard").style.transform = `rotateY(${lerp(75, -8, fp) + Math.sin(seg(t, 13.15, 13.9) * Math.PI) * 6}deg) rotateX(${lerp(10, 2, fp)}deg)`;
+      $("shine").style.transform = `translateX(${lerp(-60, 60, seg(t, 13.0, 13.75))}%)`;
+    }
+  }
+
+  // S10 end card
+  {
+    const w = windowOf(t, 13.85, 15, 0.4, 0.01);
+    show($("s10"), w, `scale(${lerp(1.06, 1, w.in)})`);
+    if (w.on) {
+      const lp = eExpo(seg(t, 13.9, 14.35));
+      $("e-logo").style.transform = `scale(${lerp(0.5, 1, lp)})`;
+      $("e-logo").style.filter = `drop-shadow(0 0 40px rgba(40,194,255,0.5))`;
+      decode(eLetters, t, 13.95, 0.03);
+      const cp = eExpo(seg(t, 14.3, 14.55));
+      $("e-cta").style.opacity = String(cp);
+      $("e-cta").style.transform = `translateX(-50%) translateY(${lerp(30, 0, cp)}px)`;
+      $("e-chips").style.opacity = String(eExpo(seg(t, 14.3, 14.55)));
+    }
+  }
+}
+
+window.seek = seek;
+window.ready = Promise.all([
+  document.fonts.ready,
+  ...[...document.images].map((img) => (img.complete ? Promise.resolve() : img.decode().catch(() => {}))),
+]).then(() => { seek(0); return true; });
+
+// Preview: open with ?play to watch it loop in real time.
+if (location.search.includes("play")) {
+  window.ready.then(() => {
+    const start = performance.now();
+    const tick = (now) => { seek(((now - start) / 1000) % DUR); requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+}
+</script>
+</body>
+</html>

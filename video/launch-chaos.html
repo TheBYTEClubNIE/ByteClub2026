@@ -1,0 +1,702 @@
+<!doctype html>
+<!--
+  The Byte Club website launch video, "chaotic but informational" cut, cut to
+  "Murder In My Mind" (Kordhell, ~120 BPM): every slam, cut and shake sits on
+  the beat, and "IT'S LIVE" lands on the drop. ~43s,
+  1920x1080, 30fps. Real footage of the site (out/clips, from capture.mjs)
+  is cut fast, cropped, glitched, collaged and annotated, with slamming type,
+  ticker bands and a running launch log that states one fact per section.
+  window.seek(t) renders the frame at t seconds (render-launch.mjs).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Byte Club launch video (chaos cut)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=block" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #07080a; --ink: #f3f5f7; --muted: #9aa2ab; --faint: #5c636a;
+    --accent: #28c2ff; --accent2: #2af5ff; --warm: #ffbf7f; --pink: #ff9db0; --lav: #c6a6ff; --mint: #7ee0b5;
+    --display: "Unbounded", sans-serif; --body: "IBM Plex Sans", sans-serif; --mono: "IBM Plex Mono", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--body); }
+  #world { position: absolute; inset: -40px; }
+  #world > * { position: absolute; }
+  .layer { position: absolute; left: 40px; top: 40px; width: 1920px; height: 1080px; }
+
+  #grid { position: absolute; left: -100px; top: -100px; width: 2200px; height: 1360px; background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 96px 96px; }
+
+  /* footage boxes */
+  .ft { position: absolute; overflow: hidden; background: #000; transform-origin: 50% 50%; }
+  .ft img { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .ft .r, .ft .b { mix-blend-mode: screen; display: none; }
+  .ft .r { filter: url(#onlyRed); }
+  .ft .b { filter: url(#onlyCyan); }
+  .ft .tint { position: absolute; inset: 0; mix-blend-mode: color; background: var(--accent); opacity: 0; }
+  .ft .shade { position: absolute; inset: 0; background: #000; opacity: 0; }
+  .ft.win { border-radius: 16px; border: 2px solid rgba(255,255,255,0.18); box-shadow: 0 40px 90px -30px rgba(0,0,0,0.95); }
+  .ft.win::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 34px; z-index: 3; background: #11151a; border-bottom: 1.5px solid rgba(255,255,255,0.1); }
+  .ft.win::after { content: "● ● ●"; position: absolute; left: 14px; top: 7px; z-index: 4; font-size: 12px; letter-spacing: 3px; color: #39424a; }
+  .ft.phone { border-radius: 48px; border: 12px solid #1c2227; box-shadow: 0 50px 100px -30px rgba(0,0,0,0.95), inset 0 0 0 2px rgba(255,255,255,0.06); }
+
+  /* type */
+  .slam { position: absolute; font-family: var(--display); font-weight: 800; line-height: 0.92; letter-spacing: -0.045em; white-space: nowrap; transform-origin: 50% 50%; }
+  .slam.out { color: transparent; -webkit-text-stroke: 3px var(--ink); }
+  .slam.acc { color: var(--accent); }
+  .slam.warm { color: var(--warm); }
+  .tag { position: absolute; padding: 10px 20px; font-family: var(--mono); font-weight: 600; font-size: 26px; letter-spacing: 0.06em; text-transform: uppercase; color: #031018; background: var(--accent2); white-space: nowrap; }
+  .tag.dark { color: var(--ink); background: #0b0e11; border: 2px solid var(--accent); }
+  .tag.warm { background: var(--warm); color: #1a1006; }
+  .tag.pink { background: var(--pink); color: #1a0710; }
+  .info { position: absolute; padding: 18px 24px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.12); background: rgba(7,8,10,0.86); font-family: var(--body); font-size: 30px; line-height: 1.4; color: var(--ink); max-width: 660px; }
+  .info b { font-weight: 600; color: var(--accent2); }
+
+  /* tickers */
+  .band { position: absolute; left: -300px; width: 2600px; padding: 18px 0; overflow: hidden; background: var(--accent2); color: #031018; transform-origin: 50% 50%; }
+  .band.dark { background: #0b0e11; color: var(--ink); border-block: 2px solid rgba(255,255,255,0.18); }
+  .band .trk { display: flex; white-space: nowrap; font-family: var(--display); font-weight: 800; font-size: 54px; letter-spacing: -0.02em; text-transform: uppercase; }
+  .band .trk span { padding: 0 28px; }
+
+  /* callouts */
+  #callouts { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+  #callouts .ring { fill: none; stroke: var(--accent2); stroke-width: 5; stroke-linecap: round; }
+  #callouts .lead { fill: none; stroke: var(--accent2); stroke-width: 4; stroke-linecap: round; }
+  .clabel { position: absolute; padding: 8px 16px; font-family: var(--mono); font-weight: 600; font-size: 24px; letter-spacing: 0.04em; text-transform: uppercase; color: #031018; background: var(--accent2); white-space: nowrap; }
+
+  /* launch log */
+  #log { position: absolute; left: 56px; bottom: 56px; width: 640px; padding: 20px 24px 22px; border-radius: 14px; background: rgba(6,8,10,0.86); border: 1.5px solid rgba(40,194,255,0.35); box-shadow: 0 30px 60px -20px rgba(0,0,0,0.9); font-family: var(--mono); font-size: 22px; line-height: 1.55; color: var(--muted); z-index: 30; }
+  #log .hd { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; letter-spacing: 0.14em; color: var(--accent); }
+  #log p { white-space: nowrap; overflow: hidden; }
+  #log p .ok { color: var(--mint); }
+  #log p .v { color: var(--ink); }
+  #log .cur { display: inline-block; width: 12px; height: 22px; vertical-align: -4px; background: var(--accent2); }
+
+  /* hud */
+  #hud { position: absolute; inset: 0; z-index: 40; pointer-events: none; font-family: var(--mono); }
+  #hud .tl { position: absolute; left: 56px; top: 44px; display: flex; align-items: center; gap: 14px; font-family: var(--display); font-weight: 700; font-size: 24px; }
+  #hud .tl img { width: 54px; height: 54px; }
+  #hud .tr { position: absolute; right: 56px; top: 50px; display: flex; gap: 22px; align-items: center; font-size: 20px; letter-spacing: 0.1em; color: var(--muted); }
+  #hud .rec { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+  #hud .rec i { width: 14px; height: 14px; border-radius: 50%; background: #ff4d5e; box-shadow: 0 0 14px #ff4d5e; }
+  #hud .sec { position: absolute; right: 56px; bottom: 50px; font-size: 20px; letter-spacing: 0.12em; color: var(--accent2); text-transform: uppercase; }
+  #bar { position: absolute; left: 0; bottom: 0; height: 6px; width: 1920px; background: var(--accent2); transform-origin: 0 50%; box-shadow: 0 0 20px var(--accent2); }
+
+  #fx-noise { position: absolute; inset: 0; z-index: 50; opacity: 0.09; mix-blend-mode: screen; }
+  #fx-scan { position: absolute; inset: 0; z-index: 51; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.22) 0 1px, transparent 1px 3px); opacity: 0.5; }
+  #fx-vig { position: absolute; inset: 0; z-index: 52; background: radial-gradient(120% 95% at 50% 50%, transparent 58%, rgba(0,0,0,0.7)); }
+  #fx-flash { position: absolute; inset: 0; z-index: 60; background: #fff; opacity: 0; }
+  #fx-black { position: absolute; inset: 0; z-index: 70; background: #000; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <filter id="onlyRed"><feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" /></filter>
+  <filter id="onlyCyan"><feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" /></filter>
+</svg>
+<div id="stage">
+  <div id="world">
+    <div id="grid"></div>
+    <div class="layer" id="L"></div>
+  </div>
+  <svg id="callouts" viewBox="0 0 1920 1080" width="1920" height="1080"></svg>
+  <div id="labels" style="position:absolute;inset:0;z-index:20"></div>
+  <div id="log"><div class="hd"><span>LAUNCH LOG</span><span id="log-t"></span></div><div id="log-lines"></div></div>
+  <div id="hud">
+    <div class="tl"><img src="../client/public/Logo/logo-transparent.png" alt="" />The Byte Club</div>
+    <div class="tr"><span id="tc"></span><span class="rec"><i></i>LIVE</span></div>
+    <div class="sec" id="sec"></div>
+    <div id="bar"></div>
+  </div>
+  <canvas id="fx-noise" width="480" height="270"></canvas>
+  <div id="fx-scan"></div>
+  <div id="fx-vig"></div>
+  <div id="fx-flash"></div>
+  <div id="fx-black"></div>
+</div>
+
+<script>
+const FPS = 30;
+let DURATION = 60; // set by the retime below
+const CLIPLEN = {};
+window.CLIPLEN = CLIPLEN;
+
+/* ───── helpers ───── */
+const $ = (id) => document.getElementById(id);
+const L = $("L");
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const outExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const outBack = (x) => { const c = 2.4; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const inOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const lerp = (a, b, k) => a + (b - a) * k;
+const rnd = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const set = (el, css) => Object.assign(el.style, css);
+let BUILDING = []; // elements of the scene being built, so a scene can hide all of its own
+const el = (html) => { const d = document.createElement("div"); d.innerHTML = html.trim(); const n = d.firstChild; L.appendChild(n); BUILDING.push(n); return n; };
+
+let frameNo = 0;
+let loads = [];
+let hits = []; // [time, strength] for shake + flash
+
+/* footage boxes: a cropped, transformable window onto a clip frame */
+function footage(cls = "") {
+  const box = el(`<div class="ft ${cls}"><img class="m" alt=""><img class="r" alt=""><img class="b" alt=""><div class="tint"></div><div class="shade"></div></div>`);
+  box._m = box.querySelector(".m");
+  box._r = box.querySelector(".r");
+  box._b = box.querySelector(".b");
+  box._tint = box.querySelector(".tint");
+  box._shade = box.querySelector(".shade");
+  box.style.display = "none";
+  return box;
+}
+const MOBILE = (c) => c.startsWith("m-");
+function srcOf(clip, sec) {
+  const max = (CLIPLEN[clip] ?? 9999) - 1;
+  const n = clamp(Math.round(sec * FPS), 0, max);
+  return `out/clips/${clip}/${String(n).padStart(5, "0")}.jpg`;
+}
+// show `clip` at `sec`, cropped to region [rx, ry, rw, rh] (source px), inside a box at x,y,w,h
+function paint(box, o) {
+  if (!o) return void (box.style.display = "none");
+  const sw = MOBILE(o.clip) ? 780 : 1920;
+  const sh = MOBILE(o.clip) ? 1688 : 1080;
+  const [rx, ry, rw, rh] = o.region ?? [0, 0, sw, sh];
+  const s = Math.max(o.w / rw, o.h / rh);
+  const ox = -rx * s + (o.w - rw * s) / 2;
+  const oy = -ry * s + (o.h - rh * s) / 2;
+  set(box, {
+    display: "block", left: `${o.x}px`, top: `${o.y}px`, width: `${o.w}px`, height: `${o.h}px`,
+    opacity: o.opacity ?? 1, zIndex: o.z ?? 1,
+    transform: `rotate(${o.rot ?? 0}deg) scale(${o.scale ?? 1})`,
+  });
+  const src = srcOf(o.clip, o.sec);
+  const g = o.rgb ?? 0;
+  for (const [img, dx] of [[box._m, 0], [box._r, g], [box._b, -g]]) {
+    if (img !== box._m && !g) { img.style.display = "none"; continue; }
+    if (img.getAttribute("src") !== src) { img.setAttribute("src", src); loads.push(img.decode().catch(() => {})); }
+    set(img, { display: "block", width: `${sw * s}px`, height: `${sh * s}px`, transform: `translate(${ox + dx}px, ${oy}px)` });
+  }
+  // horizontal slice glitch on the colour copies
+  if (o.slice) {
+    const a = rnd(frameNo * 3.1) * 70, b = rnd(frameNo * 5.7) * 70;
+    box._r.style.clipPath = `inset(${a}% 0 ${clamp(100 - a - 12, 0, 100)}% 0)`;
+    box._b.style.clipPath = `inset(${b}% 0 ${clamp(100 - b - 16, 0, 100)}% 0)`;
+    box._r.style.transform += ` translateX(${(rnd(frameNo) - 0.5) * 120}px)`;
+    box._b.style.transform += ` translateX(${(rnd(frameNo + 9) - 0.5) * 120}px)`;
+    box._r.style.mixBlendMode = box._b.style.mixBlendMode = "normal";
+    box._r.style.filter = box._b.style.filter = "none";
+  } else {
+    box._r.style.clipPath = box._b.style.clipPath = "none";
+    box._r.style.mixBlendMode = box._b.style.mixBlendMode = "";
+    box._r.style.filter = box._b.style.filter = "";
+  }
+  box._tint.style.opacity = o.tint ?? 0;
+  box._shade.style.opacity = o.shade ?? 0;
+}
+
+/* slamming type: big words that punch in, hold, and cut out */
+function word(text, cls = "", size = 200) {
+  const w = el(`<div class="slam ${cls}">${text}</div>`);
+  w.style.fontSize = `${size}px`;
+  w.style.display = "none";
+  return w;
+}
+function slam(w, t, a, b, o = {}) {
+  if (t < a || t >= b) return void (w.style.display = "none");
+  const p = outBack(seg(t, a, a + 0.2));
+  const k = seg(t, a, a + 0.06);
+  set(w, {
+    display: "block", left: `${o.x}px`, top: `${o.y}px`, zIndex: o.z ?? 10,
+    opacity: Math.min(1, k * 2),
+    transform: `translate(-50%, -50%) rotate(${o.rot ?? 0}deg) scale(${lerp(o.from ?? 1.6, 1, p) * (o.drift ? 1 + (t - a) * o.drift : 1)})`,
+    textShadow: `0 14px 44px rgba(0,0,0,0.85)` + (k < 1 || !o.trail ? "" : `, ${o.trail}px 0 0 rgba(42,245,255,0.55), ${-o.trail}px 0 0 rgba(255,77,140,0.5)`),
+  });
+}
+function tag(text, cls = "") {
+  const g = el(`<div class="tag ${cls}">${text}</div>`);
+  g.style.display = "none";
+  return g;
+}
+function pop(g, t, a, b, o = {}) {
+  if (t < a || t >= b) return void (g.style.display = "none");
+  const p = outBack(seg(t, a, a + 0.22));
+  set(g, { display: "block", left: `${o.x}px`, top: `${o.y}px`, zIndex: o.z ?? 12, transform: `rotate(${o.rot ?? 0}deg) scale(${lerp(0.3, 1, p)})`, transformOrigin: o.origin ?? "0 50%" });
+}
+function info(html) {
+  const i = el(`<div class="info">${html}</div>`);
+  i.style.display = "none";
+  return i;
+}
+function fadeUp(n, t, a, b, o = {}) {
+  if (t < a || t >= b) return void (n.style.display = "none");
+  const p = outExpo(seg(t, a, a + 0.5));
+  set(n, { display: "block", left: `${o.x}px`, top: `${o.y}px`, zIndex: o.z ?? 12, opacity: p, transform: `translateY(${(1 - p) * 30}px)` });
+}
+function band(words, cls = "") {
+  const b = el(`<div class="band ${cls}"><div class="trk">${Array(8).fill(words.map((w) => `<span>${w}</span><span>✦</span>`).join("")).join("")}</div></div>`);
+  b.style.display = "none";
+  return b;
+}
+function sweep(b, t, a, e, o) {
+  if (t < a || t >= e) return void (b.style.display = "none");
+  const p = outExpo(seg(t, a, a + 0.35));
+  set(b, { display: "block", top: `${o.y}px`, zIndex: o.z ?? 8, transform: `rotate(${o.rot}deg) scaleY(${p})` });
+  b.firstChild.style.transform = `translateX(${(o.dir ?? -1) * ((t - a) * (o.speed ?? 420)) - 600}px)`;
+}
+
+/* callouts: a circle around something, a line, and a label */
+const SVGNS = "http://www.w3.org/2000/svg";
+function callout(label) {
+  const g = document.createElementNS(SVGNS, "g");
+  const ring = document.createElementNS(SVGNS, "ellipse");
+  ring.setAttribute("class", "ring");
+  ring.setAttribute("pathLength", "1");
+  ring.setAttribute("stroke-dasharray", "1 1");
+  const lead = document.createElementNS(SVGNS, "path");
+  lead.setAttribute("class", "lead");
+  lead.setAttribute("pathLength", "1");
+  lead.setAttribute("stroke-dasharray", "1 1");
+  g.append(ring, lead);
+  $("callouts").appendChild(g);
+  const lab = document.createElement("div");
+  lab.className = "clabel";
+  lab.textContent = label;
+  $("labels").appendChild(lab);
+  BUILDING.push(g, lab);
+  return { g, ring, lead, lab };
+}
+function point(c, t, a, b, o) {
+  const on = t >= a && t < b;
+  c.g.style.display = "none";
+  c.lab.style.display = on ? "block" : "none";
+  if (!on) return;
+  const p = outBack(seg(t, a + 0.1, a + 0.32));
+  set(c.lab, { left: `${o.lx + (o.ldx ?? 0)}px`, top: `${o.ly - 24}px`, transform: `scale(${p}) rotate(${o.lrot ?? -2}deg)`, transformOrigin: "0 50%" });
+}
+function counter(t, a, b, to) { return Math.round(to * outExpo(seg(t, a, b))); }
+
+/* ───── the launch log: one line per section ───── */
+const LOG = [
+  [5.4, `<span class="v">$</span> open byteclubnie.vercel.app`],
+  [10.0, `<span class="ok">✓</span> events <span class="v">printed live</span>, thermal or dot-matrix`],
+  [16.4, `<span class="ok">✓</span> <span class="v">5 domains</span> wired into <span class="v">7 leads</span>`],
+  [22.4, `<span class="ok">✓</span> <span class="v">19 core members</span> on lanyards`],
+  [28.4, `<span class="ok">✓</span> <span class="v">5 releases</span> shipped, <span class="v">1 aftermovie</span>`],
+  [34.4, `<span class="ok">✓</span> blog: <span class="v">6 shelves</span>`],
+  [39.8, `<span class="ok">✓</span> bytle: <span class="v">1 word a day</span>, 6 tries`],
+  [43.8, `<span class="ok">✓</span> byte id: <span class="v">your name on a holo card</span>`],
+  [47.8, `<span class="ok">✓</span> built <span class="v">mobile-first</span>`],
+  [53.8, `<span class="v">→ byteclubnie.vercel.app is live</span>`],
+];
+const logLines = LOG.map(([, html]) => { const p = document.createElement("p"); p.innerHTML = html; $("log-lines").appendChild(p); return p; });
+const logPlain = LOG.map(([, html]) => html.replace(/<[^>]+>/g, ""));
+function paintLog(t) {
+  const show = t >= LOG_ON[0] && t < LOG_ON[1];
+  $("log").style.display = show ? "block" : "none";
+  if (!show) return;
+  const inP = outExpo(seg(t, LOG_ON[0], LOG_ON[0] + 0.4));
+  set($("log"), { opacity: inP, transform: `translateY(${(1 - inP) * 40}px)` });
+  // keep the last 4 lines on screen
+  const visible = LOG.map((l, i) => i).filter((i) => t >= LOG[i][0]);
+  logLines.forEach((p, i) => {
+    const on = visible.includes(i) && visible.indexOf(i) >= visible.length - 4;
+    p.style.display = on ? "block" : "none";
+    if (!on) return;
+    const chars = Math.floor(seg(t, LOG[i][0], LOG[i][0] + 0.4) * logPlain[i].length);
+    if (chars < logPlain[i].length) p.innerHTML = logPlain[i].slice(0, chars) + `<span class="cur"></span>`;
+    else p.innerHTML = LOG[i][1];
+  });
+  $("log-t").textContent = `T+${t.toFixed(1)}s`;
+}
+
+/* ───── scenes ───── */
+const S = [];
+const scene = (a, b, build) => { BUILDING = []; const s = { a, b, ...build(), els: BUILDING }; S.push(s); return s; };
+
+// 0 · cold open: strobe montage + words
+scene(0, 5.2, () => {
+  const bg = footage();
+  const words = [["THE", 0.35], ["BYTE", 0.7], ["CLUB", 1.05]].map(([w, at], i) => ({ n: word(w, i === 1 ? "acc" : "", 300), at }));
+  const has = word("HAS A", "out", 120);
+  const neu = word("NEW", "", 300);
+  const site = word("WEBSITE.", "acc", 260);
+  const logo = el(`<img src="../client/public/Logo/logo-transparent.png" style="position:absolute;width:300px;height:300px;display:none" alt="">`);
+  const live = word("IT'S LIVE", "", 230);
+  const strobe = ["changelog", "core", "events", "leads", "blogpage", "byteid", "hero", "bytle", "changelog", "core"];
+  return {
+    paint(t) {
+      // strobe: a new frame every 4 video frames, tinted and split
+      const k = Math.floor(t * FPS / 4);
+      const clip = strobe[k % strobe.length];
+      const on = t > 0.25 && t < 3.6;
+      paint(bg, on ? { clip, sec: 1 + rnd(k) * 6, x: 0, y: 0, w: 1920, h: 1080, rgb: 14, tint: 0.55, shade: 0.45, slice: k % 3 === 0 } : null);
+      words.forEach(({ n, at }, i) => slam(n, t, at, 1.45, { x: 960, y: 260 + i * 270, rot: [-4, 2, -2][i], trail: 10 }));
+      slam(has, t, 1.45, 2.4, { x: 960, y: 300, rot: -3 });
+      slam(neu, t, 1.7, 2.4, { x: 960, y: 520, rot: 2, trail: 8 });
+      slam(site, t, 1.95, 2.4, { x: 960, y: 760, rot: -2, trail: 12 });
+      if (t >= 2.4 && t < 3.6) {
+        const p = outBack(seg(t, 2.4, 2.7));
+        set(logo, { display: "block", left: "810px", top: "220px", transform: `scale(${lerp(2.2, 1, p)}) rotate(${(1 - p) * -30}deg)` });
+      } else logo.style.display = "none";
+      slam(live, t, 3.6, 5.2, { x: 960, y: 540, rot: -3, trail: 14, drift: 0.04 });
+    },
+    hits: [0.35, 0.7, 1.05, 1.7, 1.95, 2.4, 3.6],
+  };
+});
+
+// 1 · home
+scene(5.2, 9.6, () => {
+  const f = footage();
+  const b1 = band(["Write code", "Build things", "Ship it", "Show up"]);
+  const w = word("HOME", "out", 230);
+  const c = callout("workshops · ideathons · hackathons");
+  const nfo = info(`NIE's <b>student-run tech club</b>, now with a website as hands-on as its events.`);
+  return {
+    paint(t, u) {
+      const z = 1 + u * 0.035;
+      paint(f, { clip: "hero", sec: 0.2 + u * 0.9, x: 0, y: 0, w: 1920, h: 1080, region: [960 - 960 / z, 540 - 540 / z, 1920 / z, 1080 / z], rgb: u < 0.2 ? 18 : 0, slice: u < 0.15 });
+      slam(w, u, 0.05, 1.6, { x: 1450, y: 160, rot: -4 });
+      sweep(b1, u, 1.5, 4.4, { y: 880, rot: -4 });
+      point(c, u, 0.8, 4.4, { cx: 520, cy: 470, rx: 210, ry: 46, lx: 820, ly: 360 });
+      fadeUp(nfo, u, 1.0, 4.4, { x: 1150, y: 640 });
+    },
+    hits: [5.2, 5.25],
+  };
+});
+
+// 2 · events: zoom punch on the receipt, then dot-matrix
+scene(9.6, 16.2, () => {
+  const f = footage();
+  const w1 = word("WHAT'S", "", 170), w2 = word("NEXT?", "acc", 230), w3 = word("PRINTED.", "warm", 150);
+  const t1 = tag("thermal"), t2 = tag("dot-matrix mode", "warm");
+  const nfo = info(`See what's next, <b>what we run</b> and <b>how to get in</b>.`);
+  const c = callout("5 events · 20 photos");
+  const runs = band(["Ideathons", "Beginner sessions", "Build sessions", "Treasure hunts", "Meetups"]);
+  return {
+    paint(t, u) {
+      const dot = u > 3.5;
+      const punch = inOut(seg(u, 0.1, 0.6));
+      const region = dot ? [1040, 0, 540, 760] : [lerp(0, 1030, punch), lerp(0, 110, punch), lerp(1920, 540, punch), lerp(1080, 820, punch)];
+      paint(f, { clip: "events", sec: dot ? 7.2 + (u - 3.5) * 0.4 : 1.3 + u * 0.9, x: 1000, y: 70, w: 780, h: 940, region, rot: dot ? 3 : -2, rgb: (u > 3.4 && u < 3.65) || u < 0.12 ? 22 : 0, slice: u > 3.4 && u < 3.6 });
+      f.classList.add("win");
+      slam(w1, u, 0.3, 3.4, { x: 470, y: 250, rot: -3 });
+      slam(w2, u, 0.55, 3.4, { x: 500, y: 450, rot: 2, trail: 8 });
+      slam(w3, u, 3.55, 6.6, { x: 500, y: 330, rot: -4, trail: 10 });
+      pop(t1, u, 1.0, 3.4, { x: 1560, y: 120, rot: 4 });
+      pop(t2, u, 3.7, 6.6, { x: 1520, y: 110, rot: 5 });
+      fadeUp(nfo, u, 1.4, 6.6, { x: 150, y: 560 });
+      point(c, u, 4.4, 6.6, { cx: 0, cy: 0, rx: 0, lx: 1440, ly: 760 });
+      sweep(runs, u, 3.8, 6.6, { y: 935, rot: 3, z: 8 });
+    },
+    hits: [9.6, 9.9, 10.15, 13.15],
+  };
+});
+
+// 3 · leads: the dial up close, then the leads booting
+scene(16.2, 22.4, () => {
+  const f = footage(), g = footage();
+  const n5 = word("5", "acc", 380), dom = word("DOMAINS", "", 120), n7 = word("7", "warm", 380), leads = word("LEADS", "", 120);
+  const c1 = callout("tech · design · creative · mgmt · outreach");
+  const c2 = callout("wired as you scroll");
+  const nfo = info(`The club lead's domains <b>wire into every lead</b> as you scroll.`);
+  return {
+    paint(t, u) {
+      const z = inOut(seg(u, 0, 0.5));
+      paint(f, { clip: "leads", sec: 1.4 + u * 0.8, x: 0, y: 0, w: 1920, h: 1080, region: [lerp(0, 330, z), lerp(0, 290, z), lerp(1920, 900, z), lerp(1080, 506, z)], rgb: u < 0.15 ? 20 : 0, opacity: u < 3.2 ? 1 : 0, shade: 0.35 });
+      paint(g, u >= 3.2 ? { clip: "leads", sec: 5 + (u - 3.2) * 1.4, x: 980, y: 120, w: 860, h: 840, region: [300, 60, 1200, 1000], rot: 2, rgb: u < 3.35 ? 20 : 0, slice: u < 3.3 } : null);
+      g.classList.add("win");
+      slam(n5, u, 0.6, 3.2, { x: 1450, y: 330, rot: -6, trail: 10 });
+      slam(dom, u, 0.8, 3.2, { x: 1500, y: 560, rot: -3 });
+      point(c1, u, 1.0, 3.2, { cx: 640, cy: 520, rx: 300, ry: 300, lx: 1080, ly: 760 });
+      slam(n7, u, 3.3, 6.2, { x: 330, y: 330, rot: 5, trail: 10 });
+      slam(leads, u, 3.5, 6.2, { x: 420, y: 560, rot: 2 });
+      point(c2, u, 3.9, 6.2, { cx: 1010, cy: 560, rx: 46, ry: 220, lx: 560, ly: 760, ldx: -40 });
+      fadeUp(nfo, u, 4.2, 6.2, { x: 150, y: 640 });
+    },
+    hits: [16.2, 16.8, 19.4, 19.5],
+  };
+});
+
+// 4 · core team: a collage of windows, the fling up close
+scene(22.4, 28.6, () => {
+  const a = footage(), b = footage(), c = footage(), p = footage("phone");
+  const g1 = word("GRAB.", "", 180), g2 = word("FLING.", "acc", 180), g3 = word("19", "warm", 330);
+  const lab = tag("on lanyards", "dark");
+  const nfo = info(`Every core member has a <b>3D ID card</b>. Grab one by the card or the strap.`);
+  return {
+    paint(t, u) {
+      const fly = (k, d) => outExpo(seg(u, d, d + 0.5)) * k;
+      paint(a, { clip: "core", sec: 2.3 + u * 0.8, x: lerp(-900, 90, fly(1, 0)), y: 150, w: 1040, h: 600, region: [380, 100, 1180, 680], rot: -4, z: 2 });
+      paint(b, { clip: "core", sec: 4 + u * 0.6, x: lerp(2400, 1120, fly(1, 0.15)), y: 90, w: 700, h: 420, region: [380, 600, 1180, 480], rot: 5, z: 1 });
+      paint(c, u > 2.6 ? { clip: "core", sec: 2.6 + (u - 2.6) * 0.7, x: 540, y: 130, w: 980, h: 800, region: [820, 180, 760, 620], rot: -1.5, z: 4, rgb: u < 2.75 ? 22 : 0, slice: u < 2.7 } : null);
+      paint(p, { clip: "m-core", sec: 1.2 + u * 0.4, x: lerp(2200, 1460, fly(1, 0.3)), y: 420, w: 330, h: 640, rot: 8, z: 3 });
+      [a, b, c].forEach((x) => x.classList.add("win"));
+      slam(g1, u, 0.7, 2.6, { x: 520, y: 700, rot: -4, z: 9 });
+      slam(g2, u, 1.3, 2.6, { x: 1320, y: 700, rot: 3, z: 9, trail: 10 });
+      slam(g3, u, 3.2, 6.2, { x: 330, y: 380, rot: -5, z: 9, trail: 12 });
+      pop(lab, u, 3.45, 6.2, { x: 160, y: 560, rot: -3, z: 9 });
+      fadeUp(nfo, u, 3.8, 6.2, { x: 150, y: 680, z: 9 });
+    },
+    hits: [22.4, 23.1, 23.7, 25.0, 25.6],
+  };
+});
+
+// 5 · changelog: four releases, cut hard
+scene(28.6, 34.6, () => {
+  const f = footage();
+  // [version, name, where it is in the changelog footage, how long it holds]
+  const R = [["v1.0", "Beyond BYTE Ideathon", 3.4, 1], ["v2.0", "Bits to Bytes", 6.0, 1], ["v3.0", "Annual Assembly", 6.62, 1], ["v4.0", "Beyond The Labs", 8.4, 1], ["v5.0", "Searching for<br>the Upside Down", 0, 2]];
+  const starts = R.reduce((acc, r, i) => [...acc, i ? acc[i - 1] + R[i - 1][3] : 0], []);
+  const film = tag("▶ aftermovie, now on the site", "pink");
+  const vs = R.map(([v]) => word(v, "acc", 320));
+  const ns = R.map(([, n]) => word(n, "", 96));
+  ns[4].style.lineHeight = "1";
+  const tg = tag("changelog · every event, release by release", "dark");
+  const st = tag("", "warm");
+  return {
+    paint(t, u) {
+      let i = 0;
+      while (i < R.length - 1 && u >= starts[i + 1]) i++;
+      const lu = u - starts[i];
+      const k = lu / R[i][3];
+      const v5 = i === 4;
+      paint(f, v5
+        ? { clip: "aftermovie", sec: 2.4 + lu * 1.6, x: 0, y: 0, w: 1920, h: 1080, region: [lerp(0, 120, k), lerp(0, 68, k), lerp(1920, 1680, k), lerp(1080, 945, k)], rgb: lu < 0.12 ? 30 : 0, slice: lu < 0.1, shade: 0.35 }
+        : { clip: "changelog", sec: R[i][2] + lu * 0.15, x: 0, y: 0, w: 1920, h: 1080, region: [lerp(240, 300, k), lerp(0, 20, k), lerp(1244, 1138, k), lerp(700, 640, k)], rgb: lu < 0.12 ? 26 : 0, slice: lu < 0.08, shade: 0.3 });
+      vs.forEach((n, j) => slam(n, u, starts[j] + 0.05, starts[j] + R[j][3], { x: 1450, y: 330, rot: -5, trail: 12 }));
+      ns.forEach((n, j) => slam(n, u, starts[j] + 0.16, starts[j] + R[j][3], { x: j === 4 ? 1220 : 1300, y: j === 4 ? 600 : 560, rot: -2, from: 1.2 }));
+      pop(tg, u, 0.2, 6, { x: 120, y: 150, rot: -2 });
+      pop(film, u, starts[4] + 0.45, 6, { x: 1100, y: 790, rot: -3 });
+      st.textContent = `${counter(u, starts[4] + 0.7, starts[4] + 1.4, 5)} shipped · ${counter(u, starts[4] + 0.8, starts[4] + 1.5, 20)} photos`;
+      pop(st, u, starts[4] + 0.7, 6, { x: 1100, y: 880, rot: 2 });
+    },
+    hits: [28.6, 29.6, 30.6, 31.6, 32.6, 32.75],
+  };
+});
+
+// 6 · blog
+scene(34.6, 40.0, () => {
+  const f = footage(), s = footage();
+  const b1 = band(["Web Dev", "Agentic AI", "Machine Learning", "Open Source", "DSA", "Creative"]);
+  const b2 = band(["Byte Blog", "Six shelves", "Pull a book"], "dark");
+  const w = word("BYTE BLOG", "", 200);
+  const six = word("6", "warm", 300);
+  const sh = tag("shelves", "warm");
+  return {
+    paint(t, u) {
+      paint(f, { clip: "blogpage", sec: 2.2 + u * 0.8, x: 0, y: 0, w: 1920, h: 1080, region: [180, 380, 1560, 700], rgb: u < 0.14 ? 22 : 0, slice: u < 0.1, shade: 0.2 });
+      paint(s, u > 2.6 ? { clip: "blog", sec: 1.6 + (u - 2.6) * 0.8, x: 1020, y: 160, w: 780, h: 440, region: [960, 220, 640, 360], rot: 4, z: 3, rgb: u < 2.75 ? 20 : 0 } : null);
+      s.classList.add("win");
+      slam(w, u, 0.15, 5.4, { x: 700, y: 170, rot: -3, trail: 8 });
+      sweep(b1, u, 0.6, 5.4, { y: 740, rot: -5, z: 9 });
+      sweep(b2, u, 0.9, 5.4, { y: 880, rot: 3, dir: 1, z: 8 });
+      slam(six, u, 2.0, 5.4, { x: 300, y: 480, rot: 6, trail: 10, z: 10 });
+      pop(sh, u, 2.25, 5.4, { x: 400, y: 520, rot: -4, z: 11 });
+    },
+    hits: [34.6, 34.75, 36.6, 37.2],
+  };
+});
+
+// 7 · bytle
+scene(40.0, 44.0, () => {
+  const f = footage();
+  const tiles = [..."BYTLE"].map((ch, i) => el(`<div style="position:absolute;width:150px;height:150px;display:none;place-items:center;border-radius:14px;font:800 92px var(--display);color:#06121a;background:${["#28c2ff", "#ffbf7f", "#28c2ff", "#3a434b", "#ffbf7f"][i]}">${ch}</div>`));
+  const nfo = info(`<b>One tech word a day.</b> Six tries. Same word for everyone.`);
+  const t1 = tag("new word every midnight", "dark");
+  return {
+    paint(t, u) {
+      paint(f, { clip: "bytle", sec: 0.6 + u * 1.3, x: 120, y: 150, w: 760, h: 800, region: [380, 300, 520, 560], rot: -3, rgb: u < 0.12 ? 22 : 0, slice: u < 0.08 });
+      f.classList.add("win");
+      tiles.forEach((n, i) => {
+        const a = 0.3 + i * 0.12;
+        if (u < a) return void (n.style.display = "none");
+        const p = seg(u, a, a + 0.3);
+        set(n, { display: "grid", left: `${1000 + i * 168}px`, top: "300px", transform: `perspective(600px) rotateX(${(1 - outExpo(p)) * 90}deg) rotate(${[-4, 2, -2, 3, -1][i]}deg)` });
+      });
+      fadeUp(nfo, u, 1.1, 4, { x: 1000, y: 520 });
+      pop(t1, u, 1.6, 4, { x: 1000, y: 700, rot: -2 });
+    },
+    hits: [40.0, 40.3, 40.42, 40.54, 40.66, 40.78],
+  };
+});
+
+// 8 · byte id
+scene(44.0, 48.0, () => {
+  const f = footage();
+  const w1 = word("YOUR NAME", "out", 150), w2 = word("ON A HOLO", "", 150), w3 = word("ID CARD.", "acc", 150);
+  const t1 = tag("share it · tag @thebyteclubnie", "pink");
+  return {
+    paint(t, u) {
+      paint(f, { clip: "byteid", sec: 1.3 + u * 1.0, x: 1040, y: 110, w: 720, h: 900, region: [1100, 120, 470, 590], rot: 4, rgb: u < 0.12 ? 22 : 0, slice: u < 0.08 });
+      f.classList.add("win");
+      slam(w1, u, 0.2, 4, { x: 520, y: 330, rot: -3 });
+      slam(w2, u, 0.5, 4, { x: 540, y: 500, rot: 2 });
+      slam(w3, u, 0.8, 4, { x: 520, y: 670, rot: -2, trail: 10 });
+      pop(t1, u, 1.5, 4, { x: 1080, y: 990, rot: 3, z: 12 });
+    },
+    hits: [44.0, 44.2, 44.5, 44.8],
+  };
+});
+
+// 9 · mobile: three phones at once
+scene(48.0, 54.0, () => {
+  const ph = [footage("phone"), footage("phone"), footage("phone")];
+  const w = word("MOBILE-FIRST.", "", 150);
+  const nfo = info(`Every section is<br><b>built for your phone</b> first.`);
+  const clips = [["m-events", 1.0], ["m-leads", 0.6], ["m-core", 0.8]];
+  return {
+    paint(t, u) {
+      ph.forEach((p, i) => {
+        const k = outExpo(seg(u, 0.1 + i * 0.15, 0.7 + i * 0.15));
+        paint(p, { clip: clips[i][0], sec: clips[i][1] + u * 0.45, x: 560 + i * 330, y: lerp(1300, 300 + Math.abs(i - 1) * 40, k), w: 330, h: 690, rot: (i - 1) * 7, z: i === 1 ? 3 : 2, rgb: u > 3 && u < 3.12 ? 18 : 0 });
+      });
+      slam(w, u, 0.9, 6, { x: 960, y: 190, rot: -2, trail: 10, z: 10 });
+      fadeUp(nfo, u, 1.5, 6, { x: 110, y: 430, z: 10 });
+    },
+    hits: [48.0, 48.9, 51.0],
+  };
+});
+
+// 10 · outro
+scene(54.0, 60, () => {
+  const logo = el(`<img src="../client/public/Logo/logo-transparent.png" style="position:absolute;width:240px;height:240px;display:none" alt="">`);
+  const w = word("THE BYTE CLUB", "", 150);
+  const url = el(`<div style="position:absolute;display:none;padding:18px 36px;border-radius:999px;border:3px solid var(--accent2);background:rgba(42,245,255,0.1);font:500 46px var(--mono);color:var(--accent2);white-space:nowrap"></div>`);
+  const stamp = el(`<div style="position:absolute;display:none;padding:14px 30px;border:6px solid #ff4d5e;color:#ff4d5e;font:800 64px var(--display);letter-spacing:0.04em;border-radius:12px">NOW LIVE</div>`);
+  const fol = info(`Follow <b>@thebyteclubnie</b> for what's next.`);
+  const b1 = band(["No experience needed", "All years welcome", "Just show up"]);
+  return {
+    paint(t, u) {
+      if (u > 0.1) {
+        const p = outBack(seg(u, 0.1, 0.45));
+        set(logo, { display: "block", left: "840px", top: "120px", transform: `scale(${lerp(2.4, 1, p)}) rotate(${(1 - p) * 40}deg)` });
+      } else logo.style.display = "none";
+      slam(w, u, 0.45, 6, { x: 960, y: 470, trail: 10 });
+      if (u > 1.0) {
+        const site = "byteclubnie.vercel.app";
+        const n = Math.floor(seg(u, 1.1, 1.9) * site.length);
+        url.textContent = site.slice(0, n) + (u < 2.2 && Math.floor(u * 6) % 2 ? "▍" : "");
+        const p = outExpo(seg(u, 1.0, 1.3));
+        set(url, { display: "block", left: "960px", top: "600px", transform: `translateX(-50%) scale(${lerp(0.8, 1, p)})`, opacity: p });
+      } else url.style.display = "none";
+      if (u > 2.1) {
+        const p = outBack(seg(u, 2.1, 2.3));
+        set(stamp, { display: "block", left: "1380px", top: "250px", transform: `rotate(-12deg) scale(${lerp(2.6, 1, p)})`, opacity: Math.min(1, p * 2) });
+      } else stamp.style.display = "none";
+      fadeUp(fol, u, 2.6, 6, { x: 700, y: 760 });
+      sweep(b1, u, 0.3, 6, { y: 930, rot: -3 });
+    },
+    hits: [54.1, 54.45, 56.1],
+  };
+});
+
+/* ───── beat grid ─────
+   The song (from 12.99s in) has a beat every 0.5012s and drops at video
+   beats 8, 40 and 72. Each scene gets a whole number of beats, and every
+   hit inside it is pinned to the nearest free half-beat with a
+   piecewise-linear time warp, so slams and cuts land on the music. */
+const BEAT = 0.5012;
+const DROPS = [8, 40, 72].map((b) => b * BEAT);
+// scene lengths in beats; ?cut=30 gives the 30-second version (v5.0 then lands on drop 2)
+//                        cold home events leads core changelog blog bytle byteid mobile outro
+const CUTS = { full: [12, 6, 8, 8, 6, 12, 6, 6, 8, 6, 8], 30: [10, 4, 6, 6, 6, 12, 4, 3, 3, 3, 4] };
+const BEATS = CUTS[new URLSearchParams(location.search).get("cut")] ?? CUTS.full;
+// the cold open is placed by hand: THE, BYTE, CLUB, NEW, WEBSITE, logo on beats 1-6, IT'S LIVE on the drop
+const COLD = [[0.35, 1], [0.7, 2], [1.05, 3], [1.7, 4.5], [1.95, 5], [2.4, 6], [3.6, 8]];
+let at = 0;
+S.forEach((sc, i) => {
+  sc.A = at;
+  sc.B = at + BEATS[i] * BEAT;
+  const k = (sc.b - sc.a) / (sc.B - sc.A);
+  const half = BEAT / 2;
+  const anchors = [[sc.a, sc.A]];
+  let last = sc.A;
+  for (const h of [...(sc.hits ?? [])].filter((x) => x > sc.a + 1e-6 && x < sc.b - 1e-6).sort((x, y) => x - y)) {
+    const hand = i === 0 && COLD.find(([ah]) => Math.abs(ah - h) < 1e-6);
+    let r = hand ? sc.A + hand[1] * BEAT : Math.round((sc.A + (h - sc.a) / k) / half) * half;
+    if (r <= last + 1e-6) r = last + half;
+    if (r >= sc.B - 1e-6) continue;
+    anchors.push([h, r]);
+    last = r;
+  }
+  anchors.push([sc.b, sc.B]);
+  sc.anchors = anchors;
+  at = sc.B;
+});
+DURATION = at;
+window.DURATION = DURATION;
+const warp = (an, x, from, to) => {
+  for (let j = 1; j < an.length; j++)
+    if (x <= an[j][from]) return an[j - 1][to] + ((x - an[j - 1][from]) / (an[j][from] - an[j - 1][from] || 1)) * (an[j][to] - an[j - 1][to]);
+  return an[an.length - 1][to];
+};
+// authored time -> final time, and back
+const toNew = (x) => {
+  const sc = S.find((q) => x >= q.a && x < q.b) ?? S[S.length - 1];
+  return warp(sc.anchors, x, 0, 1);
+};
+const toAuthored = (sc, t) => warp(sc.anchors, t, 1, 0);
+const HITS = [...S.flatMap((sc) => (sc.hits ?? []).map((h) => warp(sc.anchors, h, 0, 1))), ...DROPS];
+const SECTIONS = [[5.2, "home"], [9.6, "events"], [16.2, "the leads"], [22.4, "core team"], [28.6, "changelog"], [34.6, "byte blog"], [40, "bytle"], [44, "byte id"], [48, "mobile"], [54, "live"]].map(([a, n]) => [toNew(a), n]);
+LOG.forEach((l) => (l[0] = toNew(l[0])));
+const LOG_ON = [toNew(5.2), toNew(58.6)];
+
+/* noise texture, re-rolled every frame */
+const nctx = $("fx-noise").getContext("2d");
+const nimg = nctx.createImageData(480, 270);
+
+async function seek(t) {
+  frameNo = Math.round(t * FPS);
+  loads = [];
+  // camera shake + flash from recent hits
+  let shake = 0, flash = 0;
+  for (const h of HITS) {
+    const d = t - h;
+    if (d >= 0 && d < 0.3) shake = Math.max(shake, 1 - d / 0.3);
+    if (d >= 0 && d < 0.12) flash = Math.max(flash, 1 - d / 0.12);
+  }
+  const sx = (rnd(frameNo * 1.7) - 0.5) * 34 * shake;
+  const sy = (rnd(frameNo * 2.3) - 0.5) * 24 * shake;
+  const pump = Math.exp(-((t % BEAT) / BEAT) * 7) * (t >= DROPS[0] ? 1 : 0.4);
+  for (const d of DROPS) if (t >= d && t < d + 0.15) flash = Math.max(flash, 2.2 * (1 - (t - d) / 0.15));
+  set($("world"), { transform: `translate(${sx}px, ${sy}px) rotate(${(rnd(frameNo * 4.1) - 0.5) * 1.2 * shake}deg) scale(${1 + 0.012 * pump})` });
+  set($("fx-flash"), { opacity: Math.min(0.6, flash * 0.28) });
+  $("fx-noise").style.opacity = String(0.07 + 0.06 * pump);
+  set($("grid"), { transform: `translate(${(t * 22) % 96}px, ${(t * 14) % 96}px)` });
+
+  for (const sc of S) {
+    if (t >= sc.A && t < sc.B) {
+      const x = toAuthored(sc, t);
+      sc.paint(x, x - sc.a);
+    } else sc.els.forEach((n) => (n.style.display = "none"));
+  }
+
+  // hud
+  const sec = SECTIONS.filter(([a]) => t >= a).pop();
+  $("sec").textContent = sec ? `▸ ${sec[1]}` : "";
+  const ss = Math.floor(t), ff = frameNo % FPS;
+  $("tc").textContent = `00:${String(ss).padStart(2, "0")}:${String(ff).padStart(2, "0")}`;
+  set($("hud"), { opacity: t > LOG_ON[0] - 0.2 && t < LOG_ON[1] ? 1 : 0 });
+  set($("bar"), { transform: `scaleX(${t / DURATION})` });
+  paintLog(t);
+
+  // grain
+  for (let i = 0; i < nimg.data.length; i += 4) {
+    const v = rnd(i * 0.013 + frameNo * 17.3) * 255;
+    nimg.data[i] = nimg.data[i + 1] = nimg.data[i + 2] = v;
+    nimg.data[i + 3] = 255;
+  }
+  nctx.putImageData(nimg, 0, 0);
+
+  set($("fx-black"), { opacity: Math.max(1 - seg(t, 0, 0.2), seg(t, DURATION - 0.7, DURATION)) });
+  await Promise.all(loads);
+}
+
+window.seek = seek;
+window.ready = document.fonts.ready.then(() => Promise.all([...document.images].map((i) => i.decode().catch(() => {}))));
+</script>
+</body>
+</html>

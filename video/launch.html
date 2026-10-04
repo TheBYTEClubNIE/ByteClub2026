@@ -1,0 +1,420 @@
+<!doctype html>
+<!--
+  The Byte Club website launch video: ~60s, 1920x1080, 30fps.
+  Footage of the real site (captured by capture.mjs into out/clips) plays
+  inside a browser and a phone frame, with titles, captions and transitions
+  around it. Every frame is a pure function of time: window.seek(t) puts the
+  scene in its state at t seconds; render-launch.mjs steps through and
+  encodes the MP4.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Byte Club launch video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=block" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0b0d; --el: #101317; --ink: #f3f5f7; --muted: #9aa2ab; --faint: #6c747c;
+    --line: rgba(255,255,255,0.09); --line2: rgba(255,255,255,0.16);
+    --accent: #28c2ff; --accent2: #2af5ff;
+    --display: "Unbounded", sans-serif; --body: "IBM Plex Sans", sans-serif; --mono: "IBM Plex Mono", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--ink); font-family: var(--body); }
+  .abs { position: absolute; }
+
+  /* background */
+  #grid { position: absolute; inset: -80px; background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px); background-size: 80px 80px; }
+  .glow { position: absolute; border-radius: 50%; }
+  #glow1 { width: 1500px; height: 1500px; background: radial-gradient(circle, rgba(40,194,255,0.14), transparent 62%); }
+  #glow2 { width: 1300px; height: 1300px; background: radial-gradient(circle, rgba(198,166,255,0.09), transparent 62%); }
+  .dot { position: absolute; width: 3px; height: 3px; border-radius: 50%; background: var(--accent2); }
+  #vignette { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(0,0,0,0.6)); }
+
+  /* intro */
+  #intro { position: absolute; inset: 0; }
+  #i-logo { position: absolute; left: 50%; top: 120px; width: 230px; height: 230px; margin-left: -115px; }
+  #i-ring { position: absolute; left: 50%; top: 235px; width: 400px; height: 400px; margin: -200px 0 0 -200px; overflow: visible; }
+  #i-title { position: absolute; left: 0; right: 0; top: 430px; display: flex; justify-content: center; gap: 0.32em; font-family: var(--display); font-weight: 700; font-size: 136px; letter-spacing: -0.04em; line-height: 1.05; }
+  #i-title .w { display: inline-flex; overflow: hidden; padding-bottom: 0.06em; }
+  #i-title .l { display: inline-block; }
+  #i-title .g { color: var(--accent); }
+  #i-type { position: absolute; left: 0; right: 0; top: 640px; text-align: center; font-family: var(--mono); font-size: 40px; color: var(--muted); }
+  #i-type b { font-weight: 400; color: var(--accent); }
+  .caret { display: inline-block; width: 22px; height: 42px; margin-left: 6px; vertical-align: -7px; background: var(--accent); }
+  #i-line { position: absolute; left: 0; right: 0; top: 730px; text-align: center; font-family: var(--display); font-weight: 600; font-size: 52px; letter-spacing: -0.02em; }
+  #i-line span { color: var(--accent); }
+
+  /* top brand + chapter rail */
+  #brand { position: absolute; left: 96px; top: 52px; display: flex; align-items: center; gap: 14px; font-family: var(--display); font-weight: 600; font-size: 22px; letter-spacing: -0.01em; }
+  #brand img { width: 50px; height: 50px; }
+  #live { position: absolute; right: 96px; top: 60px; display: flex; align-items: center; gap: 10px; padding: 8px 18px; border-radius: 999px; border: 1.5px solid rgba(40,194,255,0.45); background: rgba(40,194,255,0.08); font-family: var(--mono); font-size: 18px; letter-spacing: 0.08em; color: var(--accent2); }
+  #live i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 12px var(--accent2); }
+  #rail { position: absolute; left: 96px; right: 96px; bottom: 44px; display: flex; gap: 30px; font-family: var(--mono); font-size: 16px; letter-spacing: 0.04em; }
+  #rail span { display: flex; align-items: center; gap: 9px; color: #4c535a; white-space: nowrap; }
+  #rail span i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  #rail span.past { color: var(--faint); }
+  #rail span.on { color: var(--ink); }
+  #rail span.on i { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  #progress { position: absolute; left: 0; bottom: 0; height: 4px; width: 1920px; transform-origin: left; background: var(--accent); box-shadow: 0 0 16px rgba(40,194,255,0.8); }
+
+  /* caption column */
+  #cap { position: absolute; left: 90px; top: 0; width: 492px; height: 1080px; display: flex; flex-direction: column; justify-content: center; }
+  #cap-t { font-family: var(--display); font-weight: 600; font-size: 48px; line-height: 1.08; letter-spacing: -0.03em; }
+  #cap-t .ln { display: block; overflow: hidden; padding-bottom: 0.08em; }
+  #cap-t .ln > span { display: block; }
+  #cap-b { margin-top: 26px; font-size: 27px; line-height: 1.5; color: var(--muted); }
+  #cap-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+  #cap-tags span { padding: 7px 16px; border-radius: 999px; border: 1.5px solid var(--line2); font-size: 19px; color: var(--ink); }
+
+  /* browser */
+  #browser { position: absolute; left: 600px; top: 186px; width: 1224px; border-radius: 18px; overflow: hidden; background: #0c0f12; border: 1.5px solid var(--line2); box-shadow: 0 60px 120px -40px rgba(0,0,0,0.9), 0 0 0 1px rgba(0,0,0,0.6); transform-origin: 50% 50%; }
+  .chrome { display: flex; align-items: center; gap: 16px; height: 46px; padding: 0 18px; background: #12161a; border-bottom: 1.5px solid var(--line); }
+  .chrome .dots { display: flex; gap: 9px; }
+  .chrome .dots i { width: 13px; height: 13px; border-radius: 50%; background: #2b3239; }
+  .chrome .url { flex: 1; max-width: 520px; margin: 0 auto; padding: 6px 16px; border-radius: 9px; background: #0a0d10; font-family: var(--mono); font-size: 16px; color: var(--muted); text-align: center; }
+  .chrome .url b { font-weight: 400; color: var(--ink); }
+  .view { position: relative; width: 1224px; height: 688.5px; overflow: hidden; background: var(--bg); }
+  .view img { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #wipe { position: absolute; inset: 0; background: var(--bg); }
+  #wipe::after { content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 5px; background: var(--accent); box-shadow: 0 0 22px var(--accent); }
+
+  /* phone */
+  #phone { position: absolute; left: 1052px; top: 82px; width: 418px; height: 880px; padding: 14px; border-radius: 62px; background: linear-gradient(160deg, #2a3138, #12161a); box-shadow: 0 60px 120px -40px rgba(0,0,0,0.95), inset 0 0 0 2px rgba(255,255,255,0.08); }
+  #phone .screen { position: relative; width: 390px; height: 852px; border-radius: 48px; overflow: hidden; background: var(--bg); }
+  #phone .screen img { position: absolute; left: 0; top: 4px; width: 390px; height: 844px; }
+  #phone .island { position: absolute; left: 50%; top: 12px; width: 118px; height: 34px; margin-left: -59px; border-radius: 20px; background: #000; z-index: 2; }
+  #pwipe { position: absolute; inset: 0; background: var(--bg); z-index: 1; }
+  #pwipe::after { content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: 4px; background: var(--accent); box-shadow: 0 0 18px var(--accent); }
+
+  /* outro */
+  #outro { position: absolute; inset: 0; }
+  #o-logo { position: absolute; left: 50%; top: 150px; width: 200px; height: 200px; margin-left: -100px; }
+  #o-title { position: absolute; left: 0; right: 0; top: 400px; display: flex; justify-content: center; gap: 0.32em; font-family: var(--display); font-weight: 700; font-size: 120px; letter-spacing: -0.04em; line-height: 1.05; }
+  #o-title .w { display: inline-flex; overflow: hidden; padding-bottom: 0.06em; }
+  #o-title .l { display: inline-block; }
+  #o-title .g { color: var(--accent); }
+  #o-url { position: absolute; left: 50%; top: 590px; transform: translateX(-50%); padding: 16px 34px; border-radius: 999px; border: 2px solid rgba(40,194,255,0.5); background: rgba(40,194,255,0.08); font-family: var(--mono); font-size: 40px; color: var(--accent2); white-space: nowrap; }
+  #o-sub { position: absolute; left: 0; right: 0; top: 720px; text-align: center; font-size: 32px; color: var(--muted); }
+  #o-sub b { font-weight: 600; color: var(--ink); }
+
+  #fade { position: absolute; inset: 0; background: #000; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg">
+    <div id="grid"></div>
+    <div class="glow" id="glow1"></div>
+    <div class="glow" id="glow2"></div>
+    <div id="dots"></div>
+    <div id="vignette"></div>
+  </div>
+
+  <div id="intro">
+    <svg id="i-ring" viewBox="0 0 400 400"><circle id="i-ring-c" cx="200" cy="200" r="196" fill="none" stroke="#28c2ff" stroke-width="3" stroke-linecap="round" pathLength="1" stroke-dasharray="1 1" opacity="0.7" /></svg>
+    <img id="i-logo" src="../client/public/Logo/logo-transparent.png" alt="" />
+    <div id="i-title"></div>
+    <p id="i-type"><span id="i-type-t"></span><span class="caret" id="i-caret"></span></p>
+    <p id="i-line">has a new home <span>on the web.</span></p>
+  </div>
+
+  <div id="cap">
+    <h2 id="cap-t"></h2>
+    <p id="cap-b"></p>
+    <div id="cap-tags"></div>
+  </div>
+
+  <div id="browser">
+    <div class="chrome">
+      <span class="dots"><i></i><i></i><i></i></span>
+      <span class="url" id="url"></span>
+      <span style="width: 57px"></span>
+    </div>
+    <div class="view">
+      <img id="shot" alt="" />
+      <div id="wipe"></div>
+    </div>
+  </div>
+
+  <div id="phone">
+    <div class="screen">
+      <div class="island"></div>
+      <img id="mshot" alt="" />
+      <div id="pwipe"></div>
+    </div>
+  </div>
+
+  <div id="outro">
+    <img id="o-logo" src="../client/public/Logo/logo-transparent.png" alt="" />
+    <div id="o-title"></div>
+    <div id="o-url"><span id="o-url-t"></span></div>
+    <p id="o-sub">Follow <b>@thebyteclubnie</b> for what's next</p>
+  </div>
+
+  <div id="brand"><img src="../client/public/Logo/logo-transparent.png" alt="" /> The Byte Club</div>
+  <div id="live"><i></i>NOW LIVE</div>
+  <div id="rail"></div>
+  <div id="progress"></div>
+  <div id="fade"></div>
+</div>
+
+<script>
+const FPS = 30;
+const INTRO = 4.4;
+const OUTRO = 4.8;
+const SITE = "byteclubnie.vercel.app";
+
+// Chapters of the tour, in page order. Each clip is footage from capture.mjs.
+// [clip, from s, to s, playback rate, url]
+const CHAPTERS = [
+  { label: "Home", title: ["A new home for", "The Byte Club"], body: "NIE's student-run tech club is now online.",
+    clips: [["hero", 0, 4.2, 1, "/"]] },
+  { label: "Events", title: ["Events,", "printed live"], body: "What's next prints as a receipt. Thermal or dot-matrix, your pick.",
+    clips: [["events", 1.2, 7.4, 1, "/#events"]] },
+  { label: "Leads", title: ["The people", "behind it"], body: "Five domains wire into every lead as you scroll.",
+    clips: [["leads", 0.6, 10, 1.45, "/#team"]] },
+  { label: "Core team", title: ["The core team,", "on lanyards"], body: "3D ID cards you can grab and fling.",
+    clips: [["core", 1.2, 8.5, 1.25, "/#team"]] },
+  { label: "Changelog", title: ["The", "changelog"], body: "Every event we've shipped, with the photos.",
+    clips: [["changelog", 1.6, 10.6, 1.5, "/#past"]] },
+  { label: "Blog", title: ["Byte Blog"], body: "Notes from the club on six shelves.",
+    tags: ["Web Dev", "Agentic AI", "ML", "Open Source", "DSA", "Creative"],
+    clips: [["blog", 0.8, 4.6, 1.3, "/#blog"], ["blogpage", 1, 6.5, 1.4, "/blog"]] },
+  { label: "Bytle", title: ["Bytle"], body: "One tech word a day. Six tries.",
+    clips: [["bytle", 0.4, 6.4, 1.5, "/bytle"]] },
+  { label: "Byte ID", title: ["Your", "Byte ID"], body: "Your name on a holo club ID card.",
+    clips: [["byteid", 0.8, 5.5, 1.4, "/#byte-id"]] },
+  { label: "Mobile", title: ["Made for", "your phone"], body: "Every section, built mobile-first.",
+    device: "phone", clips: [["m-hero", 0, 2.4, 1.2], ["m-events", 0.8, 3.2, 1.2], ["m-leads", 0.6, 3.4, 1.3], ["m-core", 0.6, 3, 1.2]] },
+];
+
+// flatten into timed segments
+const SEGS = [];
+let acc = INTRO;
+CHAPTERS.forEach((ch, ci) => {
+  ch.start = acc;
+  for (const [name, from, to, rate, url] of ch.clips) {
+    const dur = (to - from) / rate;
+    SEGS.push({ ci, name, from, rate, start: acc, end: acc + dur, url, device: ch.device ?? "browser" });
+    acc += dur;
+  }
+  ch.end = acc;
+});
+const TOUR_END = acc;
+const DURATION = TOUR_END + OUTRO;
+window.DURATION = DURATION;
+
+/* helpers */
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const outExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const inOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const outBack = (x) => 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2);
+const set = (el, css) => Object.assign(el.style, css);
+
+// letters for the big titles
+function letters(el, words) {
+  el.innerHTML = words.map((w) => `<span class="w">${[...w.text].map((c) => `<span class="l${w.g ? " g" : ""}">${c}</span>`).join("")}</span>`).join("");
+  return [...el.querySelectorAll(".l")];
+}
+const iLetters = letters($("i-title"), [{ text: "The" }, { text: "Byte", g: true }, { text: "Club" }]);
+const oLetters = letters($("o-title"), [{ text: "The" }, { text: "Byte", g: true }, { text: "Club" }]);
+
+// background particles (fixed seed)
+let seed = 7;
+const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const DOTS = Array.from({ length: 46 }, () => ({ x: rnd() * 1920, y: rnd() * 1080, s: 0.4 + rnd() * 1.2, p: rnd() * 6.28, el: null }));
+for (const d of DOTS) {
+  d.el = document.createElement("i");
+  d.el.className = "dot";
+  $("dots").appendChild(d.el);
+}
+
+// chapter rail
+$("rail").innerHTML = CHAPTERS.map((c) => `<span><i></i>${c.label}</span>`).join("");
+const railItems = [...$("rail").children];
+
+const frameSrc = (name, local) => {
+  const n = Math.max(0, Math.round(local * FPS));
+  return `out/clips/${name}/${String(n).padStart(5, "0")}.jpg`;
+};
+const CLIPLEN = {}; // filled by the renderer (frame counts) so we never ask for a missing frame
+
+let capFor = -1;
+function setCaption(ci) {
+  if (capFor === ci) return;
+  capFor = ci;
+  const ch = CHAPTERS[ci];
+  $("cap-t").innerHTML = ch.title.map((l) => `<span class="ln"><span>${l}</span></span>`).join("");
+  $("cap-b").textContent = ch.body;
+  $("cap-tags").innerHTML = (ch.tags ?? []).map((x) => `<span>${x}</span>`).join("");
+}
+
+async function seek(t) {
+  /* background */
+  set($("grid"), { transform: `translate(${(t * 6) % 80}px, ${(t * 4) % 80}px)` });
+  set($("glow1"), { left: `${-300 + Math.sin(t * 0.21) * 160}px`, top: `${-520 + Math.cos(t * 0.17) * 120}px` });
+  set($("glow2"), { left: `${1000 + Math.cos(t * 0.19) * 180}px`, top: `${300 + Math.sin(t * 0.23) * 140}px` });
+  for (const d of DOTS) {
+    const y = (d.y - t * 18 * d.s + 1080 * 4) % 1080;
+    set(d.el, { transform: `translate(${d.x + Math.sin(t * 0.6 + d.p) * 14}px, ${y}px)`, opacity: 0.15 + 0.35 * (0.5 + 0.5 * Math.sin(t * 1.3 + d.p)) });
+  }
+
+  /* intro (0 → 6s) */
+  const introOut = seg(t, 3.3, 4.1);
+  const showIntro = t < INTRO;
+  set($("intro"), { display: showIntro ? "block" : "none", opacity: 1 - introOut, transform: `scale(${1 + introOut * 0.18})` });
+  if (showIntro) {
+    const lg = outExpo(seg(t, 0.2, 1.1));
+    set($("i-logo"), { opacity: lg, transform: `scale(${0.7 + 0.3 * outBack(seg(t, 0.2, 1.1))})` });
+    $("i-ring-c").setAttribute("stroke-dashoffset", String(1 - inOut(seg(t, 0.3, 1.4))));
+    set($("i-ring"), { transform: `rotate(${t * 20}deg)`, opacity: 1 - seg(t, 2.8, 3.4) * 0.6 });
+    iLetters.forEach((el, k) => {
+      const p = outExpo(seg(t, 0.8 + k * 0.04, 1.4 + k * 0.04));
+      set(el, { transform: `translateY(${(1 - p) * 110}%)` });
+    });
+    const typed = "NIE Mysuru's student-run tech club";
+    const n = Math.floor(seg(t, 1.5, 2.3) * typed.length);
+    const k = typed.indexOf("tech club");
+    $("i-type-t").innerHTML = typed.slice(0, Math.min(n, k)) + (n > k ? `<b>${typed.slice(k, n)}</b>` : "");
+    set($("i-type"), { opacity: seg(t, 1.4, 1.6) });
+    set($("i-caret"), { opacity: Math.floor(t * 2.4) % 2 ? 0 : 1 });
+    const ln = outExpo(seg(t, 2.4, 3.0));
+    set($("i-line"), { opacity: ln, transform: `translateY(${(1 - ln) * 30}px)` });
+  }
+
+  /* tour */
+  const tourIn = outExpo(seg(t, 3.4, 4.6));
+  const tourOut = inOut(seg(t, TOUR_END - 0.2, TOUR_END + 0.9));
+  const inTour = t >= 3.4 && t < TOUR_END + 1;
+  let s = SEGS.find((x) => t >= x.start && t < x.end) ?? (t < INTRO ? SEGS[0] : SEGS[SEGS.length - 1]);
+  const ci = s.ci;
+  const ch = CHAPTERS[ci];
+
+  // chrome: brand, live pill, rail, progress
+  const chromeOn = clamp(seg(t, 4.0, 4.6) - seg(t, TOUR_END - 0.2, TOUR_END + 0.5));
+  for (const id of ["brand", "live", "rail"]) set($(id), { opacity: chromeOn });
+  set($("progress"), { transform: `scaleX(${t / DURATION})` });
+  railItems.forEach((el, k) => (el.className = k < ci ? "past" : k === ci ? "on" : ""));
+
+  // captions: lines rise in at a chapter start, fade out just before the next
+  set($("cap"), { display: inTour ? "flex" : "none" });
+  if (inTour) {
+    setCaption(ci);
+    const local = t - Math.max(ch.start, 4.0);
+    const out = seg(t, ch.end - 0.4, ch.end) * (ci < CHAPTERS.length - 1 ? 1 : 0) + seg(t, TOUR_END - 0.3, TOUR_END + 0.2) * (ci === CHAPTERS.length - 1 ? 1 : 0);
+    [...$("cap-t").querySelectorAll(".ln > span")].forEach((el, k) => {
+      const p = outExpo(seg(local, 0.1 + k * 0.09, 0.9 + k * 0.09));
+      set(el, { transform: `translateY(${(1 - p) * 110}%)` });
+    });
+    const b = outExpo(seg(local, 0.45, 1.2));
+    set($("cap-b"), { opacity: b, transform: `translateY(${(1 - b) * 18}px)` });
+    [...$("cap-tags").children].forEach((el, k) => {
+      const p = outExpo(seg(local, 0.8 + k * 0.08, 1.4 + k * 0.08));
+      set(el, { opacity: p, transform: `translateY(${(1 - p) * 14}px)` });
+    });
+    set($("cap"), { opacity: 1 - out, transform: `translateY(${-out * 24}px)` });
+  }
+
+  // devices: browser for most chapters, phone for the mobile one
+  const phoneCh = CHAPTERS.findIndex((c) => c.device === "phone");
+  const pc = CHAPTERS[phoneCh];
+  const toPhone = inOut(seg(t, pc.start - 0.5, pc.start + 0.4));
+  const fromPhone = inOut(seg(t, pc.end - 0.4, pc.end + 0.5));
+  const phoneOn = toPhone * (1 - fromPhone);
+  const bIntro = 0.62 + 0.38 * tourIn;
+  const bScale = bIntro * (1 - phoneOn * 0.12) * (1 - tourOut * 0.1);
+  // a slow push-in during each clip keeps the footage alive
+  const push = 1 + 0.025 * inOut(seg(t, s.start, s.end));
+  set($("browser"), {
+    display: inTour && phoneOn < 1 ? "block" : "none",
+    opacity: tourIn * (1 - phoneOn) * (1 - tourOut),
+    transform: `perspective(1800px) rotateX(${(1 - tourIn) * 16}deg) translateY(${(1 - tourIn) * 80}px) scale(${bScale * (s.device === "browser" ? push : 1)})`,
+  });
+  set($("phone"), {
+    display: phoneOn > 0 ? "block" : "none",
+    opacity: phoneOn,
+    transform: `translateY(${(1 - phoneOn) * 160}px) rotate(${(1 - phoneOn) * 4}deg)`,
+  });
+
+  // footage + wipes between clips (cut happens behind the wipe)
+  const loads = [];
+  const show = (img, sg, local) => {
+    const max = (CLIPLEN[sg.name] ?? 9999) - 1;
+    const src = frameSrc(sg.name, Math.min(sg.from + local * sg.rate, max / FPS));
+    if (img.getAttribute("src") !== src) {
+      img.setAttribute("src", src);
+      loads.push(img.decode().catch(() => {}));
+    }
+  };
+  const browserSeg = s.device === "browser" ? s : SEGS.filter((x) => x.device === "browser" && x.ci < phoneCh).pop();
+  if (inTour) {
+    const bs = phoneOn > 0.5 && s.device !== "browser" ? browserSeg : s.device === "browser" ? s : browserSeg;
+    show($("shot"), bs, clamp(t - bs.start, 0, bs.end - bs.start));
+    $("url").innerHTML = `<b>${SITE}</b>${bs.url === "/" ? "" : bs.url}`;
+    const phoneSeg = s.device === "phone" ? s : t < pc.start ? SEGS.find((x) => x.device === "phone") : SEGS.filter((x) => x.device === "phone").pop();
+    if (phoneOn > 0) show($("mshot"), phoneSeg, clamp(t - phoneSeg.start, 0, phoneSeg.end - phoneSeg.start));
+  }
+  // wipe: covers left→right over 0.22s before a cut, uncovers to the right after
+  const wipe = (el, device) => {
+    let cover = 0;
+    let from = "left";
+    for (const x of SEGS) {
+      if (x.device !== device || x === SEGS[0]) continue;
+      const prev = SEGS[SEGS.indexOf(x) - 1];
+      if (!prev || prev.device !== device) continue;
+      if (t >= x.start - 0.24 && t < x.start) { cover = inOut(seg(t, x.start - 0.24, x.start)); from = "left"; }
+      if (t >= x.start && t < x.start + 0.3) { cover = 1 - inOut(seg(t, x.start, x.start + 0.3)); from = "right"; }
+    }
+    set(el, {
+      display: cover > 0 ? "block" : "none",
+      clipPath: from === "left" ? `inset(0 ${(1 - cover) * 100}% 0 0)` : `inset(0 0 0 ${(1 - cover) * 100}%)`,
+    });
+  };
+  wipe($("wipe"), "browser");
+  wipe($("pwipe"), "phone");
+
+  /* outro */
+  const oT = t - TOUR_END;
+  set($("outro"), { display: oT > 0 ? "block" : "none" });
+  if (oT > 0) {
+    const lg = outExpo(seg(oT, 0.2, 1.0));
+    set($("o-logo"), { opacity: lg, transform: `scale(${0.75 + 0.25 * outBack(seg(oT, 0.2, 1.0))})` });
+    oLetters.forEach((el, k) => {
+      const p = outExpo(seg(oT, 0.5 + k * 0.04, 1.1 + k * 0.04));
+      set(el, { transform: `translateY(${(1 - p) * 110}%)` });
+    });
+    const u = outExpo(seg(oT, 1.2, 1.8));
+    set($("o-url"), { opacity: u, transform: `translateX(-50%) scale(${0.9 + 0.1 * u})` });
+    const n = Math.floor(seg(oT, 1.3, 2.2) * SITE.length);
+    $("o-url-t").textContent = SITE.slice(0, n) + (oT < 2.5 && Math.floor(oT * 2.4) % 2 === 0 ? "▍" : "");
+    const sb = outExpo(seg(oT, 2.3, 2.9));
+    set($("o-sub"), { opacity: sb, transform: `translateY(${(1 - sb) * 20}px)` });
+  }
+
+  /* fade in/out */
+  set($("fade"), { opacity: Math.max(1 - seg(t, 0, 0.5), seg(t, DURATION - 0.6, DURATION)) });
+
+  await Promise.all(loads);
+}
+
+window.seek = seek;
+window.CHAPTERS = CHAPTERS;
+window.CLIPLEN = CLIPLEN;
+window.ready = document.fonts.ready.then(() => Promise.all([...document.images].map((i) => i.decode().catch(() => {}))));
+
+if (location.search.includes("play")) {
+  const t0 = performance.now();
+  const tick = () => {
+    seek(((performance.now() - t0) / 1000) % DURATION);
+    requestAnimationFrame(tick);
+  };
+  tick();
+}
+</script>
+</body>
+</html>
