@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Delete, Share2 } from "lucide-react";
 import type { Mark, Stats, View } from "@/lib/bytle";
-import { dayNumber, nextReset } from "@/lib/bytle-day";
+import { clearOldSaves, dayNumber, nextReset } from "@/lib/bytle-day";
 
 const ROWS = 6;
 const KEYS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
@@ -68,15 +68,7 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
 
   useEffect(refresh, [refresh]);
 
-  // Remembers that today's word was played, for the dot on the nav's Bytle button.
-  useEffect(() => {
-    if (!game?.rows.length) return;
-    try {
-      localStorage.setItem(`bytle:${game.day}`, "1");
-    } catch {
-      // private windows may refuse storage; only the dot is affected
-    }
-  }, [game]);
+  useEffect(clearOldSaves, []);
 
   // Keyboard input only while the game is on screen, so typing elsewhere is untouched.
   useEffect(() => {

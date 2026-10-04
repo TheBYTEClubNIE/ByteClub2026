@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookOpen, Calendar, Gamepad2, History, Home as HomeIcon, UserPlus, Users } from "lucide-react";
 import { FloatingDock } from "@/components/ui/floating-dock";
-import { dayNumber } from "@/lib/bytle-day";
+import { clearOldSaves } from "@/lib/bytle-day";
 import ScrollRing from "./ScrollRing";
 
 const navItems = [
@@ -18,15 +18,15 @@ const navItems = [
 
 export default function SiteNav() {
   const [activeSection, setActiveSection] = useState("home");
-  // Dot on the Bytle button until today's word has been played in this browser.
+  // Dot on the Bytle button until today's word has been played (the server knows).
   const [freshWord, setFreshWord] = useState(false);
 
   useEffect(() => {
-    try {
-      setFreshWord(!localStorage.getItem(`bytle:${dayNumber(Date.now())}`));
-    } catch {
-      setFreshWord(false);
-    }
+    clearOldSaves();
+    fetch("/api/bytle", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((g: { rows?: unknown[] } | null) => setFreshWord(!!g && !g.rows?.length))
+      .catch(() => {});
 
     const observer = new IntersectionObserver(
       (entries) => {
