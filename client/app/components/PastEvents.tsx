@@ -72,6 +72,7 @@ function Scene({
       className={`scene ${index === 0 ? 'scene--first' : ''} ${active ? 'is-active' : ''}`}
       inert={!active}
     >
+      <div className="scene-view">
       <div className="scene-bg">
         {event.video ? (
           <SceneVideo src={event.video} poster={photos[0].src} active={active} />
@@ -80,7 +81,6 @@ function Scene({
         )}
       </div>
       <div className="scene-scrim" />
-      <div className="scene-scan" aria-hidden />
 
       {photos.slice(1, 4).map((p, k) => {
         const f = FLOATERS[k];
@@ -133,6 +133,8 @@ function Scene({
           <span className="stamp-date">SHIPPED</span>
         </div>
       </div>
+      </div>
+      <div className="scene-scan" aria-hidden />
     </div>
   );
 }
@@ -235,29 +237,48 @@ export default function PastEvents() {
   const scenes = useRef<(HTMLDivElement | null)[]>([]);
 
   // One scroll handler drives everything through CSS variables:
-  //   --p      0..1 across the whole history (commit graph, HEAD marker)
-  //   --enter  0..1 as a release scans in over the previous one
-  //   --life   0..1 across a release's time on screen (zoom, polaroid drift)
+  //   --cl-p      0..1 across the whole history (commit graph, HEAD marker)
+  //   --cl-enter  0..1 as a release scans in over the previous one
+  //   --cl-life   0..1 across a release's time on screen (zoom, polaroid drift)
+  // Kept cheap for phones: the variables don't inherit and are written only
+  // on the few elements that use them (so a frame restyles a handful of
+  // nodes, not the whole stage), every change is a transform or opacity (no
+  // repaints), and only the one or two releases you can see are drawn.
   useEffect(() => {
     const track = trackRef.current!;
     const stage = stageRef.current!;
+    const root = document.documentElement;
     let raf = 0;
     let listening = false;
+    const enterOf = (s: number, i: number) => (i === 0 ? 1 : i >= N ? 0 : smooth((s - (i - 0.6)) / 0.6));
+    const put = (els: HTMLElement[], name: string, v: number) => els.forEach((n) => n.style.setProperty(name, v.toFixed(4)));
+    const graph = [...stage.querySelectorAll<HTMLElement>('.cl-line--lit, .cl-head-rail')];
+    const parts = scenes.current.map((el) => ({
+      enter: el ? [el, ...el.querySelectorAll<HTMLElement>('.scene-view, .scene-scan')] : [],
+      life: el ? [...el.querySelectorAll<HTMLElement>('.scene-bg, .floater')] : [],
+    }));
 
     const update = () => {
       raf = 0;
       const r = track.getBoundingClientRect();
-      const travel = Math.max(1, r.height - window.innerHeight);
-      const p = clamp01(-r.top / travel);
+      const vh = window.innerHeight;
+      const p = clamp01(-r.top / Math.max(1, r.height - vh));
       const s = p * SEGMENTS;
-      stage.style.setProperty('--p', p.toFixed(4));
+      put(graph, '--cl-p', p);
+      // while the stage fills the screen the 3D backdrop behind it is hidden,
+      // which also stops its render loop
+      const covering = r.top <= 0 && r.bottom >= vh;
+      if (covering !== root.hasAttribute('data-cover')) root.toggleAttribute('data-cover', covering);
       let current = 0;
       scenes.current.forEach((el, i) => {
         if (!el) return;
-        const enter = i === 0 ? 1 : smooth((s - (i - 0.6)) / 0.6);
-        const life = clamp01((s - (i - 0.6)) / 1.6);
-        el.style.setProperty('--enter', enter.toFixed(4));
-        el.style.setProperty('--life', life.toFixed(4));
+        const enter = enterOf(s, i);
+        const shown = enter > 0 && enterOf(s, i + 1) < 1;
+        if (shown === el.hidden) el.hidden = !shown;
+        if (shown) {
+          put(parts[i].enter, '--cl-enter', enter);
+          put(parts[i].life, '--cl-life', clamp01((s - (i - 0.6)) / 1.6));
+        }
         if (enter > 0.5) current = i;
       });
       setActive(current);
@@ -281,6 +302,7 @@ export default function PastEvents() {
     update();
     return () => {
       io.disconnect();
+      root.removeAttribute('data-cover');
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
       cancelAnimationFrame(raf);
@@ -361,8 +383,8 @@ export default function PastEvents() {
                   <span className="cl-code">{version(i)}</span>
                 </button>
               ))}
-              <span className="cl-head" aria-hidden>
-                HEAD
+              <span className="cl-head-rail" aria-hidden>
+                <span className="cl-head">HEAD</span>
               </span>
             </div>
             {/* steps to the next release; after the last one, on to what is coming up */}
@@ -385,20 +407,28 @@ export default function PastEvents() {
 }
 
 const CHANGELOG_CSS = `
+@property --cl-p { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --cl-enter { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --cl-life { syntax: '<number>'; inherits: false; initial-value: 0; }
 .cl-track { position: relative; }
 .cl-anchor { position: absolute; left: 0; width: 1px; height: 1px; scroll-margin-top: -84px; }
 .cl-stage { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #07090b; }
 
-/* each release scans in from the bottom, like a screen redrawing */
-.scene { position: absolute; inset: 0; isolation: isolate; clip-path: inset(calc((1 - var(--enter, 0)) * 100%) 0 0 0); }
-.scene--first { clip-path: none; }
-.scene-scan { position: absolute; left: 0; right: 0; z-index: 4; top: calc((1 - var(--enter, 0)) * 100%); height: 2px; background: var(--accent-strong); box-shadow: 0 0 24px 6px rgba(42,245,255,0.55); opacity: calc(var(--enter, 0) * (1 - var(--enter, 0)) * 4); pointer-events: none; }
+/* each release scans in from the bottom, like a screen redrawing: the scene
+   slides up behind its own clipping edge while its view slides down by the
+   same amount, so the picture holds still and only the edge moves (GPU only) */
+html[data-cover] #backdrop { display: none; }
+.scene { position: absolute; inset: 0; overflow: hidden; isolation: isolate; transform: translate3d(0, calc((1 - var(--cl-enter, 0)) * 100%), 0); will-change: transform; }
+.scene[hidden] { display: block; visibility: hidden; }
+.scene-view { position: absolute; inset: 0; transform: translate3d(0, calc((var(--cl-enter, 0) - 1) * 100%), 0); will-change: transform; }
+.scene--first, .scene--first .scene-view { transform: none; will-change: auto; }
+.scene-scan { position: absolute; left: 0; right: 0; top: 0; z-index: 4; height: 2px; background: var(--accent-strong); box-shadow: 0 0 24px 6px rgba(42,245,255,0.55); opacity: calc(var(--cl-enter, 0) * (1 - var(--cl-enter, 0)) * 4); will-change: opacity; pointer-events: none; }
 .scene--first .scene-scan { display: none; }
-.scene-bg { position: absolute; inset: 0; transform: scale(calc(1.16 - var(--life, 0) * 0.16)) translate3d(0, calc(var(--life, 0) * -2%), 0); will-change: transform; }
+.scene-bg { position: absolute; inset: 0; transform: scale(calc(1.16 - var(--cl-life, 0) * 0.16)) translate3d(0, calc(var(--cl-life, 0) * -2%), 0); will-change: transform; }
 .scene-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,9,11,0.75) 0%, rgba(7,9,11,0.15) 28%, rgba(7,9,11,0.25) 50%, rgba(7,9,11,0.94) 82%, #07090b 100%); }
 .scene-scrim::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0 1px, transparent 1px 3px); }
 
-.floater { position: absolute; z-index: 2; padding: 6px 6px 22px; background: #eef1f4; border-radius: 4px; box-shadow: 0 24px 50px -12px rgba(0,0,0,0.7); cursor: zoom-in; transform: translate3d(0, calc((0.5 - var(--life, 0)) * 55vh * var(--speed, 1)), 0) rotate(var(--rot, 0deg)); transition: box-shadow 0.3s ease; }
+.floater { position: absolute; z-index: 2; padding: 6px 6px 22px; background: #eef1f4; border-radius: 4px; box-shadow: 0 24px 50px -12px rgba(0,0,0,0.7); cursor: zoom-in; transform: translate3d(0, calc((0.5 - var(--cl-life, 0)) * 55vh * var(--speed, 1)), 0) rotate(var(--rot, 0deg)); will-change: transform; transition: box-shadow 0.3s ease; }
 .floater:hover { box-shadow: 0 30px 60px -10px rgba(40,194,255,0.5); }
 .floater-img { position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: #d9dee3; }
 .floater--2 { display: none; }
@@ -408,12 +438,12 @@ const CHANGELOG_CSS = `
 .scene-tag { display: inline-block; margin-right: 8px; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: #031018; font-weight: 500; }
 .scene-name { margin-top: 10px; max-width: 14ch; font-family: var(--font-display); font-weight: 700; font-size: clamp(2.3rem, 9vw, 6.5rem); line-height: 0.98; letter-spacing: -0.035em; color: var(--ink); }
 .word { display: inline-block; overflow: hidden; margin-right: 0.22em; vertical-align: top; padding-bottom: 0.06em; }
-.ltr { display: inline-block; transform: translate3d(0, 105%, 0); transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); transition-delay: calc(var(--i) * 22ms); }
+.ltr { display: inline-block; transform: translateY(105%); transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); transition-delay: calc(var(--i) * 22ms); }
 .is-active .ltr { transform: none; }
 .scene-meta { margin-top: 12px; font-size: 14px; color: var(--accent); }
 .scene-sum { margin-top: 8px; max-width: 46ch; font-size: 15px; line-height: 1.6; color: rgba(243,245,247,0.82); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .scene-cta { margin-top: 18px; }
-.scene-meta, .scene-sum, .scene-cta, .scene-count { opacity: 0; transform: translate3d(0, 14px, 0); transition: opacity 0.5s ease 0.25s, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s; }
+.scene-meta, .scene-sum, .scene-cta, .scene-count { opacity: 0; transform: translateY(14px); transition: opacity 0.5s ease 0.25s, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s; }
 .is-active .scene-meta, .is-active .scene-sum, .is-active .scene-cta, .is-active .scene-count { opacity: 1; transform: none; }
 
 /* SHIPPED stamp slams on each time a release lands */
@@ -434,7 +464,7 @@ const CHANGELOG_CSS = `
 .cl-next:hover { border-color: var(--accent); color: var(--accent); }
 .cl-route { position: relative; flex: 1; height: 2px; margin-inline: 12px; }
 .cl-line { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(255,255,255,0.28) 0 2px, transparent 2px 8px); }
-.cl-line--lit { background: var(--accent); transform-origin: left; transform: scaleX(var(--p, 0)); box-shadow: 0 0 10px rgba(40,194,255,0.7); }
+.cl-line--lit { background: var(--accent); transform-origin: left; transform: scaleX(var(--cl-p, 0)); will-change: transform; box-shadow: 0 0 10px rgba(40,194,255,0.7); }
 .cl-stop { position: absolute; top: 50%; transform: translate(-50%, -50%); display: grid; place-items: center; width: 32px; height: 32px; }
 .cl-dot { width: 10px; height: 10px; border-radius: 50%; background: #07090b; border: 2px solid rgba(255,255,255,0.4); transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease; }
 .cl-stop.is-past .cl-dot { border-color: var(--accent); background: var(--accent); }
@@ -442,7 +472,8 @@ const CHANGELOG_CSS = `
 .cl-code { position: absolute; top: 26px; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; color: var(--ink-muted); transition: color 0.3s ease; }
 .cl-stop.is-here .cl-code { color: var(--ink); }
 .cl-stop:hover .cl-code { color: var(--accent); }
-.cl-head { position: absolute; bottom: 12px; left: calc(var(--p, 0) * 100%); transform: translateX(-50%); padding: 2px 7px; border-radius: 5px; background: var(--accent-strong); color: #031018; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; box-shadow: 0 0 14px rgba(42,245,255,0.6); pointer-events: none; }
+.cl-head-rail { position: absolute; inset: 0; transform: translateX(calc(var(--cl-p, 0) * 100%)); will-change: transform; pointer-events: none; }
+.cl-head { position: absolute; bottom: 12px; left: 0; transform: translateX(-50%); padding: 2px 7px; border-radius: 5px; background: var(--accent-strong); color: #031018; font-family: var(--font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; box-shadow: 0 0 14px rgba(42,245,255,0.6); pointer-events: none; }
 .cl-head::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 7px; background: var(--accent-strong); }
 .cl-origin-long { display: none; }
 @media (min-width: 640px) { .cl-origin-long { display: inline; } }
@@ -458,7 +489,8 @@ const CHANGELOG_CSS = `
 @media (min-width: 1024px) { .scene-content { padding: 0 48px 64px; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .scene { clip-path: none; opacity: var(--enter, 0); }
+  .scene, .scene-view { transform: none; }
+  .scene { opacity: var(--cl-enter, 0); }
   .scene-scan { display: none; }
   .scene-bg, .floater { transform: rotate(var(--rot, 0deg)); }
   .ltr, .scene-meta, .scene-sum, .scene-cta, .scene-count { transition: none; }

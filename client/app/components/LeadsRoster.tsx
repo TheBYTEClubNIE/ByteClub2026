@@ -200,8 +200,10 @@ export default function LeadsRoster() {
     const tick = () => {
       raf = 0;
       const box = el.getBoundingClientRect();
-      el.classList.toggle("is-on", box.bottom > 0 && box.top < innerHeight);
-      if (calm || !current) return;
+      const onScreen = box.bottom > 0 && box.top < innerHeight;
+      el.classList.toggle("is-on", onScreen);
+      // off screen there is nothing to draw (and scrolling elsewhere stays cheap)
+      if (calm || !current || !onScreen) return;
       // the signal front rides a little below the middle of the screen
       const y = Math.min(Math.max(innerHeight * 0.72 - box.top, 0), box.height);
       el.style.setProperty("--head", `${y}px`);
@@ -213,7 +215,8 @@ export default function LeadsRoster() {
         if (on) g.setAttribute("transform", `translate(${ln.x} ${y})`);
       });
       current.pins.forEach((p, i) => {
-        if (y >= p.y - 8) rows[i]?.classList.add("is-live");
+        const row = rows[i];
+        if (row && y >= p.y - 8 && !row.classList.contains("is-live")) row.classList.add("is-live");
       });
     };
     const queue = () => {

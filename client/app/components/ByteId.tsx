@@ -168,6 +168,14 @@ export default function ByteId() {
   const [canShare, setCanShare] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // The foil drift on phones repaints every frame, so it only runs on screen.
+  useEffect(() => {
+    const card = canvasRef.current!.parentElement!;
+    const io = new IntersectionObserver(([e]) => card.classList.toggle("is-near", e.isIntersecting));
+    io.observe(card);
+    return () => io.disconnect();
+  }, []);
+
   // Canvas needs the real font files and the logo loaded before it can draw them.
   useEffect(() => {
     let cancelled = false;
@@ -335,7 +343,8 @@ export default function ByteId() {
         .id-card { border-radius: 22px; box-shadow: 0 40px 90px -30px rgba(40,194,255,0.45), 0 0 0 1px rgba(255,255,255,0.06); }
         .id-card canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: 22px; background: #07090b; }
         @media (hover: none) {
-          .id-card::after { opacity: 0.45; animation: foil-drift 5s ease-in-out infinite alternate; }
+          .id-card::after { opacity: 0.45; animation: foil-drift 5s ease-in-out infinite alternate paused; }
+          .id-card.is-near::after { animation-play-state: running; }
         }
         @keyframes foil-drift {
           from { background-position: center, 0% 0%; }

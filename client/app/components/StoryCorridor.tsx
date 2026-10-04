@@ -513,6 +513,7 @@ export default function StoryCorridor() {
   return (
     <div
       ref={containerRef}
+      id="backdrop"
       aria-hidden="true"
       className="fixed inset-0 -z-40 pointer-events-none overflow-hidden"
       style={{ background: "var(--bg)" }}
