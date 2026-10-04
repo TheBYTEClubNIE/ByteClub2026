@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Delete, Share2 } from "lucide-react";
-import { type Mark, dayNumber, nextReset, score, wordFor } from "@/lib/bytle";
+import type { Mark, Stats, View } from "@/lib/bytle";
+import { dayNumber, nextReset } from "@/lib/bytle-day";
 
 const ROWS = 6;
 const KEYS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
@@ -13,54 +14,69 @@ const VERDICT = ["Compiled first try.", "Clean build.", "Tests passing.", "Shipp
 const SAY: Record<Mark, string> = { hit: "right spot", near: "in the word", miss: "not in the word" };
 const EMOJI: Record<Mark, string> = { hit: "🟦", near: "🟨", miss: "⬛" };
 const RANK: Record<Mark, number> = { miss: 0, near: 1, hit: 2 };
-
-type Stats = { played: number; won: number; streak: number; best: number; lastWon: number; dist: number[] };
+const NO_ROWS: View["rows"] = [];
 const NO_STATS: Stats = { played: 0, won: 0, streak: 0, best: 0, lastWon: -99, dist: [0, 0, 0, 0, 0, 0] };
 
-// Progress only lives in this browser; private windows may refuse storage.
-function load<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-function save(key: string, value: unknown) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // not fatal: the game still works for this visit
-  }
+// The game is played on the server (app/api/bytle): the browser sends guesses
+// and gets back marks, so the answer and the stats can't be read or edited here.
+async function call(init?: RequestInit): Promise<View> {
+  const res = await fetch("/api/bytle", { cache: "no-store", ...init });
+  const data = await res.json().catch(() => ({}));
+  // 409: the game was already over (finished in another tab); its state still comes back
+  if (!res.ok && res.status !== 409) throw new Error(data.error ?? "Bytle is offline");
+  return data as View;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
 export default function Bytle({ standalone = false }: { standalone?: boolean }) {
-  const [day, setDay] = useState<number | null>(null);
-  const [guesses, setGuesses] = useState<string[]>([]);
+  const [game, setGame] = useState<View | null>(null);
   const [current, setCurrent] = useState("");
+  const [sending, setSending] = useState(false);
   const [revealRow, setRevealRow] = useState(-1);
   const [shakeRow, setShakeRow] = useState(-1);
   const [toast, setToast] = useState("");
+  // shown stats lag the game by one flip, so the result isn't spoiled early
   const [stats, setStats] = useState<Stats>(NO_STATS);
   const [countdown, setCountdown] = useState("");
   const rootRef = useRef<HTMLElement>(null);
   const visible = useRef(standalone);
   const toastTimer = useRef(0);
 
-  const { word: answer, meaning } = day === null ? { word: "", meaning: "" } : wordFor(day);
-  const won = answer !== "" && guesses.includes(answer);
-  const done = won || guesses.length >= ROWS;
-  const busy = revealRow !== -1;
+  const day = game?.day ?? null;
+  const rows = game?.rows ?? NO_ROWS;
+  const answer = game?.word ?? "";
+  const meaning = game?.meaning ?? "";
+  const won = game?.status === "won";
+  const done = !!game && game.status !== "playing";
+  const busy = sending || revealRow !== -1;
 
-  // The day (and saved progress) is only known in the browser.
-  useEffect(() => {
-    const d = dayNumber(Date.now());
-    setDay(d);
-    setGuesses(load<string[]>(`bytle:${d}`, []));
-    setStats({ ...NO_STATS, ...load<Partial<Stats>>("bytle:stats", {}) });
+  const flash = useCallback((msg: string, ms = 1700) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(""), ms);
   }, []);
+
+  const refresh = useCallback(() => {
+    call()
+      .then((g) => {
+        setGame(g);
+        setStats(g.stats);
+      })
+      .catch(() => flash("Couldn't load today's word. Refresh to try again.", 4000));
+  }, [flash]);
+
+  useEffect(refresh, [refresh]);
+
+  // Remembers that today's word was played, for the dot on the nav's Bytle button.
+  useEffect(() => {
+    if (!game?.rows.length) return;
+    try {
+      localStorage.setItem(`bytle:${game.day}`, "1");
+    } catch {
+      // private windows may refuse storage; only the dot is affected
+    }
+  }, [game]);
 
   // Keyboard input only while the game is on screen, so typing elsewhere is untouched.
   useEffect(() => {
@@ -70,59 +86,50 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
     return () => io.disconnect();
   }, [standalone]);
 
-  const flash = useCallback((msg: string, ms = 1700) => {
-    setToast(msg);
-    clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToast(""), ms);
-  }, []);
-
-  const submit = useCallback(() => {
-    if (done || busy || day === null) return;
-    const row = guesses.length;
+  const submit = useCallback(async () => {
+    if (!game || done || busy) return;
+    const row = rows.length;
     if (current.length < 5) {
       setShakeRow(row);
       window.setTimeout(() => setShakeRow(-1), 500);
       flash("Not enough letters");
       return;
     }
-    const next = [...guesses, current];
-    const isWin = current === answer;
-    const isOver = isWin || next.length >= ROWS;
-    setGuesses(next);
-    setCurrent("");
-    setRevealRow(row);
-    save(`bytle:${day}`, next);
-
-    window.setTimeout(() => {
-      setRevealRow(-1);
-      if (!isOver) return;
-      setStats((prev) => {
-        const s: Stats = { ...prev, dist: [...prev.dist] };
-        s.played += 1;
-        if (isWin) {
-          s.won += 1;
-          s.dist[next.length - 1] += 1;
-          s.streak = prev.lastWon === day - 1 ? prev.streak + 1 : 1;
-          s.best = Math.max(prev.best, s.streak);
-          s.lastWon = day;
-        } else {
-          s.streak = 0;
-        }
-        save("bytle:stats", s);
-        return s;
+    setSending(true);
+    try {
+      const next = await call({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guess: current }),
       });
-      flash(isWin ? VERDICT[next.length - 1] : `Build failed. It was ${answer}.`, 2600);
-    }, REVEAL_TOTAL);
-  }, [answer, busy, current, day, done, flash, guesses]);
+      setGame(next);
+      setCurrent("");
+      if (next.rows.length <= row) {
+        setStats(next.stats);
+        return;
+      }
+      setRevealRow(row);
+      window.setTimeout(() => {
+        setRevealRow(-1);
+        setStats(next.stats);
+        if (next.status === "won") flash(VERDICT[row], 2600);
+        else if (next.status === "lost") flash(`Build failed. It was ${next.word}.`, 2600);
+      }, REVEAL_TOTAL);
+    } catch {
+      flash("Couldn't reach the server. Try again.");
+    } finally {
+      setSending(false);
+    }
+  }, [busy, current, done, flash, game, rows.length]);
 
   const press = useCallback(
     (key: string) => {
-      if (done || busy) return;
-      if (key === "ENTER") return submit();
+      if (!game || done || busy) return;
+      if (key === "ENTER") return void submit();
       if (key === "BACK") return setCurrent((c) => c.slice(0, -1));
       if (/^[A-Z]$/.test(key)) setCurrent((c) => (c.length < 5 ? c + key : c));
     },
-    [busy, done, submit]
+    [busy, done, game, submit]
   );
 
   useEffect(() => {
@@ -150,12 +157,7 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
     if (!done || day === null) return;
     const tick = () => {
       const now = Date.now();
-      if (dayNumber(now) !== day) {
-        const d = dayNumber(now);
-        setDay(d);
-        setGuesses(load<string[]>(`bytle:${d}`, []));
-        return;
-      }
+      if (dayNumber(now) !== day) return refresh();
       if (!visible.current) return;
       const left = Math.max(0, nextReset(now) - now);
       setCountdown(`${pad(Math.floor(left / 3_600_000))}:${pad(Math.floor(left / 60_000) % 60)}:${pad(Math.floor(left / 1000) % 60)}`);
@@ -163,22 +165,22 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
     tick();
     const id = window.setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [day, done]);
+  }, [day, done, refresh]);
 
   const keyState = useMemo(() => {
     const out: Record<string, Mark> = {};
-    guesses.forEach((g, r) => {
+    rows.forEach(({ guess, marks }, r) => {
       if (r === revealRow) return; // wait for the flip before colouring keys
-      score(g, answer).forEach((m, i) => {
-        if (!out[g[i]] || RANK[m] > RANK[out[g[i]]]) out[g[i]] = m;
+      marks.forEach((m, i) => {
+        if (!out[guess[i]] || RANK[m] > RANK[out[guess[i]]]) out[guess[i]] = m;
       });
     });
     return out;
-  }, [answer, guesses, revealRow]);
+  }, [rows, revealRow]);
 
   const share = async () => {
-    const grid = guesses.map((g) => score(g, answer).map((m) => EMOJI[m]).join("")).join("\n");
-    const text = `Bytle #${(day ?? 0) + 1} ${won ? guesses.length : "X"}/6\n\n${grid}\n\nbyteclubnie.vercel.app/bytle`;
+    const grid = rows.map(({ marks }) => marks.map((m) => EMOJI[m]).join("")).join("\n");
+    const text = `Bytle #${(day ?? 0) + 1} ${won ? rows.length : "X"}/6\n\n${grid}\n\nbyteclubnie.vercel.app/bytle`;
     try {
       if (navigator.share) {
         await navigator.share({ text });
@@ -191,11 +193,12 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
     }
   };
 
-  const lastIndex = guesses.length - 1;
+  const lastIndex = rows.length - 1;
+  const last = rows[lastIndex];
   const announce =
-    revealRow === -1 && lastIndex >= 0
-      ? `${guesses[lastIndex]}: ${score(guesses[lastIndex], answer)
-          .map((m, i) => `${guesses[lastIndex][i]} ${SAY[m]}`)
+    revealRow === -1 && last
+      ? `${last.guess}: ${last.marks
+          .map((m, i) => `${last.guess[i]} ${SAY[m]}`)
           .join(", ")}.${done ? (won ? " Solved." : ` The word was ${answer}.`) : ""}`
       : "";
 
@@ -230,10 +233,10 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
             </p>
             <div className="bt-board" aria-hidden>
               {Array.from({ length: ROWS }, (_, r) => {
-                const guess = guesses[r];
-                const isCurrent = r === guesses.length && !done;
+                const guess = rows[r]?.guess;
+                const isCurrent = r === rows.length && !done;
                 const letters = guess ?? (isCurrent ? current : "");
-                const marks = guess ? score(guess, answer) : null;
+                const marks = rows[r]?.marks ?? null;
                 const winRow = won && r === lastIndex && revealRow === -1;
                 return (
                   <div

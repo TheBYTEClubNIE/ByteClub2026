@@ -1,17 +1,28 @@
+import { isAdmin, jsonBody } from "@/lib/security";
+
 const BLOG_CATEGORIES = ["webdev", "ml", "agentic-ai", "opensource"];
+// a row id goes into the PostgREST URL, so it must be a plain id and nothing else
+const ID = /^(\d{1,18}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 
-// Mirrors server/src/controllers/adminController.js's create/update/delete
-// actions, gated with the same static ADMIN_TOKEN, so the /admin panel works
-// without depending on the separately-deployed Express backend.
+const bad = (error: string) => Response.json({ error }, { status: 400 });
+
+// Create/update/delete blog posts for the /admin panel, for signed-in admins only.
 export async function POST(request: Request) {
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader?.replace(/^Bearer\s+/i, "");
-
-    if (!token || token !== process.env.ADMIN_TOKEN) {
-        return Response.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdmin(request)) {
+        return Response.json({ error: "Session expired. Log out and sign in again." }, { status: 401 });
     }
 
-    const { action, blog_id, title, content, category, is_published } = await request.json();
+    const body = await jsonBody(request);
+    if (!body) return bad("Expected a JSON object");
+    const { action, blog_id, title, content, category, is_published } = body;
+
+    if (title !== undefined && (typeof title !== "string" || title.length > 300)) return bad("title must be text, up to 300 characters");
+    if (content !== undefined && (typeof content !== "string" || content.length > 200_000)) return bad("content must be text");
+    if (category !== undefined && !BLOG_CATEGORIES.includes(category as string)) {
+        return bad(`category must be one of ${BLOG_CATEGORIES.join(", ")}`);
+    }
+    if (is_published !== undefined && typeof is_published !== "boolean") return bad("is_published must be true or false");
+    if (action !== "create" && !ID.test(String(blog_id ?? ""))) return bad("A valid blog_id is required");
 
     const supabaseUrl = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
@@ -21,15 +32,11 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
         Prefer: "return=representation",
     };
+    const row = `${supabaseUrl}/rest/v1/blogs?blog_id=eq.${encodeURIComponent(String(blog_id))}`;
 
     try {
         if (action === "create") {
-            if (!title || !content) {
-                return Response.json({ error: "Title and content are required" }, { status: 400 });
-            }
-            if (category && !BLOG_CATEGORIES.includes(category)) {
-                return Response.json({ error: `category must be one of ${BLOG_CATEGORIES.join(", ")}` }, { status: 400 });
-            }
+            if (!title || !content) return bad("Title and content are required");
 
             const res = await fetch(`${supabaseUrl}/rest/v1/blogs`, {
                 method: "POST",
@@ -38,7 +45,7 @@ export async function POST(request: Request) {
                     title,
                     content,
                     category: category || "webdev",
-                    is_published: is_published !== undefined ? is_published : false,
+                    is_published: is_published ?? false,
                 }),
             });
             if (!res.ok) throw new Error(`Supabase responded ${res.status}: ${await res.text()}`);
@@ -46,38 +53,24 @@ export async function POST(request: Request) {
             return Response.json({ success: true, blog: data[0] }, { status: 201 });
 
         } else if (action === "update") {
-            if (!blog_id) return Response.json({ error: "blog_id is required for update" }, { status: 400 });
-            if (category && !BLOG_CATEGORIES.includes(category)) {
-                return Response.json({ error: `category must be one of ${BLOG_CATEGORIES.join(", ")}` }, { status: 400 });
-            }
-
             const updates: Record<string, unknown> = {};
             if (title !== undefined) updates.title = title;
             if (content !== undefined) updates.content = content;
             if (category !== undefined) updates.category = category;
             if (is_published !== undefined) updates.is_published = is_published;
 
-            const res = await fetch(`${supabaseUrl}/rest/v1/blogs?blog_id=eq.${blog_id}`, {
-                method: "PATCH",
-                headers,
-                body: JSON.stringify(updates),
-            });
+            const res = await fetch(row, { method: "PATCH", headers, body: JSON.stringify(updates) });
             if (!res.ok) throw new Error(`Supabase responded ${res.status}: ${await res.text()}`);
             const data = await res.json();
             return Response.json({ success: true, blog: data[0] ?? null });
 
         } else if (action === "delete") {
-            if (!blog_id) return Response.json({ error: "blog_id is required for delete" }, { status: 400 });
-
-            const res = await fetch(`${supabaseUrl}/rest/v1/blogs?blog_id=eq.${blog_id}`, {
-                method: "DELETE",
-                headers,
-            });
+            const res = await fetch(row, { method: "DELETE", headers });
             if (!res.ok) throw new Error(`Supabase responded ${res.status}: ${await res.text()}`);
             return Response.json({ success: true, message: "Blog deleted successfully" });
 
         } else {
-            return Response.json({ error: "Invalid action. Use 'create', 'update', or 'delete'" }, { status: 400 });
+            return bad("Invalid action. Use 'create', 'update', or 'delete'");
         }
     } catch (error) {
         console.error("ADMIN ROUTE ERROR:", error);

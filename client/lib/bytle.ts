@@ -1,6 +1,9 @@
 // Bytle: one tech word a day. Add words anywhere in the list (exactly five
 // letters, A-Z); the daily order is a fixed shuffle, so everyone gets the
 // same word on the same day.
+//
+// SERVER ONLY: this file holds every answer. Only app/api/bytle imports it,
+// and the browser just sends guesses there (the calendar is lib/bytle-day.ts).
 
 export const WORDS: [string, string][] = [
   ["ARRAY", "An ordered list of values you reach by index."],
@@ -119,13 +122,6 @@ export const WORDS: [string, string][] = [
   ["FIGMA", "The design tool where interfaces get drawn before they're coded."],
 ];
 
-const DAY = 86_400_000;
-// Midnight IST, 1 Oct 2026: Bytle #1.
-const LAUNCH = Date.UTC(2026, 9, 1) - 5.5 * 3_600_000;
-
-export const dayNumber = (now: number) => Math.floor((now - LAUNCH) / DAY);
-export const nextReset = (now: number) => LAUNCH + (dayNumber(now) + 1) * DAY;
-
 // Fixed shuffle, so the daily order isn't alphabetical but is the same for everyone.
 const ORDER = (() => {
   const idx = WORDS.map((_, i) => i);
@@ -162,4 +158,55 @@ export function score(guess: string, answer: string): Mark[] {
     }
   }
   return marks;
+}
+
+/* one game, played on the server */
+
+export const ROWS = 6;
+
+export type Stats = { played: number; won: number; streak: number; best: number; lastWon: number; dist: number[] };
+export const NO_STATS: Stats = { played: 0, won: 0, streak: 0, best: 0, lastWon: -99, dist: [0, 0, 0, 0, 0, 0] };
+
+// What the server keeps (sealed in a cookie) for one browser.
+export type Game = { day: number; guesses: string[]; stats: Stats };
+
+// What the browser gets: marks for each guess, and the word only once the game is over.
+export type View = {
+  day: number;
+  rows: { guess: string; marks: Mark[] }[];
+  status: "playing" | "won" | "lost";
+  stats: Stats;
+  word?: string;
+  meaning?: string;
+};
+
+export function view(game: Game): View {
+  const { word, meaning } = wordFor(game.day);
+  const won = game.guesses.includes(word);
+  const over = won || game.guesses.length >= ROWS;
+  return {
+    day: game.day,
+    rows: game.guesses.map((guess) => ({ guess, marks: score(guess, word) })),
+    status: won ? "won" : over ? "lost" : "playing",
+    stats: game.stats,
+    ...(over ? { word, meaning } : {}),
+  };
+}
+
+// Adds a guess to a game still in play; stats only change when it ends.
+export function play(game: Game, guess: string): Game {
+  const guesses = [...game.guesses, guess];
+  const won = guess === wordFor(game.day).word;
+  if (!won && guesses.length < ROWS) return { ...game, guesses };
+  const s: Stats = { ...game.stats, dist: [...game.stats.dist], played: game.stats.played + 1 };
+  if (won) {
+    s.won += 1;
+    s.dist[guesses.length - 1] += 1;
+    s.streak = s.lastWon === game.day - 1 ? s.streak + 1 : 1;
+    s.best = Math.max(s.best, s.streak);
+    s.lastWon = game.day;
+  } else {
+    s.streak = 0;
+  }
+  return { ...game, guesses, stats: s };
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BookOpen, Calendar, Gamepad2, History, Home as HomeIcon, UserPlus, Users } from "lucide-react";
 import { FloatingDock } from "@/components/ui/floating-dock";
-import { dayNumber } from "@/lib/bytle";
+import { dayNumber } from "@/lib/bytle-day";
 import ScrollRing from "./ScrollRing";
 
 const navItems = [

@@ -84,10 +84,10 @@ export default function ContactForm() {
         <form onSubmit={handleSubmit} className="mt-7 flex flex-col gap-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Name" htmlFor="contact-name">
-              <input id="contact-name" name="name" autoComplete="name" value={form.name} onChange={handleChange} placeholder="Rahul Kumar" required className="contact-input" />
+              <input id="contact-name" name="name" autoComplete="name" maxLength={100} value={form.name} onChange={handleChange} placeholder="Rahul Kumar" required className="contact-input" />
             </Field>
             <Field label="Email" htmlFor="contact-email">
-              <input id="contact-email" name="email" type="email" autoComplete="email" value={form.email} onChange={handleChange} placeholder="you@example.com" required className="contact-input" />
+              <input id="contact-email" name="email" type="email" autoComplete="email" maxLength={254} value={form.email} onChange={handleChange} placeholder="you@example.com" required className="contact-input" />
             </Field>
           </div>
 

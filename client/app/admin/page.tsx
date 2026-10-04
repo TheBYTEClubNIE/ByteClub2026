@@ -27,7 +27,7 @@ export default function AdminPage() {
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = sessionStorage.getItem("admin_token");
+    const stored = sessionStorage.getItem("admin_session");
     if (stored) {
       setToken(stored);
       setView("dashboard");
@@ -35,13 +35,13 @@ export default function AdminPage() {
   }, []);
 
   const handleLogin = (t: string) => {
-    sessionStorage.setItem("admin_token", t);
+    sessionStorage.setItem("admin_session", t);
     setToken(t);
     setView("dashboard");
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("admin_token");
+    sessionStorage.removeItem("admin_session");
     setToken(null);
     setView("login");
   };
@@ -204,6 +204,7 @@ function Dashboard({
         },
         body: JSON.stringify({ action: "delete", blog_id }),
       });
+      if (res.status === 401) return onLogout();
       if (!res.ok) throw new Error();
       showToast("✓ Post deleted");
       setDeleteConfirm(null);

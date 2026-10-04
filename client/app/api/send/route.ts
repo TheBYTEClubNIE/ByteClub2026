@@ -1,10 +1,27 @@
 import { Resend } from "resend";
+import { jsonBody, tooMany } from "@/lib/security";
+
+// Visitors' text goes into an HTML email, so it is escaped: nobody can inject
+// links, images or markup into the club's inbox.
+const escapeHtml = (s: string) =>
+    s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+const text = (v: unknown, max: number) => (typeof v === "string" && v.trim().length <= max ? v.trim() : "");
 
 export async function POST(request: Request) {
-    const { name, email, message } = await request.json();
+    if (tooMany(request, "send", 5, 10 * 60_000)) {
+        return Response.json({ error: "Too many messages. Try again in a few minutes." }, { status: 429 });
+    }
+    const body = await jsonBody(request);
+    // limits match the form (the message box takes 1000 characters)
+    const name = text(body?.name, 100).replace(/[\r\n]+/g, " ");
+    const email = text(body?.email, 254);
+    const message = text(body?.message, 1000);
 
     if (!name || !email || !message) {
         return Response.json({ error: "All fields required" }, { status: 400 });
+    }
+    if (!/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(email)) {
+        return Response.json({ error: "Enter a valid email" }, { status: 400 });
     }
 
     try {
@@ -29,9 +46,9 @@ export async function POST(request: Request) {
             subject: `New Message from ${name}`,
             html: `
         <h2>New Contact Message</h2>
-        <p><b>Name:</b> ${name}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Message:</b><br/>${message}</p>
+        <p><b>Name:</b> ${escapeHtml(name)}</p>
+        <p><b>Email:</b> ${escapeHtml(email)}</p>
+        <p><b>Message:</b><br/>${escapeHtml(message).replace(/\r?\n/g, "<br/>")}</p>
       `,
         });
 
