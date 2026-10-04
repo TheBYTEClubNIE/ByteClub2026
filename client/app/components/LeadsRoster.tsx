@@ -403,7 +403,7 @@ const CREW_CSS = `
 .crew-list { display: grid; gap: 56px; margin-top: 64px; }
 
 /* the club lead's dial: the five domains in a ring around the photo */
-.dial { grid-area: shot; position: relative; width: min(100%, 20rem); aspect-ratio: 1; }
+.dial { grid-area: shot; position: relative; width: min(100%, 20rem); aspect-ratio: 1; overflow: clip; }
 .dial-pin { position: absolute; inset: 1.2%; pointer-events: none; }
 .dial-holo { position: absolute; inset: 13.3%; }
 .dial-photo { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: 50%; background: #07090b; clip-path: circle(50% at 50% 50%); transition: clip-path 1.1s cubic-bezier(0.16, 1, 0.3, 1); }

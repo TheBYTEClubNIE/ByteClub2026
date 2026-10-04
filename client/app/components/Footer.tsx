@@ -60,8 +60,8 @@ export default function Footer() {
   return (
     <footer className="mt-8 border-t" style={{ borderColor: "var(--line)", background: "var(--bg)" }}>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:px-8 lg:px-12">
-        <div className="grid grid-cols-2 gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
-          <div className="col-span-2 md:col-span-1">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
+          <div>
             <p className="tbc-heading" style={{ fontSize: "1.3rem", fontWeight: 600 }}>
               The Byte Club
             </p>
@@ -75,7 +75,7 @@ export default function Footer() {
             <h2 className="mb-4 text-sm font-semibold" style={{ color: "var(--ink)" }}>
               Site
             </h2>
-            <ul style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="grid grid-cols-1 gap-2.5 text-sm sm:grid-cols-2 sm:gap-x-8">
+            <ul style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-sm">
               {QUICK_LINKS.map((link) => (
                 <li key={link.label}>
                   <Link href={link.href} className="transition-colors hover:text-[var(--ink)]">
@@ -90,7 +90,7 @@ export default function Footer() {
             <h2 className="mb-4 text-sm font-semibold" style={{ color: "var(--ink)" }}>
               Follow
             </h2>
-            <ul className="flex gap-2">
+            <ul className="flex flex-wrap gap-2">
               {SOCIALS.map((social) => (
                 <li key={social.label}>
                   <a

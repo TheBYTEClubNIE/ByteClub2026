@@ -8,7 +8,8 @@ import { clearOldSaves } from "@/lib/bytle-day";
 import ScrollRing from "./ScrollRing";
 
 const navItems = [
-  { title: "Home", href: "#home", icon: <HomeIcon className="h-full w-full" /> },
+  // the smallest phones only fit five; the logo ring beside the dock already goes home
+  { title: "Home", href: "#home", icon: <HomeIcon className="h-full w-full" />, className: "max-[359px]:hidden" },
   { title: "Events", href: "#events", icon: <Calendar className="h-full w-full" /> },
   { title: "Team", href: "#team", icon: <Users className="h-full w-full" /> },
   { title: "Changelog", href: "#past", icon: <History className="h-full w-full" /> },
@@ -54,7 +55,7 @@ export default function SiteNav() {
           <ScrollRing />
         </div>
         <div className="pointer-events-auto flex-1 min-w-0 flex justify-center">
-          <FloatingDock items={activeNavItems} />
+          <FloatingDock items={activeNavItems} className="max-[359px]:gap-1" />
         </div>
         <div className="pointer-events-auto flex shrink-0 items-center gap-2">
           <Link
