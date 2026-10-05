@@ -1,13 +1,13 @@
 import { ScrollWords } from "./effects";
 
 const STORY =
-  "The Byte Club began in 2023 as a handful of first-years who wanted tech events that didn't feel like another lecture. It's grown into a full community, but the idea hasn't changed: get people writing code, building things, and helping each other get better at it, one fun event at a time.";
+  "The Byte Club began in August 2024 as a handful of first-years who wanted tech events that didn't feel like another lecture. It's grown into a full community, but the idea hasn't changed: get people writing code, building things, and helping each other get better at it, one fun event at a time.";
 
 export default function About() {
   return (
     <section id="about" className="section">
       <h2 className="section-title max-w-3xl">
-        Started small in 2023. Still learning out loud.
+        Started small in Aug 2024. Still learning out loud.
       </h2>
 
       <ScrollWords

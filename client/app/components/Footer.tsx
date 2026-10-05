@@ -67,7 +67,7 @@ export default function Footer() {
             </p>
             <p style={{ color: "var(--ink-muted)", fontFamily: "var(--font-body)" }} className="mt-3 max-w-xs text-sm leading-relaxed">
               NIE&apos;s student-run technical club. Fun-first tech events,
-              real skills, since 2023.
+              real skills, since Aug 2024.
             </p>
           </div>
 

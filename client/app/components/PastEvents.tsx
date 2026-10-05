@@ -364,7 +364,7 @@ export default function PastEvents() {
           {/* commit graph: HEAD rides along as you scroll */}
           <nav className="cl-map" aria-label="Changelog releases">
             <span className="cl-origin">
-              <span className="cl-origin-long">git init · </span>2023
+              <span className="cl-origin-long">git init · Aug </span>2024
             </span>
             <div className="cl-route">
               <span className="cl-line" />
