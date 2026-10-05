@@ -5,7 +5,7 @@ import Bytle from "../components/Bytle";
 
 export const metadata: Metadata = {
   title: "Bytle, the daily tech word game",
-  description: "One tech word a day, six tries. Crack it, learn what it means, share your grid. By The Byte Club, NIE.",
+  description: "One tech word a day, 4 to 8 letters long, with a try for every letter plus one. Crack it, learn what it means, share your grid. By The Byte Club, NIE.",
 };
 
 export default function BytlePage() {

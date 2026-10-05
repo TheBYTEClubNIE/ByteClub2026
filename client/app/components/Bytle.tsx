@@ -5,17 +5,19 @@ import { Delete, Share2 } from "lucide-react";
 import type { Mark, Stats, View } from "@/lib/bytle";
 import { clearOldSaves, dayNumber, nextReset } from "@/lib/bytle-day";
 
-const ROWS = 6;
 const KEYS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
 const FLIP = 340; // ms per tile flip
 const STAGGER = 260; // ms between tiles
-const REVEAL_TOTAL = STAGGER * 4 + FLIP + 60;
-const VERDICT = ["Compiled first try.", "Clean build.", "Tests passing.", "Shipped.", "Merged at the deadline.", "Hotfix landed. Phew."];
+// the last tile starts flipping (letters - 1) staggers in
+const revealMs = (letters: number) => STAGGER * (letters - 1) + FLIP + 60;
+const VERDICT = ["Compiled first try.", "Clean build.", "Tests passing.", "Shipped.", "Merged at the deadline."];
+// how it went, by guess number; the very last try is always a close call
+const verdict = (row: number, tries: number) => (row === tries - 1 ? "Hotfix landed. Phew." : VERDICT[Math.min(row, VERDICT.length - 1)]);
 const SAY: Record<Mark, string> = { hit: "right spot", near: "in the word", miss: "not in the word" };
 const EMOJI: Record<Mark, string> = { hit: "🟦", near: "🟨", miss: "⬛" };
 const RANK: Record<Mark, number> = { miss: 0, near: 1, hit: 2 };
 const NO_ROWS: View["rows"] = [];
-const NO_STATS: Stats = { played: 0, won: 0, streak: 0, best: 0, lastWon: -99, dist: [0, 0, 0, 0, 0, 0] };
+const NO_STATS: Stats = { played: 0, won: 0, streak: 0, best: 0, lastWon: -99, dist: [] };
 
 // The game is played on the server (app/api/bytle): the browser sends guesses
 // and gets back marks, so the answer and the stats can't be read or edited here.
@@ -45,6 +47,9 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
 
   const day = game?.day ?? null;
   const rows = game?.rows ?? NO_ROWS;
+  // today's word length and tries (a 5 x 6 board until the server answers)
+  const letters = game?.letters ?? 5;
+  const tries = game?.tries ?? 6;
   const answer = game?.word ?? "";
   const meaning = game?.meaning ?? "";
   const won = game?.status === "won";
@@ -81,7 +86,7 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
   const submit = useCallback(async () => {
     if (!game || done || busy) return;
     const row = rows.length;
-    if (current.length < 5) {
+    if (current.length < letters) {
       setShakeRow(row);
       window.setTimeout(() => setShakeRow(-1), 500);
       flash("Not enough letters");
@@ -104,24 +109,24 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
       window.setTimeout(() => {
         setRevealRow(-1);
         setStats(next.stats);
-        if (next.status === "won") flash(VERDICT[row], 2600);
+        if (next.status === "won") flash(verdict(row, next.tries), 2600);
         else if (next.status === "lost") flash(`Build failed. It was ${next.word}.`, 2600);
-      }, REVEAL_TOTAL);
+      }, revealMs(next.letters));
     } catch {
       flash("Couldn't reach the server. Try again.");
     } finally {
       setSending(false);
     }
-  }, [busy, current, done, flash, game, rows.length]);
+  }, [busy, current, done, flash, game, letters, rows.length]);
 
   const press = useCallback(
     (key: string) => {
       if (!game || done || busy) return;
       if (key === "ENTER") return void submit();
       if (key === "BACK") return setCurrent((c) => c.slice(0, -1));
-      if (/^[A-Z]$/.test(key)) setCurrent((c) => (c.length < 5 ? c + key : c));
+      if (/^[A-Z]$/.test(key)) setCurrent((c) => (c.length < letters ? c + key : c));
     },
-    [busy, done, game, submit]
+    [busy, done, game, letters, submit]
   );
 
   useEffect(() => {
@@ -172,7 +177,7 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
 
   const share = async () => {
     const grid = rows.map(({ marks }) => marks.map((m) => EMOJI[m]).join("")).join("\n");
-    const text = `Bytle #${(day ?? 0) + 1} ${won ? rows.length : "X"}/6\n\n${grid}\n\nbyteclubnie.vercel.app/bytle`;
+    const text = `Bytle #${(day ?? 0) + 1} ${won ? rows.length : "X"}/${tries}\n\n${grid}\n\nbyteclubnie.vercel.app/bytle`;
     try {
       if (navigator.share) {
         await navigator.share({ text });
@@ -196,6 +201,8 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
 
   const streak = day !== null && stats.lastWon >= day - 1 ? stats.streak : 0;
   const maxDist = Math.max(1, ...stats.dist);
+  // guess counts: 1 to 6 always, more once a long word has been won that late
+  const distRows = Math.max(6, ...stats.dist.map((n, i) => (n ? i + 1 : 0)));
   const Heading = standalone ? "h1" : "h2";
   const today =
     day === null ? "" : new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "Asia/Kolkata" });
@@ -207,15 +214,16 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
       <header className="section-head">
         <Heading className="section-title">Bytle</Heading>
         <p className="section-lede">
-          One tech word a day, six tries. Crack it and learn what it means,
-          then send your grid to the group chat.
+          One tech word a day, 4 to 8 letters long, with a try for every
+          letter plus one. Crack it, learn what it means, then send your
+          grid to the group chat.
         </p>
       </header>
 
       <div className="bt-layout">
         <div className="bt-play">
           <div className="bt-bar">
-            <span>{day === null ? "Bytle" : `Bytle #${day + 1}`}</span>
+            <span>{day === null ? "Bytle" : `Bytle #${day + 1} · ${letters} letters, ${tries} tries`}</span>
             <span>{today}</span>
           </div>
 
@@ -223,11 +231,11 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
             <p className={`bt-toast ${toast ? "is-on" : ""}`} role="status">
               {toast}
             </p>
-            <div className="bt-board" aria-hidden>
-              {Array.from({ length: ROWS }, (_, r) => {
+            <div className="bt-board" aria-hidden style={{ ["--n" as string]: letters }}>
+              {Array.from({ length: tries }, (_, r) => {
                 const guess = rows[r]?.guess;
                 const isCurrent = r === rows.length && !done;
-                const letters = guess ?? (isCurrent ? current : "");
+                const typed = guess ?? (isCurrent ? current : "");
                 const marks = rows[r]?.marks ?? null;
                 const winRow = won && r === lastIndex && revealRow === -1;
                 return (
@@ -235,8 +243,8 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
                     key={r}
                     className={`bt-row ${isCurrent ? "is-current" : ""} ${shakeRow === r ? "is-shake" : ""} ${winRow ? "is-win" : ""}`}
                   >
-                    {Array.from({ length: 5 }, (_, c) => {
-                      const ch = letters[c] ?? "";
+                    {Array.from({ length: letters }, (_, c) => {
+                      const ch = typed[c] ?? "";
                       const mark = marks?.[c];
                       return (
                         <span
@@ -299,7 +307,7 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
         <aside className="bt-side">
           {done && revealRow === -1 ? (
             <div className="bt-card bt-result">
-              <p className="bt-verdict">{won ? VERDICT[lastIndex] : "Build failed."}</p>
+              <p className="bt-verdict">{won ? verdict(lastIndex, tries) : "Build failed."}</p>
               <p className="bt-word">{answer}</p>
               <p className="bt-meaning">{meaning}</p>
               <button type="button" className="btn btn-accent w-full" onClick={share}>
@@ -313,7 +321,10 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
           ) : (
             <div className="bt-card">
               <h3 className="bt-h3">How it plays</h3>
-              <p className="bt-copy">Guess the five-letter tech word. After each guess the tiles show how close you were.</p>
+              <p className="bt-copy">
+                Guess the tech word. It&apos;s 4 to 8 letters long and changes every day, and you get one more try than
+                it has letters (never fewer than six). After each guess the tiles show how close you were.
+              </p>
               <ul className="bt-legend">
                 <li>
                   <span className="bt-tile bt-tile--sm is-hit">C</span> Right letter, right spot
@@ -350,7 +361,7 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
               </div>
             </dl>
             <ol className="bt-dist" aria-label="Guess distribution">
-              {stats.dist.map((n, i) => (
+              {Array.from({ length: distRows }, (_, i) => stats.dist[i] ?? 0).map((n, i) => (
                 <li key={i}>
                   <span>{i + 1}</span>
                   <span
@@ -378,8 +389,9 @@ const BYTLE_CSS = `
 .bt-toast { position: absolute; z-index: 2; left: 50%; top: -44px; transform: translate(-50%, -8px); padding: 8px 14px; border-radius: 999px; background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 600; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
 .bt-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
 
-.bt-board { display: grid; gap: 7px; width: min(100%, 22rem); margin-inline: auto; perspective: 600px; }
-.bt-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.bt-board { --n: 5; display: grid; gap: 7px; width: min(100%, calc(var(--n) * 4.4rem)); margin-inline: auto; perspective: 600px; }
+.bt-row { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 7px; }
+.bt-board .bt-tile { font-size: clamp(1.05rem, calc(30vw / var(--n)), 1.8rem); }
 .bt-tile {
   --mark-bg: transparent; --mark-fg: var(--ink); --mark-line: var(--line-strong);
   display: grid; place-items: center; aspect-ratio: 1; border-radius: 8px;

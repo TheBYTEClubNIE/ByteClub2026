@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { type Game, NO_STATS, play, view } from "@/lib/bytle";
+import { type Game, MAX_TRIES, NO_STATS, play, view, wordFor } from "@/lib/bytle";
 import { dayNumber } from "@/lib/bytle-day";
 import { jsonBody, seal, tooMany, unseal } from "@/lib/security";
 
@@ -11,8 +11,13 @@ const COOKIE = "bytle";
 
 async function load(): Promise<Game> {
   const day = dayNumber(Date.now());
+  const letters = wordFor(day).word.length;
   const saved = unseal<Game>("bytle", (await cookies()).get(COOKIE)?.value);
-  return { day, guesses: saved?.day === day ? saved.guesses : [], stats: saved?.stats ?? NO_STATS };
+  // today's guesses only count if they fit today's word (it changed length once)
+  const guesses = saved?.day === day && saved.guesses.every((g) => g.length === letters) ? saved.guesses : [];
+  // older saves kept six guess counts; there can be up to MAX_TRIES now
+  const stats = saved?.stats ? { ...saved.stats, dist: Array.from({ length: MAX_TRIES }, (_, i) => saved.stats.dist[i] ?? 0) } : NO_STATS;
+  return { day, guesses, stats };
 }
 
 export async function GET() {
@@ -22,9 +27,12 @@ export async function GET() {
 export async function POST(request: Request) {
   if (tooMany(request, "bytle", 60, 60_000)) return Response.json({ error: "Slow down a little" }, { status: 429 });
   const guess = String((await jsonBody(request))?.guess ?? "").toUpperCase();
-  if (!/^[A-Z]{5}$/.test(guess)) return Response.json({ error: "Five letters, A to Z" }, { status: 400 });
-
   const game = await load();
+  const letters = wordFor(game.day).word.length;
+  if (!/^[A-Z]+$/.test(guess) || guess.length !== letters) {
+    return Response.json({ error: `Today's word has ${letters} letters, A to Z` }, { status: 400 });
+  }
+
   if (view(game).status !== "playing") return Response.json(view(game), { status: 409 });
   const next = play(game, guess);
   (await cookies()).set(COOKIE, seal("bytle", next), {

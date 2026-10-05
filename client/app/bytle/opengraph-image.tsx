@@ -7,7 +7,7 @@ export const contentType = "image/png";
 export default function Image() {
   return ogCard({
     label: "Bytle",
-    title: "One tech word a day. Six tries.",
+    title: "One tech word a day. 4 to 8 letters.",
     sub: "Crack it, learn what it means, share your grid.",
   });
 }
