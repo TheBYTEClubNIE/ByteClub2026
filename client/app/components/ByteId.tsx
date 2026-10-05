@@ -179,13 +179,13 @@ export default function ByteId() {
   // Canvas needs the real font files and the logo loaded before it can draw them.
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       const fonts = {
         display: getComputedStyle(displayProbe.current!).fontFamily,
         mono: getComputedStyle(monoProbe.current!).fontFamily,
       };
       const logo = new Image();
-      logo.src = "/Logo/logo-transparent.png";
+      logo.src = "/Logo/logo-500.png";
       await Promise.allSettled([
         logo.decode(),
         document.fonts.load(`700 100px ${fonts.display}`),
@@ -198,9 +198,20 @@ export default function ByteId() {
       setReady(true);
       const probe = new File([new Blob()], "x.png", { type: "image/png" });
       setCanShare(typeof navigator.canShare === "function" && navigator.canShare({ files: [probe] }));
-    })();
+    };
+    // fetched only once the card is close to the screen, not on page load
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        load();
+      },
+      { rootMargin: "800px 0px" }
+    );
+    io.observe(canvasRef.current!);
     return () => {
       cancelled = true;
+      io.disconnect();
     };
   }, []);
 

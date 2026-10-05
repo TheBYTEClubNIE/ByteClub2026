@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import Image, { getImageProps } from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { EVENTS, type ClubEvent, longDate, oldestFirst, slugOf } from '@/content/events';
@@ -46,19 +46,22 @@ function SceneVideo({ src, poster, active }: { src: string; poster: string; acti
     if (active && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) v.play().catch(() => {});
     else v.pause();
   }, [active]);
-  return <video ref={ref} src={src} poster={poster} muted loop playsInline preload="none" aria-hidden className="absolute inset-0 h-full w-full object-cover" />;
+  const still = getImageProps({ src: poster, alt: '', width: 540, height: 960, quality: 75 }).props.src;
+  return <video ref={ref} src={src} poster={still} muted loop playsInline preload="none" aria-hidden className="absolute inset-0 h-full w-full object-cover" />;
 }
 
 function Scene({
   event,
   index,
   active,
+  load,
   onOpen,
   sceneRef,
 }: {
   event: ClubEvent;
   index: number;
   active: boolean;
+  load: boolean;
   onOpen: (photo: number) => void;
   sceneRef: (el: HTMLDivElement | null) => void;
 }) {
@@ -74,7 +77,7 @@ function Scene({
     >
       <div className="scene-view">
       <div className="scene-bg">
-        {event.video ? (
+        {!load ? null : event.video ? (
           <SceneVideo src={event.video} poster={photos[0].src} active={active} />
         ) : (
           <Image src={photos[0].src} alt="" fill sizes="100vw" quality={90} className="object-cover" />
@@ -94,7 +97,7 @@ function Scene({
             aria-label={`Open photo: ${p.caption}`}
           >
             <span className="floater-img">
-              <Image src={p.src} alt="" fill sizes="(min-width: 768px) 230px, 140px" quality={90} className="object-cover" />
+              {load && <Image src={p.src} alt="" fill sizes="(min-width: 768px) 230px, 140px" quality={90} className="object-cover" />}
             </span>
           </button>
         );
@@ -229,6 +232,8 @@ function Lightbox({ event, start, onClose }: { event: ClubEvent; start: number; 
 
 export default function PastEvents() {
   const [active, setActive] = useState(0);
+  // photos load a release ahead of the one on screen, not all at once
+  const [reach, setReach] = useState(1);
   const [open, setOpen] = useState<{ event: ClubEvent; index: number } | null>(null);
   const close = useCallback(() => setOpen(null), []);
 
@@ -282,6 +287,7 @@ export default function PastEvents() {
         if (enter > 0.5) current = i;
       });
       setActive(current);
+      setReach((r) => Math.max(r, current + 1));
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(update);
@@ -354,6 +360,7 @@ export default function PastEvents() {
               event={event}
               index={i}
               active={i === active}
+              load={i <= reach}
               onOpen={(photo) => setOpen({ event, index: photo })}
               sceneRef={(el) => {
                 scenes.current[i] = el;

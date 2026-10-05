@@ -45,7 +45,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
         <Link href="/" className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/Logo/logo-transparent.png" alt="" className="h-9 w-9 object-contain" />
+          <img src="/Logo/logo-128.png" alt="" className="h-9 w-9 object-contain" />
           <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>
             The Byte Club
           </span>

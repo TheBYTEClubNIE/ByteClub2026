@@ -18,7 +18,7 @@ export default function BytlePage() {
         </Link>
         <Link href="/" aria-label="The Byte Club home" className="hidden sm:flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/Logo/logo-transparent.png" alt="" className="h-9 w-9 object-contain" />
+          <img src="/Logo/logo-128.png" alt="" className="h-9 w-9 object-contain" />
           <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>
             The Byte Club
           </span>

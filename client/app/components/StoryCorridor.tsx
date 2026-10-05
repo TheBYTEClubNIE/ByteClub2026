@@ -164,7 +164,7 @@ export default function StoryCorridor() {
     scene.add(fillLight);
 
     const textureLoader = new THREE.TextureLoader();
-    const logoTexture = textureLoader.load("/Logo/logo-transparent.png");
+    const logoTexture = textureLoader.load("/Logo/logo-500.png");
 
     // Persistent, deliberately minimal ambient field: quiet dust plus a
     // handful of big tumbling shards further out — all camera-attached so

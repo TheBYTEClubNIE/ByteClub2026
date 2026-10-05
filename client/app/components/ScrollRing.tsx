@@ -36,7 +36,7 @@ export default function ScrollRing() {
         />
       </svg>
       <img
-        src="/Logo/logo-transparent.png"
+        src="/Logo/logo-128.png"
         alt="The Byte Club"
         className="w-[27px] h-[27px] object-contain select-none pointer-events-none"
         draggable={false}

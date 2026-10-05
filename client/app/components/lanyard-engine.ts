@@ -278,7 +278,7 @@ export function mountLanyards(wall: HTMLElement, canvas: HTMLCanvasElement, opts
   const physical = (map: THREE.Texture) =>
     new THREE.MeshPhysicalMaterial({ map, roughness: 0.5, metalness: 0, clearcoat: narrow ? 0 : 1, clearcoatRoughness: 0.22 });
   const backMat = physical(backTex);
-  loadImage("/Logo/logo-transparent.png", 256).then((logo) => {
+  loadImage("/Logo/logo-500.png", 256).then((logo) => {
     if (!logo || disposed) return;
     backTex.image = drawBack(opts.color, opts.label, fonts, logo);
     backTex.needsUpdate = true;

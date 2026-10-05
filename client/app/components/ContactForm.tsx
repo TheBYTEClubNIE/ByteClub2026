@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, ChangeEvent, FormEvent } from "react";
-import axios from "axios";
 
 interface FormState {
   name: string;
@@ -42,7 +41,12 @@ export default function ContactForm() {
     e.preventDefault();
     setStatus("sending");
     try {
-      await axios.post("/api/send", form);
+      const res = await fetch("/api/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("send failed");
       setStatus("success");
       setForm({ name: "", email: "", message: "" });
     } catch {

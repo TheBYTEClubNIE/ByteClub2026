@@ -179,7 +179,7 @@ export default function BlogShelf({ posts }: { posts: Post[] }) {
       {/* Header */}
       <header className="fixed top-0 inset-x-0 z-30 flex items-center justify-between px-5 sm:px-8 py-5">
         <Link href="/" className="flex items-center gap-3">
-          <img src="/Logo/logo-transparent.png" alt="The Byte Club" className="w-9 h-9 rounded-full object-cover" />
+          <img src="/Logo/logo-128.png" alt="The Byte Club" className="w-9 h-9 rounded-full object-cover" />
           <span style={{ fontFamily: "var(--font-display)", color: "var(--ink)" }} className="font-bold text-sm hidden sm:inline">
             The Byte Club
           </span>
