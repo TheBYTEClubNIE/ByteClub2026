@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Hammer, Lightbulb, Search, Sprout, Users, type LucideIcon } from "lucide-react";
 import {
   EVENTS,
@@ -264,11 +264,27 @@ function HowToGetIn() {
 
 /* ───────── section ───────── */
 
+// How each printer pushes paper out: thermal in quick small steps that each
+// shove and settle, dot matrix a whole text line per jump.
 const PRINTERS = [
-  { id: "thermal", label: "Thermal", ms: 1100 },
-  { id: "matrix", label: "Dot matrix", ms: 1500 },
+  { id: "thermal", label: "Thermal", step: 12, ms: 34, ease: "cubic-bezier(0.3, 0, 0.1, 1)" },
+  { id: "matrix", label: "Dot matrix", step: 22, ms: 80, ease: "steps(1, start)" },
 ] as const;
 type Printer = (typeof PRINTERS)[number]["id"];
+
+// Feeds a sheet out of the slot a step at a time, the way a printer pushes
+// paper out as it prints. The sheet starts tucked inside the printer.
+function feed(sheet: HTMLElement, p: Printer) {
+  const { step, ms, ease } = PRINTERS.find((x) => x.id === p)!;
+  const h = sheet.offsetHeight;
+  const n = Math.max(1, Math.ceil(h / step));
+  const frames: Keyframe[] = Array.from({ length: n + 1 }, (_, i) => ({
+    transform: `translateY(${Math.min(0, i * step - h)}px)`,
+    offset: i / n,
+    easing: ease,
+  }));
+  return sheet.animate(frames, { duration: n * ms, fill: "both" });
+}
 
 // The club's events as a printout, printed when the section comes into view.
 // Pick a printer (thermal receipt or dot-matrix fanfold); switching or
@@ -280,14 +296,10 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
   const [serial, setSerial] = useState(1);
   const [torn, setTorn] = useState(false);
   const [printer, setPrinter] = useState<Printer>("thermal");
-  const [busy, setBusy] = useState(false);
-  const busyTimer = useRef(0);
-
-  const run = (p: Printer) => {
-    setBusy(true);
-    clearTimeout(busyTimer.current);
-    busyTimer.current = window.setTimeout(() => setBusy(false), PRINTERS.find((x) => x.id === p)!.ms);
-  };
+  // printing starts the first time the section is on screen
+  const [started, setStarted] = useState(false);
+  const machine = useRef<HTMLDivElement>(null);
+  const hang = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = stage.current!;
@@ -296,18 +308,37 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
     const io = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
-        el.classList.add("is-printing");
-        run("thermal");
+        setStarted(true);
         io.disconnect();
       },
       { rootMargin: "0px 0px -20% 0px" }
     );
     io.observe(el);
-    return () => {
-      io.disconnect();
-      clearTimeout(busyTimer.current);
-    };
+    return () => io.disconnect();
   }, []);
+
+  // Each new sheet feeds out of the slot while the printer runs, then the
+  // paper settles with a little swing. (Before paint, so it never flashes.)
+  useLayoutEffect(() => {
+    const paper = hang.current;
+    if (!started || !paper) return;
+    const body = machine.current!;
+    body.classList.add("is-busy");
+    paper.classList.add("is-feeding");
+    const run = feed(paper.firstElementChild as HTMLElement, printer);
+    run.finished.then(
+      () => {
+        body.classList.remove("is-busy");
+        paper.classList.remove("is-feeding");
+        paper.animate({ rotate: ["0deg", "0.9deg", "-0.5deg", "0.2deg", "0deg"] }, { duration: 1000, easing: "ease-out" });
+      },
+      () => {} // cancelled: torn off mid-print
+    );
+    return () => {
+      run.cancel();
+      body.classList.remove("is-busy");
+    };
+  }, [started, serial, printer]);
 
   const print = (next: Printer) => {
     if (torn) return;
@@ -318,7 +349,6 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
         setTorn(false);
         setPrinter(next);
         setSerial((s) => s + 1);
-        if (!calm) run(next);
       },
       calm ? 0 : 650
     );
@@ -353,7 +383,7 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
               Reprint
             </button>
           </div>
-          <div className={`printer ${busy ? "is-busy" : ""}`} aria-hidden>
+          <div ref={machine} className="printer" aria-hidden>
             {printer === "thermal" ? (
               <>
                 <span className={`printer-led ${live ? "is-live" : ""}`} />
@@ -375,7 +405,7 @@ export default function EventsBoard({ builtAt }: { builtAt: number }) {
               </>
             )}
           </div>
-          <div key={serial} className={`receipt-hang ${torn ? "is-torn" : ""}`}>
+          <div key={serial} ref={hang} className={`receipt-hang ${torn ? "is-torn" : ""}`}>
             <Receipt now={now} serial={serial} />
           </div>
         </div>
@@ -428,6 +458,9 @@ const RECEIPT_CSS = `
 .printer-led.is-live { background: #7ee0b5; box-shadow: 0 0 10px #7ee0b5; }
 .printer.is-busy .printer-led { animation: led 0.24s steps(2) infinite; }
 @keyframes led { 50% { opacity: 0.3; } }
+/* the motor hums while it prints */
+.printer.is-busy { animation: buzz 0.1s steps(2) infinite; }
+@keyframes buzz { 50% { transform: translateY(0.6px); } }
 .printer-slot { position: absolute; left: 16px; right: 16px; bottom: 7px; height: 6px; border-radius: 3px; background: #040506; box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.9); }
 
 /* thermal: a small black POS printer with a serrated tear bar */
@@ -453,9 +486,10 @@ const RECEIPT_CSS = `
 @keyframes head { to { left: calc(100% - 22px); } }
 [data-printer="matrix"] .printer-slot { left: 10px; right: 10px; background: #2a2620; }
 
-/* the paper: hangs from the slot and sways a little */
-.receipt-hang { position: relative; z-index: 1; margin: -9px 24px 0; transform-origin: 50% 0; }
-.receipt-hang::before { content: ""; position: absolute; inset: 14px 8px 4px; box-shadow: 0 34px 50px -24px rgba(0, 0, 0, 0.9); pointer-events: none; }
+/* the paper: comes out of the slot (anything above it stays inside the printer) */
+.receipt-hang { position: relative; z-index: 1; margin: -9px 24px 0; transform-origin: 50% 0; clip-path: inset(0 -48px -160px -48px); }
+.receipt-hang::before { content: ""; position: absolute; inset: 14px 8px 4px; box-shadow: 0 34px 50px -24px rgba(0, 0, 0, 0.9); pointer-events: none; transition: opacity 0.5s ease; }
+.receipt-hang.is-feeding::before { opacity: 0; transition: none; }
 .receipt-hang.is-torn { animation: r-tear 0.65s cubic-bezier(0.55, 0, 0.75, 0.2) forwards; }
 @keyframes r-tear { 15% { transform: translateY(8px) rotate(-1.5deg); } 100% { transform: translateY(160px) rotate(-9deg); opacity: 0; } }
 
@@ -511,14 +545,10 @@ const RECEIPT_CSS = `
 [data-printer="matrix"] :is(.r-doc, .r-tag) { background: none; color: var(--r-ink); box-shadow: inset 0 0 0 1.5px var(--r-ink); }
 [data-printer="matrix"] .r-btn { background: none; color: var(--r-ink); box-shadow: inset 0 0 0 2px var(--r-ink); }
 [data-printer="matrix"] .r-btn:hover { background: var(--r-ink); color: var(--r-paper); }
-.stage.is-printing[data-printer="matrix"] .receipt { animation-duration: 1.5s; }
-
-/* printing: only once the script has armed it, so it reads fine without */
-.stage.is-armed:not(.is-printing) .receipt { clip-path: inset(0 0 100% 0); }
-.stage.is-printing .receipt { animation: r-print 1.1s cubic-bezier(0.22, 0.8, 0.3, 1) both; }
-@keyframes r-print { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+/* waits inside the printer until it's fed out (only once the script has armed it) */
+.stage.is-armed .receipt { transform: translateY(-100%); }
 
 @media (prefers-reduced-motion: reduce) {
-  .printer.is-busy .printer-led { animation: none; }
+  .printer.is-busy, .printer.is-busy .printer-led { animation: none; }
 }
 `;
