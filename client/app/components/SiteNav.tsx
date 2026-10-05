@@ -49,7 +49,7 @@ export default function SiteNav() {
   }));
 
   return (
-    <nav aria-label="Main" className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none pt-5 overflow-x-hidden">
+    <nav aria-label="Main" className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pointer-events-none pt-5">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
         <div className="pointer-events-auto shrink-0">
           <ScrollRing />

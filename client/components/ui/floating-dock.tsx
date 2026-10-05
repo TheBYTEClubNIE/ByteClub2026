@@ -16,8 +16,9 @@ import { useRef, useState } from "react";
  * A single dock that always renders directly (no hamburger-style collapse
  * hidden behind a tap, and no separate desktop/mobile variant) — most of
  * this site's traffic is mobile, so the nav needs to be visible outright,
- * not one extra tap away. Sized small enough (34px rest / 60px on hover)
- * that all 7 items comfortably fit even a narrow phone screen without
+ * not one extra tap away. Sized small enough (30px rest / 44px on hover,
+ * which still fits inside the bar)
+ * that all the items comfortably fit even a narrow phone screen without
  * overflowing — the original larger Aceternity sizing (40-80px) added up
  * to more than a 375px-wide screen could hold and dragged the whole fixed
  * header (and the page) into horizontal overflow.
@@ -35,7 +36,7 @@ export const FloatingDock = ({
       onMouseMove={(e) => mouseX.set(e.pageX)}
       onMouseLeave={() => mouseX.set(Infinity)}
       className={cn(
-        "mx-auto flex h-12 sm:h-14 items-end gap-1.5 sm:gap-2.5 rounded-2xl px-2.5 sm:px-3.5 pb-2 sm:pb-2.5 max-w-full overflow-x-auto",
+        "mx-auto flex h-12 sm:h-14 items-center gap-1.5 sm:gap-2.5 rounded-2xl px-2.5 sm:px-3.5 max-w-full",
         className,
       )}
       style={{
@@ -76,14 +77,14 @@ function IconContainer({
 
   // Rest/peak sizes are deliberately small (not the original 40/80) so
   // 7 of these side by side always fit within a phone-width screen.
-  let widthTransform = useTransform(distance, [-150, 0, 150], [30, 52, 30]);
-  let heightTransform = useTransform(distance, [-150, 0, 150], [30, 52, 30]);
+  let widthTransform = useTransform(distance, [-150, 0, 150], [30, 44, 30]);
+  let heightTransform = useTransform(distance, [-150, 0, 150], [30, 44, 30]);
 
-  let widthTransformIcon = useTransform(distance, [-150, 0, 150], [15, 26, 15]);
+  let widthTransformIcon = useTransform(distance, [-150, 0, 150], [15, 22, 15]);
   let heightTransformIcon = useTransform(
     distance,
     [-150, 0, 150],
-    [15, 26, 15],
+    [15, 22, 15],
   );
 
   let width = useSpring(widthTransform, {
@@ -117,20 +118,20 @@ function IconContainer({
         style={{
           width,
           height,
-          background: active ? "var(--accent-soft)" : "var(--bg-elevated)",
-          border: `1px solid ${active ? "var(--accent-border)" : "var(--line)"}`,
+          // no ring around each button: the active one is tinted, hover lifts it slightly
+          background: active ? "var(--accent-soft)" : hovered ? "rgba(255,255,255,0.07)" : "transparent",
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="relative flex aspect-square items-center justify-center rounded-full"
+        className="relative flex aspect-square items-center justify-center rounded-full transition-colors"
       >
         <AnimatePresence>
           {hovered && (
             <motion.div
-              initial={{ opacity: 0, y: 10, x: "-50%" }}
+              initial={{ opacity: 0, y: -6, x: "-50%" }}
               animate={{ opacity: 1, y: 0, x: "-50%" }}
-              exit={{ opacity: 0, y: 2, x: "-50%" }}
-              className="absolute -top-8 left-1/2 w-fit rounded-md px-2 py-0.5 text-xs whitespace-pre hidden sm:block"
+              exit={{ opacity: 0, y: -2, x: "-50%" }}
+              className="absolute top-full mt-2.5 left-1/2 w-fit rounded-md px-2 py-0.5 text-xs whitespace-pre hidden sm:block"
               style={{
                 fontFamily: "var(--font-mono)",
                 background: "var(--bg-elevated)",
