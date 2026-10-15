@@ -19,12 +19,13 @@ export default function Home() {
   // Build time. Client components start from this so the first render
   // matches the server HTML, then switch to the visitor's clock.
   const builtAt = Date.now();
-  const posts = readPosts().map(({ slug, title, category, date, minutes, content }) => ({
+  const posts = readPosts().map(({ slug, title, category, date, minutes, author, content }) => ({
     slug,
     title,
     category,
     date,
     minutes,
+    author,
     excerpt: excerpt(content),
   }));
 

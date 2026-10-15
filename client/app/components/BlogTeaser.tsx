@@ -48,7 +48,7 @@ export default function BlogTeaser({ posts }: { posts: PostSummary[] }) {
                     <Link href={`/blog/${post.slug}`} className="bs-post group">
                       <span className="bs-post-title">{post.title}</span>
                       <span className="bs-post-meta">
-                        {[postDate(post.date), `${post.minutes} min read`].filter(Boolean).join(" · ")}
+                        {[post.author, postDate(post.date), `${post.minutes} min read`].filter(Boolean).join(" · ")}
                       </span>
                       {i === 0 && post.excerpt && <span className="bs-post-excerpt">{post.excerpt}</span>}
                       <span className="bs-post-go" aria-hidden>

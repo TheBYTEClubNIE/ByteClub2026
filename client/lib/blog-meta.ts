@@ -19,4 +19,5 @@ export interface PostSummary {
   date: string;
   minutes: number;
   excerpt: string;
+  author?: string;
 }

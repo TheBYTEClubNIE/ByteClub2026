@@ -21,7 +21,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: post.title,
     description,
-    openGraph: { type: "article", title: post.title, description, publishedTime: post.date || undefined },
+    authors: post.author ? [{ name: post.author }] : undefined,
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description,
+      publishedTime: post.date || undefined,
+      authors: post.author ? [post.author] : undefined,
+    },
     twitter: { card: "summary_large_image", title: post.title, description },
   };
 }
@@ -75,6 +82,11 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           >
             {post.title}
           </h1>
+          {post.author && (
+            <p className="mt-4 text-base" style={{ color: "var(--ink-muted)" }}>
+              By <span style={{ color: "var(--ink)", fontWeight: 600 }}>{post.author}</span>
+            </p>
+          )}
           <div className="mt-6">
             <ShareButton title={post.title} />
           </div>

@@ -11,6 +11,7 @@ import { CATEGORY_LABEL, postDate } from "./blog-meta";
 //   date: 2026-09-24
 //   title: Overrides the first "# Heading"
 //   image: /blog/cover.jpg  (optional cover, file goes in client/public/)
+//   author: Diwakar Sharma  (optional, shown under the title)
 //   ---
 
 export interface Post {
@@ -19,6 +20,7 @@ export interface Post {
   category: string;
   date: string;
   image?: string;
+  author?: string;
   content: string;
   minutes: number;
 }
@@ -54,6 +56,7 @@ export function readPosts(): Post[] {
         category: CATEGORY_LABEL[meta.category] ? meta.category : "webdev",
         date: meta.date || "",
         image: meta.image || undefined,
+        author: meta.author || undefined,
         content: content.trim(),
         minutes: Math.max(1, Math.round(content.split(/\s+/).length / 220)),
       };
