@@ -17,16 +17,112 @@ const SAY: Record<Mark, string> = { hit: "right spot", near: "in the word", miss
 const EMOJI: Record<Mark, string> = { hit: "🟦", near: "🟨", miss: "⬛" };
 const RANK: Record<Mark, number> = { miss: 0, near: 1, hit: 2 };
 const NO_ROWS: View["rows"] = [];
-const NO_STATS: Stats = { played: 0, won: 0, streak: 0, best: 0, lastWon: -99, dist: [] };
+const NO_STATS: Stats = { played: 0, won: 0, streak: 0, best: 0, lastWon: -99, dist: [], points: 0 };
 
 // The game is played on the server (app/api/bytle): the browser sends guesses
-// and gets back marks, so the answer and the stats can't be read or edited here.
+// and gets back marks, so nothing here can be read ahead or edited. Guests can
+// play; signed-in players have every result saved to their account.
 async function call(init?: RequestInit): Promise<View> {
   const res = await fetch("/api/bytle", { cache: "no-store", ...init });
   const data = await res.json().catch(() => ({}));
   // 409: the game was already over (finished in another tab); its state still comes back
   if (!res.ok && res.status !== 409) throw new Error(data.error ?? "Bytle is offline");
   return data as View;
+}
+
+// After a sign-in that didn't finish, the address carries ?signin=; read it once and tidy the URL.
+function takeSignInNote() {
+  const url = new URL(location.href);
+  const note = url.searchParams.get("signin");
+  if (!note) return null;
+  url.searchParams.delete("signin");
+  history.replaceState(null, "", url);
+  return note === "unavailable" ? "Sign-in isn't available right now." : "Sign-in didn't finish. Try again.";
+}
+
+// Google blocks its sign-in inside apps' built-in browsers (Instagram, etc.).
+function inAppBrowser() {
+  const ua = navigator.userAgent;
+  if (/Instagram/i.test(ua)) return "Instagram";
+  if (/FBAN|FBAV|FB_IAB/i.test(ua)) return "Facebook";
+  if (/LinkedInApp/i.test(ua)) return "LinkedIn";
+  if (/Snapchat/i.test(ua)) return "Snapchat";
+  if (/\bLine\//i.test(ua)) return "LINE";
+  return null;
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z" />
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C36.9 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z" />
+    </svg>
+  );
+}
+
+// "Sign in with Google", plus a heads-up inside apps where Google blocks it.
+function SignIn({ inApp, label = "Sign in with Google" }: { inApp: string | null; label?: string }) {
+  return (
+    <>
+      {inApp && (
+        <p className="bt-note">
+          Google doesn&apos;t allow sign-in inside {inApp}&apos;s browser. Tap the menu (⋯), choose <b>Open in browser</b>,
+          then sign in there.
+        </p>
+      )}
+      <a className="btn btn-primary bt-google" href="/auth/signin?next=/bytle">
+        <GoogleIcon />
+        {label}
+      </a>
+    </>
+  );
+}
+
+type Entry = { name: string; points: number; wins: number; days: number; rank: number };
+
+// The global leaderboard: top ten by points, and your own spot if you're further down.
+function Leaderboard({ version }: { version: number }) {
+  const [board, setBoard] = useState<{ top: Entry[]; me: Entry | null } | null>(null);
+  useEffect(() => {
+    fetch("/api/bytle/leaderboard", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setBoard)
+      .catch(() => {});
+  }, [version]);
+
+  const top = board?.top.slice(0, 10) ?? [];
+  const me = board?.me;
+  const meShown = !!me && top.some((e) => e.rank === me.rank && e.name === me.name);
+  return (
+    <div className="bt-card">
+      <h3 className="bt-h3">Global leaderboard</h3>
+      <p className="bt-fine">1 point for every day you play, plus tries left + 1 for solving it.</p>
+      {board === null ? (
+        <p className="bt-copy">Loading…</p>
+      ) : top.length === 0 ? (
+        <p className="bt-copy">No scores yet. Be the first on the board.</p>
+      ) : (
+        <ol className="bt-lb">
+          {top.map((e) => (
+            <li key={e.rank + e.name} className={me && e.rank === me.rank && e.name === me.name ? "is-me" : ""}>
+              <span className="bt-lb-rank">{e.rank}</span>
+              <span className="bt-lb-name">{e.name}</span>
+              <span className="bt-lb-pts">{e.points}</span>
+            </li>
+          ))}
+          {me && !meShown && (
+            <li className="is-me bt-lb-you">
+              <span className="bt-lb-rank">{me.rank}</span>
+              <span className="bt-lb-name">{me.name} (you)</span>
+              <span className="bt-lb-pts">{me.points}</span>
+            </li>
+          )}
+        </ol>
+      )}
+    </div>
+  );
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -41,6 +137,10 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
   // shown stats lag the game by one flip, so the result isn't spoiled early
   const [stats, setStats] = useState<Stats>(NO_STATS);
   const [countdown, setCountdown] = useState("");
+
+  const [inApp, setInApp] = useState<string | null>(null);
+  // bumped whenever a result lands, so the leaderboard reloads
+  const [boardVersion, setBoardVersion] = useState(0);
   const rootRef = useRef<HTMLElement>(null);
   const visible = useRef(standalone);
   const toastTimer = useRef(0);
@@ -54,6 +154,8 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
   const meaning = game?.meaning ?? "";
   const won = game?.status === "won";
   const done = !!game && game.status !== "playing";
+  // "in": signed in; "guest": can sign in; "off": sign-in isn't set up on the server
+  const account = !game ? "loading" : !game.guest ? "in" : game.canSignIn ? "guest" : "off";
   const busy = sending || revealRow !== -1;
 
   const flash = useCallback((msg: string, ms = 1700) => {
@@ -67,11 +169,19 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
       .then((g) => {
         setGame(g);
         setStats(g.stats);
+        const note = takeSignInNote();
+        if (note) flash(note, 3500);
       })
       .catch(() => flash("Couldn't load today's word. Refresh to try again.", 4000));
   }, [flash]);
 
   useEffect(refresh, [refresh]);
+
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads the browser's user agent once
+    setInApp(inAppBrowser());
+  }, []);
 
   useEffect(clearOldSaves, []);
 
@@ -109,6 +219,7 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
       window.setTimeout(() => {
         setRevealRow(-1);
         setStats(next.stats);
+        if (next.status !== "playing") setBoardVersion((v) => v + 1);
         if (next.status === "won") flash(verdict(row, next.tries), 2600);
         else if (next.status === "lost") flash(`Build failed. It was ${next.word}.`, 2600);
       }, revealMs(next.letters));
@@ -302,6 +413,20 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
               </div>
             ))}
           </div>
+          {account === "in" && (
+            <form method="post" action="/auth/signout" className="bt-account">
+              <span>
+                Playing as <b>{game?.name}</b>
+              </span>
+              <button type="submit">Sign out</button>
+            </form>
+          )}
+          {account === "guest" && (
+            <p className="bt-account">
+              <span>Playing as a guest</span>
+              <a href="/auth/signin?next=/bytle">Sign in to save your score</a>
+            </p>
+          )}
         </div>
 
         <aside className="bt-side">
@@ -317,6 +442,16 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
               <p className="bt-next">
                 Next word in <strong>{countdown || "--:--:--"}</strong>
               </p>
+              {account === "guest" && (
+                <div className="bt-save">
+                  <p className="bt-h3">Save this result</p>
+                  <p className="bt-copy">
+                    Sign in and today&apos;s game moves to your account: {won ? "your points count" : "it counts"}, your
+                    streak starts, and you&apos;re on the global leaderboard.
+                  </p>
+                  <SignIn inApp={inApp} label="Sign in to save your score" />
+                </div>
+              )}
             </div>
           ) : (
             <div className="bt-card">
@@ -340,6 +475,18 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
             </div>
           )}
 
+          {account === "guest" && !done && (
+            <div className="bt-card">
+              <h3 className="bt-h3">Your stats</h3>
+              <p className="bt-copy">
+                Sign in with Google to keep your stats and streak on any device and climb the global leaderboard. You can
+                sign in mid-game; today&apos;s guesses come with you.
+              </p>
+              <SignIn inApp={inApp} />
+              <p className="bt-fine">Your Google name and points appear on the leaderboard.</p>
+            </div>
+          )}
+          {account === "in" && (
           <div className="bt-card">
             <h3 className="bt-h3">Your stats</h3>
             <dl className="bt-stats">
@@ -359,6 +506,10 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
                 <dt>Best</dt>
                 <dd>{stats.best}</dd>
               </div>
+              <div>
+                <dt>Points</dt>
+                <dd>{stats.points}</dd>
+              </div>
             </dl>
             <ol className="bt-dist" aria-label="Guess distribution">
               {Array.from({ length: distRows }, (_, i) => stats.dist[i] ?? 0).map((n, i) => (
@@ -374,6 +525,9 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
               ))}
             </ol>
           </div>
+          )}
+
+          <Leaderboard version={boardVersion} />
         </aside>
       </div>
     </section>
@@ -381,6 +535,23 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
 }
 
 const BYTLE_CSS = `
+.bt-google { width: 100%; gap: 10px; margin-top: 16px; }
+.bt-save { margin-top: 20px; padding-top: 18px; border-top: 1px dashed var(--line-strong); }
+.bt-note { margin-bottom: 14px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 191, 127, 0.1); border: 1px solid rgba(255, 191, 127, 0.3); font-size: 14px; line-height: 1.5; color: #ffd9b3; }
+.bt-fine { margin-top: 12px; font-size: 13px; line-height: 1.5; color: var(--ink-faint); }
+.bt-account { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; font-size: 14px; color: var(--ink-muted); }
+.bt-account b { color: var(--ink); font-weight: 600; }
+.bt-account a { font-weight: 600; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.bt-account button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: 13px; font-weight: 600; color: var(--ink); }
+.bt-account button:hover { background: rgba(255, 255, 255, 0.06); }
+.bt-lb { display: grid; gap: 4px; margin-top: 14px; counter-reset: none; }
+.bt-lb li { display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 14px; color: var(--ink); }
+.bt-lb li:nth-child(-n + 3) .bt-lb-rank { color: var(--accent); }
+.bt-lb li.is-me { background: var(--accent-soft); outline: 1px solid var(--accent-border); }
+.bt-lb-you { margin-top: 6px; }
+.bt-lb-rank { font-family: var(--font-mono); font-size: 13px; color: var(--ink-muted); }
+.bt-lb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-lb-pts { font-family: var(--font-mono); font-weight: 500; color: var(--accent-strong); }
 .bt-layout { display: grid; gap: 28px; }
 .bt-play { width: 100%; max-width: 30rem; margin-inline: auto; }
 .bt-bar { display: flex; justify-content: space-between; margin-bottom: 14px; font-family: var(--font-mono); font-size: 13px; color: var(--ink-muted); }
@@ -449,7 +620,7 @@ const BYTLE_CSS = `
 .bt-next { margin-top: 14px; text-align: center; font-size: 14px; color: var(--ink-muted); }
 .bt-next strong { font-family: var(--font-mono); font-weight: 500; color: var(--ink); }
 
-.bt-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; text-align: center; }
+.bt-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 16px; text-align: center; }
 .bt-stats dd { order: -1; font-family: var(--font-display); font-weight: 600; font-size: 1.6rem; color: var(--ink); }
 .bt-stats div { display: flex; flex-direction: column; }
 .bt-stats dt { margin-top: 2px; font-size: 12px; color: var(--ink-muted); }

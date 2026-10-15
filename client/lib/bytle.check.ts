@@ -1,7 +1,7 @@
 // Run: node lib/bytle.check.ts   (Node 22+ strips the types itself)
 import assert from "node:assert/strict";
-import { LENGTHS, MAX_TRIES, NO_STATS, WORDS, play, score, triesFor, view, wordFor } from "./bytle.ts";
-import type { Game } from "./bytle.ts";
+import { LENGTHS, LOGIN_POINTS, MAX_TRIES, NO_STATS, WORDS, pointsFor, score, statsFrom, statusOf, triesFor, view, wordFor } from "./bytle.ts";
+import type { Day } from "./bytle.ts";
 import { dayNumber, nextReset } from "./bytle-day.ts";
 import { seal, unseal } from "./security.ts";
 
@@ -46,39 +46,49 @@ assert.equal(NO_STATS.dist.length, MAX_TRIES);
 assert.deepEqual(score("COMMAND", "COMPILE"), ["hit", "hit", "hit", "miss", "miss", "miss", "miss"]);
 assert.deepEqual(score("NODE", "DONE"), ["near", "hit", "near", "hit"]);
 
-// a game: the word only shows once it's over, and stats move once
+// a game: the word only shows once it's over
 const day = 3; // a 7-letter day: 8 tries
 const { word } = wordFor(day);
-let g: Game = { day, guesses: [], stats: NO_STATS };
-assert.equal(view(g).word, undefined);
 assert.equal(word.length, 7);
-assert.equal(view(g).tries, 8);
-assert.equal(view(g).letters, 7);
-g = play(g, "Z".repeat(7));
-assert.equal(view(g).status, "playing");
-assert.equal(view(g).word, undefined);
-assert.equal(g.stats.played, 0);
-g = play(g, word);
-assert.equal(view(g).status, "won");
-assert.equal(view(g).word, word);
-assert.deepEqual([g.stats.played, g.stats.won, g.stats.streak, g.stats.dist[1]], [1, 1, 1, 1]);
-const next = play({ day: day + 1, guesses: [], stats: g.stats }, wordFor(day + 1).word);
-assert.equal(next.stats.streak, 2);
-let lost: Game = { day: day + 2, guesses: [], stats: next.stats };
-const lostLetters = wordFor(day + 2).word.length;
-for (let i = 0; i < triesFor(lostLetters) - 1; i++) lost = play(lost, "Z".repeat(lostLetters));
-assert.equal(view(lost).status, "playing", "still one try left");
-lost = play(lost, "Z".repeat(lostLetters));
-assert.equal(view(lost).status, "lost");
-assert.deepEqual([lost.stats.played, lost.stats.won, lost.stats.streak, lost.stats.best], [3, 2, 0, 2]);
+const miss = "Z".repeat(7);
+const fresh: Day = { day, guesses: [], status: "playing", points: LOGIN_POINTS };
+assert.equal(view(fresh, NO_STATS, "A").word, undefined);
+assert.equal(view(fresh, NO_STATS, "A").tries, 8);
+assert.equal(statusOf(day, [miss]), "playing");
+assert.equal(statusOf(day, [miss, word]), "won");
+assert.equal(statusOf(day, Array(8).fill(miss)), "lost");
+assert.equal(statusOf(day, Array(7).fill(miss)), "playing", "one try left");
+assert.equal(view({ ...fresh, guesses: [miss, word], status: "won" }, NO_STATS, "A").word, word);
+
+// points: 1 for showing up, plus tries left + 1 for solving
+assert.equal(pointsFor(day, []), 1);
+assert.equal(pointsFor(day, [miss]), 1);
+assert.equal(pointsFor(day, [word]), 1 + 8); // solved first try on an 8-try day
+assert.equal(pointsFor(day, [miss, word]), 1 + 7);
+assert.equal(pointsFor(day, [...Array(7).fill(miss), word]), 1 + 1); // on the last try
+assert.equal(pointsFor(day, Array(8).fill(miss)), 1); // lost
+
+// stats from saved days: streaks need back-to-back wins
+const won = (d: number, n: number): Day => ({ day: d, guesses: Array(n).fill("X"), status: "won", points: 3 });
+const s1 = statsFrom([won(1, 2), won(2, 3), { day: 3, guesses: ["X"], status: "lost", points: 1 }, won(4, 1), won(5, 2), won(6, 2), { day: 7, guesses: [], status: "playing", points: 1 }]);
+assert.equal(s1.played, 6); // today's unfinished game doesn't count yet
+assert.equal(s1.won, 5);
+assert.equal(s1.streak, 3); // days 4-6
+assert.equal(s1.best, 3);
+assert.equal(s1.lastWon, 6);
+assert.deepEqual(s1.dist.slice(0, 3), [1, 3, 1]);
+assert.equal(s1.points, 3 * 5 + 1 + 1);
+assert.equal(statsFrom([won(1, 2), won(3, 2)]).streak, 1, "a skipped day ends the streak");
+assert.deepEqual(statsFrom([]), NO_STATS);
 
 // seals round-trip; any edit, or reuse for another purpose, is rejected
 process.env.SESSION_SECRET = "test-secret-".repeat(4);
+const g = { day, guesses: [miss] };
 const sealed = seal("bytle", g);
 assert.deepEqual(unseal("bytle", sealed), g);
 assert.equal(unseal("admin", sealed), null);
 const sig = sealed.split(".")[1];
-const cheat = Buffer.from(JSON.stringify({ ...g, stats: { ...g.stats, won: 999 } })).toString("base64url");
+const cheat = Buffer.from(JSON.stringify({ ...g, guesses: [] })).toString("base64url");
 assert.equal(unseal("bytle", `${cheat}.${sig}`), null);
 assert.equal(unseal("bytle", sealed.slice(0, -1) + (sealed.endsWith("A") ? "B" : "A")), null);
 for (const junk of ["", "x", "a.b", "a.b.c", null, undefined]) assert.equal(unseal("bytle", junk), null);
