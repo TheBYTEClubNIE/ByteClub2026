@@ -1,6 +1,7 @@
 ---
 category: webdev
 date: 2026-09-24
+author: Tanishq Dhawan
 ---
 
 # How Node.js Actually Works: V8 Engine, libuv, and C++ Bindings
