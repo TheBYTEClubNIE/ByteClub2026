@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Unbounded, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { SITE_URL } from "@/content/site";
+import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 // Unbounded: a geometric, slightly retro-futurist display face with real
@@ -74,6 +75,7 @@ export default function RootLayout({
     >
       <body>
         {children}
+        <Analytics />
       </body>
     </html>
   );
