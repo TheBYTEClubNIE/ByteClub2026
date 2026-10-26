@@ -1,6 +1,7 @@
 ---
 category: dsa
 date: 2026-10-26
+author: Mayank Rai
 ---
 
 # Recursion vs. Iteration: Making Sense of Repetition in DSA
