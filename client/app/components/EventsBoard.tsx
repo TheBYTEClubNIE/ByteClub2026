@@ -99,9 +99,7 @@ function NextEvent({ e, now }: { e: ClubEvent; now: number }) {
   const sub = status === "LIVE" ? `Happening now${e.venue ? ` at ${e.venue}` : ""}` : startsIn(e.start, now);
   return (
     <div className="r-next">
-      <p className="r-big">
-        <span className="r-code">{e.code}</span> {e.name}
-      </p>
+      <p className="r-big">{e.name}</p>
       <p className="r-sum">{e.summary}</p>
       <div className="r-lines">
         <Line k="Date" v={`${boardDate(e.start)} ${boardYear(e.start)}`} />

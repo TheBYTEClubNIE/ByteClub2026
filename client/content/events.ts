@@ -91,6 +91,14 @@ export const EVENTS: ClubEvent[] = [
       { src: "/Events/upside-4.jpg", caption: "Following the clues" },
     ],
   },
+  {
+    code: "HB",
+    name: "Hello Byte",
+    summary:
+      "Our orientation for new members: meet the club and the people behind it, see what we build, and find out how to get involved.",
+    venue: "MV Hall and Azeez Seth Hall",
+    start: "2026-10-30T17:30:00+05:30",
+  },
 ];
 
 /* ───────── helpers (no need to touch these) ───────── */
