@@ -107,6 +107,11 @@ function NextEvent({ e, now }: { e: ClubEvent; now: number }) {
         {e.venue && <Line k="Venue" v={e.venue} />}
       </div>
       {sub && <p className="r-note">{sub}</p>}
+      {e.website && (
+        <a className="r-btn r-btn-alt" href={e.website} target="_blank" rel="noopener noreferrer">
+          Event website →
+        </a>
+      )}
       {status !== "LIVE" && (
         <>
           <a className="r-btn" href={e.register ?? JOIN_LINK.href} target="_blank" rel="noopener noreferrer">
@@ -517,6 +522,8 @@ const RECEIPT_CSS = `
 .r-note { margin-top: 10px; color: #3e444a; }
 .r-btn { display: flex; justify-content: center; margin-top: 12px; padding: 11px; background: var(--r-ink); color: var(--r-paper); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; transition: background-color 0.2s ease; }
 .r-btn:hover { background: #2c3238; }
+.r-btn-alt { background: none; color: var(--r-ink); box-shadow: inset 0 0 0 2px var(--r-ink); }
+.r-btn-alt:hover { background: var(--r-ink); color: var(--r-paper); }
 .r-cal { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 12px; }
 .r-cal a { text-decoration: underline; text-underline-offset: 3px; }
 

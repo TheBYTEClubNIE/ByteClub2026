@@ -7,6 +7,7 @@
 //   start/end ISO time with the IST offset: "2026-04-08T14:30:00+05:30".
 //             Leave both out if the date isn't known (old events).
 //   register  Registration form link. Hidden once the event starts.
+//   website   Optional event site, linked on the ticket.
 //   photos    Images in client/public/, shown in the past events timeline.
 //   video     Optional aftermovie (client/public/), plays behind its changelog release.
 
@@ -18,6 +19,7 @@ export interface ClubEvent {
   start?: string;
   end?: string;
   register?: string;
+  website?: string;
   photos?: { src: string; caption: string }[];
   video?: string;
 }
@@ -98,6 +100,7 @@ export const EVENTS: ClubEvent[] = [
       "Our orientation for new members: meet the club and the people behind it, see what we build, and find out how to get involved.",
     venue: "MV Hall and Azeez Seth Hall",
     start: "2026-10-30T17:30:00+05:30",
+    website: "https://hello-byte.vercel.app/",
   },
 ];
 
