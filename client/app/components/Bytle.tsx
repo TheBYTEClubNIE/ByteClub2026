@@ -99,7 +99,9 @@ function Leaderboard({ version }: { version: number }) {
   return (
     <div className="bt-card">
       <h3 className="bt-h3">Global leaderboard</h3>
-      <p className="bt-fine">1 point for every day you play, plus tries left + 1 for solving it.</p>
+      <p className="bt-fine">
+        1 point for every day you play, plus tries left + 1 for solving it. On a tie, whoever got there first ranks higher.
+      </p>
       {board === null ? (
         <p className="bt-copy">Loading…</p>
       ) : top.length === 0 ? (
