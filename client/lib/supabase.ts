@@ -32,11 +32,13 @@ export function googleName(user: User) {
   return (name || "Player").slice(0, 80);
 }
 
-// Their Google profile photo, if Google sent one.
+// Their Google profile photo, if Google sent one. Only Google's photo host is
+// allowed by the site's image policy (next.config.ts), so anything else falls
+// back to their initial.
 export function googleAvatar(user: User) {
   const m = user.user_metadata ?? {};
   const url = String(m.avatar_url || m.picture || "");
-  return url.startsWith("https://") ? url : undefined;
+  return /^https:\/\/[a-z0-9-]+\.googleusercontent\.com\//.test(url) ? url : undefined;
 }
 
 // Database access that bypasses row level security: only call it after
