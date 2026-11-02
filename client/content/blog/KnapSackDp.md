@@ -1,7 +1,7 @@
 ---
 category: dsa
 date: 2026-11-02
-author: Your Name
+author: Diwakar Sharma
 ---
 # 🎒 Understanding the 0/1 Knapsack Problem Using Dynamic Programming
 
