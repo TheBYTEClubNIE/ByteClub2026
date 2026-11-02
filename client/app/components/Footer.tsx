@@ -113,6 +113,26 @@ export default function Footer() {
           © {new Date().getFullYear()} The Byte Club, NIE.
         </p>
       </div>
+
+      {/* the name as a giant faded sign-off, its bottom cut off by the page edge */}
+      <div aria-hidden className="pointer-events-none select-none overflow-hidden" style={{ height: "clamp(1.6rem, 8.8vw, 12.8rem)" }}>
+        <p
+          className="text-center whitespace-nowrap"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontWeight: 900,
+            fontSize: "clamp(2rem, 11vw, 16rem)",
+            lineHeight: 1,
+            letterSpacing: "-0.04em",
+            background: "linear-gradient(180deg, color-mix(in srgb, var(--ink) 16%, transparent), transparent 85%)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
+          }}
+        >
+          The Byte Club
+        </p>
+      </div>
     </footer>
   );
 }
