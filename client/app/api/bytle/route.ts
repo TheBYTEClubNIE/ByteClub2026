@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { type Day, LOGIN_POINTS, NO_STATS, pointsFor, statsFrom, statusOf, view, wordFor } from "@/lib/bytle";
 import { dayNumber } from "@/lib/bytle-day";
 import { jsonBody, seal, tooMany, unseal } from "@/lib/security";
-import { accountsReady, currentUser, db, googleName } from "@/lib/supabase";
+import { accountsReady, currentUser, db, googleAvatar, googleName } from "@/lib/supabase";
 
 // Bytle is played here. Anyone can play as a guest; signing in with Google
 // saves each day to the player's account (stats, points, leaderboard). The
@@ -69,7 +69,12 @@ async function today(userId: string, name: string) {
   return { day, rows, row };
 }
 
-const signedInView = (row: Row, rows: Row[], name: string) => ({ ...view(row, statsFrom(rows), name), guest: false, canSignIn: true });
+const signedInView = (row: Row, rows: Row[], name: string, avatar?: string) => ({
+  ...view(row, statsFrom(rows), name),
+  guest: false,
+  canSignIn: true,
+  avatar,
+});
 
 export async function GET(request: Request) {
   const user = accountsReady() ? await currentUser() : null;
@@ -82,8 +87,9 @@ export async function GET(request: Request) {
   }
   if (!user) return Response.json(guestView(day, await guestGuesses(day)));
   const name = googleName(user);
+  const avatar = googleAvatar(user);
   const { rows, row } = await today(user.id, name);
-  return Response.json(signedInView(row, rows, name));
+  return Response.json(signedInView(row, rows, name, avatar));
 }
 
 export async function POST(request: Request) {
@@ -105,8 +111,9 @@ export async function POST(request: Request) {
   }
 
   const name = googleName(user);
+  const avatar = googleAvatar(user);
   const { rows, row } = await today(user.id, name);
-  if (row.status !== "playing") return Response.json(signedInView(row, rows, name), { status: 409 });
+  if (row.status !== "playing") return Response.json(signedInView(row, rows, name, avatar), { status: 409 });
   const guesses = [...row.guesses, guess];
   const next: Row = { ...row, guesses, status: statusOf(day, guesses), points: pointsFor(day, guesses), updated_at: new Date().toISOString() };
   // only if nothing changed since we read it (two quick taps can't both count)
@@ -120,7 +127,7 @@ export async function POST(request: Request) {
   if (error) throw error;
   if (!data.length) {
     const now = await today(user.id, name);
-    return Response.json(signedInView(now.row, now.rows, name), { status: 409 });
+    return Response.json(signedInView(now.row, now.rows, name, avatar), { status: 409 });
   }
-  return Response.json(signedInView(next, rows.map((r) => (r.day === day ? next : r)), name));
+  return Response.json(signedInView(next, rows.map((r) => (r.day === day ? next : r)), name, avatar));
 }

@@ -82,7 +82,8 @@ function SignIn({ inApp, label = "Sign in with Google" }: { inApp: string | null
 
 type Entry = { name: string; points: number; wins: number; days: number; rank: number };
 
-// The global leaderboard: top ten by points, and your own spot if you're further down.
+// The global leaderboard: everyone in the top 50 by points (the list scrolls),
+// and your own spot if you're further down.
 function Leaderboard({ version }: { version: number }) {
   const [board, setBoard] = useState<{ top: Entry[]; me: Entry | null } | null>(null);
   useEffect(() => {
@@ -92,7 +93,7 @@ function Leaderboard({ version }: { version: number }) {
       .catch(() => {});
   }, [version]);
 
-  const top = board?.top.slice(0, 10) ?? [];
+  const top = board?.top ?? [];
   const me = board?.me;
   const meShown = !!me && top.some((e) => e.rank === me.rank && e.name === me.name);
   return (
@@ -413,14 +414,6 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
               </div>
             ))}
           </div>
-          {account === "in" && (
-            <form method="post" action="/auth/signout" className="bt-account">
-              <span>
-                Playing as <b>{game?.name}</b>
-              </span>
-              <button type="submit">Sign out</button>
-            </form>
-          )}
           {account === "guest" && (
             <p className="bt-account">
               <span>Playing as a guest</span>
@@ -430,6 +423,25 @@ export default function Bytle({ standalone = false }: { standalone?: boolean }) 
         </div>
 
         <aside className="bt-side">
+          {account === "in" && (
+            <form method="post" action="/auth/signout" className="bt-card bt-profile">
+              {game?.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element -- Google's photo URL, already sized
+                <img src={game.avatar} alt="" width={48} height={48} referrerPolicy="no-referrer" />
+              ) : (
+                <span className="bt-avatar" aria-hidden>
+                  {game?.name.charAt(0)}
+                </span>
+              )}
+              <div className="min-w-0">
+                <p className="bt-profile-name">{game?.name}</p>
+                <p className="bt-fine">
+                  {stats.points} points · {streak} day streak
+                </p>
+              </div>
+              <button type="submit">Sign out</button>
+            </form>
+          )}
           {done && revealRow === -1 ? (
             <div className="bt-card bt-result">
               <p className="bt-verdict">{won ? verdict(lastIndex, tries) : "Build failed."}</p>
@@ -544,7 +556,14 @@ const BYTLE_CSS = `
 .bt-account a { font-weight: 600; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 .bt-account button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: 13px; font-weight: 600; color: var(--ink); }
 .bt-account button:hover { background: rgba(255, 255, 255, 0.06); }
-.bt-lb { display: grid; gap: 4px; margin-top: 14px; counter-reset: none; }
+.bt-profile { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.bt-profile img, .bt-avatar { width: 48px; height: 48px; border-radius: 50%; }
+.bt-avatar { display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; }
+.bt-profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ink); }
+.bt-profile .bt-fine { margin-top: 2px; }
+.bt-profile button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-strong); font-size: 13px; font-weight: 600; color: var(--ink); }
+.bt-profile button:hover { background: rgba(255, 255, 255, 0.06); }
+.bt-lb { display: grid; gap: 4px; margin-top: 14px; max-height: 26rem; overflow-y: auto; counter-reset: none; }
 .bt-lb li { display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; font-size: 14px; color: var(--ink); }
 .bt-lb li:nth-child(-n + 3) .bt-lb-rank { color: var(--accent); }
 .bt-lb li.is-me { background: var(--accent-soft); outline: 1px solid var(--accent-border); }

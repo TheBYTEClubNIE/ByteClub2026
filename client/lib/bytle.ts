@@ -414,6 +414,7 @@ export type View = {
   meaning?: string;
   // playing without an account (no stats); canSignIn: accounts are set up
   guest?: boolean;
+  avatar?: string;
   canSignIn?: boolean;
 };
 
