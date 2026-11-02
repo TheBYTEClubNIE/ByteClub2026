@@ -351,58 +351,83 @@ export function score(guess: string, answer: string): Mark[] {
   return marks;
 }
 
-/* one game, played on the server */
+/* games, played on the server and saved per player */
+
+// Points: 1 for logging in and opening the day's word, plus (tries left + 1)
+// for solving it, so solving in fewer guesses scores more.
+export const LOGIN_POINTS = 1;
+export const winPoints = (tries: number, guessesUsed: number) => tries - guessesUsed + 1;
+
+export type Status = "playing" | "won" | "lost";
+
+// One player's game for one day, as saved in the database.
+export type Day = { day: number; guesses: string[]; status: Status; points: number };
+
+export function statusOf(day: number, guesses: string[]): Status {
+  const { word } = wordFor(day);
+  if (guesses.includes(word)) return "won";
+  return guesses.length >= triesFor(word.length) ? "lost" : "playing";
+}
+
+export function pointsFor(day: number, guesses: string[]) {
+  const { word } = wordFor(day);
+  return LOGIN_POINTS + (statusOf(day, guesses) === "won" ? winPoints(triesFor(word.length), guesses.length) : 0);
+}
 
 // dist[i]: games won on guess i + 1
-export type Stats = { played: number; won: number; streak: number; best: number; lastWon: number; dist: number[] };
-export const NO_STATS: Stats = { played: 0, won: 0, streak: 0, best: 0, lastWon: -99, dist: Array(MAX_TRIES).fill(0) };
+export type Stats = { played: number; won: number; streak: number; best: number; lastWon: number; dist: number[]; points: number };
+export const NO_STATS: Stats = { played: 0, won: 0, streak: 0, best: 0, lastWon: -99, dist: Array(MAX_TRIES).fill(0), points: 0 };
 
-// What the server keeps (sealed in a cookie) for one browser.
-export type Game = { day: number; guesses: string[]; stats: Stats };
+// A player's stats from all their saved days. A streak is a run of days won
+// back to back; a lost or skipped day ends it.
+export function statsFrom(days: Day[]): Stats {
+  const s: Stats = { ...NO_STATS, dist: Array(MAX_TRIES).fill(0) };
+  const wonDays = new Set<number>();
+  for (const d of days) {
+    s.points += d.points;
+    if (d.status === "playing") continue;
+    s.played += 1;
+    if (d.status === "won") {
+      s.won += 1;
+      s.dist[d.guesses.length - 1] += 1;
+      wonDays.add(d.day);
+    }
+  }
+  for (const day of [...wonDays].sort((a, b) => a - b)) {
+    s.streak = wonDays.has(day - 1) ? s.streak + 1 : 1;
+    s.best = Math.max(s.best, s.streak);
+    s.lastWon = day;
+  }
+  return s;
+}
 
 // What the browser gets: marks for each guess, and the word only once the game is over.
 export type View = {
   day: number;
+  name: string;
   letters: number;
   tries: number;
   rows: { guess: string; marks: Mark[] }[];
-  status: "playing" | "won" | "lost";
+  status: Status;
   stats: Stats;
   word?: string;
   meaning?: string;
+  // playing without an account (no stats); canSignIn: accounts are set up
+  guest?: boolean;
+  canSignIn?: boolean;
 };
 
-export function view(game: Game): View {
-  const { word, meaning } = wordFor(game.day);
-  const tries = triesFor(word.length);
-  const won = game.guesses.includes(word);
-  const over = won || game.guesses.length >= tries;
+export function view(today: Day, stats: Stats, name: string): View {
+  const { word, meaning } = wordFor(today.day);
+  const status = statusOf(today.day, today.guesses);
   return {
-    day: game.day,
+    day: today.day,
+    name,
     letters: word.length,
-    tries,
-    rows: game.guesses.map((guess) => ({ guess, marks: score(guess, word) })),
-    status: won ? "won" : over ? "lost" : "playing",
-    stats: game.stats,
-    ...(over ? { word, meaning } : {}),
+    tries: triesFor(word.length),
+    rows: today.guesses.map((guess) => ({ guess, marks: score(guess, word) })),
+    status,
+    stats,
+    ...(status === "playing" ? {} : { word, meaning }),
   };
-}
-
-// Adds a guess to a game still in play; stats only change when it ends.
-export function play(game: Game, guess: string): Game {
-  const guesses = [...game.guesses, guess];
-  const { word } = wordFor(game.day);
-  const won = guess === word;
-  if (!won && guesses.length < triesFor(word.length)) return { ...game, guesses };
-  const s: Stats = { ...game.stats, dist: [...game.stats.dist], played: game.stats.played + 1 };
-  if (won) {
-    s.won += 1;
-    s.dist[guesses.length - 1] += 1;
-    s.streak = s.lastWon === game.day - 1 ? s.streak + 1 : 1;
-    s.best = Math.max(s.best, s.streak);
-    s.lastWon = game.day;
-  } else {
-    s.streak = 0;
-  }
-  return { ...game, guesses, stats: s };
 }

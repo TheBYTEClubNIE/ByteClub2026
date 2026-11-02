@@ -24,9 +24,9 @@ export default function SiteNav() {
 
   useEffect(() => {
     clearOldSaves();
-    fetch("/api/bytle", { cache: "no-store" })
+    fetch("/api/bytle?peek", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
-      .then((g: { rows?: unknown[] } | null) => setFreshWord(!!g && !g.rows?.length))
+      .then((g: { fresh?: boolean } | null) => setFreshWord(!!g?.fresh))
       .catch(() => {});
 
     const observer = new IntersectionObserver(
