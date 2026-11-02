@@ -29,17 +29,22 @@ alter table public.players enable row level security;
 alter table public.bytle_days enable row level security;
 revoke all on public.players, public.bytle_days from anon, authenticated;
 
--- totals per player, ranked (ties share a rank)
-create or replace view public.bytle_leaderboard with (security_invoker = true) as
+-- totals per player, ranked 1, 2, 3… with no shared places: on equal points,
+-- whoever made their last submission first ranks higher
+drop view if exists public.bytle_leaderboard;
+create view public.bytle_leaderboard with (security_invoker = true) as
 select
   p.id as player_id,
   p.name,
   coalesce(sum(d.points), 0)::int as points,
   (count(d.day) filter (where d.status = 'won'))::int as wins,
   count(d.day)::int as days,
-  (rank() over (order by coalesce(sum(d.points), 0) desc))::int as rank
+  coalesce(max(d.updated_at), p.created_at) as last_submitted,
+  (row_number() over (
+    order by coalesce(sum(d.points), 0) desc, coalesce(max(d.updated_at), p.created_at), p.id
+  ))::int as rank
 from public.players p
 left join public.bytle_days d on d.player_id = p.id
-group by p.id, p.name;
+group by p.id, p.name, p.created_at;
 
 revoke all on public.bytle_leaderboard from anon, authenticated;

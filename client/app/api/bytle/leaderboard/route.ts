@@ -7,9 +7,7 @@ export async function GET() {
   const top = await db()
     .from("bytle_leaderboard")
     .select(columns)
-    .order("points", { ascending: false })
-    .order("wins", { ascending: false })
-    .order("name")
+    .order("rank")
     .limit(50);
   if (top.error) throw top.error;
 
