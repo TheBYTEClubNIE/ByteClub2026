@@ -3,14 +3,14 @@ import type { NextConfig } from "next";
 const dev = process.env.NODE_ENV !== "production";
 
 // Everything the site loads comes from itself (the admin panel also pulls
-// Google Fonts). Inline scripts stay allowed because Next.js inlines its own;
+// Google Fonts, and Bytle shows signed-in players' Google photos). Inline scripts stay allowed because Next.js inlines its own;
 // the rest still blocks plugins, framing, foreign scripts and form hijacking.
 const CSP = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://*.googleusercontent.com",
   "media-src 'self'",
   `connect-src 'self'${dev ? " ws:" : ""}`,
   "worker-src 'self' blob:",
